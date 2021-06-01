@@ -15,7 +15,6 @@ eCommerceOpSystem = eCommerceOperationalSystem()
 eCommerceOpSystem.add_tables([PRODUCT_TABLE, STORE_TABLE, STORE_SALES_TABLE])
 data_generator.add_tables([PRODUCT_TABLE, STORE_TABLE, STORE_SALES_TABLE])
 
-
 DailyOperations = [
         [   
             GeneratorItem(PRODUCT_TABLE, 5000, 0), 

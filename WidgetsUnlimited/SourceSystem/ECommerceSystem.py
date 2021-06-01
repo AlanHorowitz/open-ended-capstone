@@ -1,6 +1,6 @@
 from util.sqltypes import Table, Column
 from typing import List
-from .OperationalSourceSystem import OperationalSourceSystem
+from .OperationalSourceSystem import OperationalSystem
 
 import psycopg2
 from psycopg2.extras import DictCursor, DictRow
@@ -9,7 +9,7 @@ from psycopg2.extensions import connection, cursor
 from util.etlutils import create_table
 
 
-class eCommerceOperationalSystem(OperationalSourceSystem):
+class eCommerceOperationalSystem(OperationalSystem):
     def __init__(self) -> None:
         # open connection to postgres
         self.connection: connection = psycopg2.connect(
