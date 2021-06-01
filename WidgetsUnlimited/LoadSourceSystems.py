@@ -1,25 +1,20 @@
 from collections import namedtuple
 from util.sqltypes import Table
-# from generator import InStoreOperationalSystem
-from generator.ECommerceOperationalSystem import eCommerceOperationalSystem
-# from generator import ProductOperationalSystem
-from generator.Generator import Generator, GeneratorItem 
+from SourceSystem.ECommerceSystem import eCommerceOperationalSystem
+from DataGeneration.Generator import Generator, GeneratorItem 
 
-from tables.product import PRODUCT_TABLE
-from tables.store import STORE_TABLE
-from tables.store_sales import STORE_SALES_TABLE
+from domain.product import PRODUCT_TABLE
+from domain.store import STORE_TABLE
+from domain.store_sales import STORE_SALES_TABLE
 
-gen = Generator()
+data_generator = Generator()
 
 eCommerceOpSystem = eCommerceOperationalSystem() 
-# inStoreOpSystem = InStoreOperationalSystem() 
-# productOpSystem = ProductOperationalSystem()
 
-# # Associate tables with operational systems;  
-eCommerceOpSystem.add_tables([PRODUCT_TABLE, STORE_TABLE])
-gen.add_tables([PRODUCT_TABLE, STORE_TABLE])
-# # inStoreOpSystem.add_tables([table1, table2])
-# # productOpSystem.add_tables([table1, table2])
+# Associate tables with operational systems;  
+eCommerceOpSystem.add_tables([PRODUCT_TABLE, STORE_TABLE, STORE_SALES_TABLE])
+data_generator.add_tables([PRODUCT_TABLE, STORE_TABLE, STORE_SALES_TABLE])
+
 
 DailyOperations = [
         [   
@@ -29,20 +24,18 @@ DailyOperations = [
         [
             GeneratorItem(PRODUCT_TABLE, 5, 50),
             GeneratorItem(STORE_TABLE, 10, 20),
-        #     GeneratorItem(STORE_SALES_TABLE, 50000, 0),
-        # ],
-        # [
-        #     GeneratorItem(PRODUCT_TABLE, 10, 30),
-        #     GeneratorItem(STORE_TABLE, 1, 0),
-        #     GeneratorItem(STORE_SALES_TABLE, 50000, 0),
+            GeneratorItem(STORE_SALES_TABLE, 50000, 0),
+        ],
+        [
+            GeneratorItem(PRODUCT_TABLE, 10, 30),
+            GeneratorItem(STORE_TABLE, 1, 0),
+            GeneratorItem(STORE_SALES_TABLE, 50000, 0),
         ],
     ]
 
 for updates in DailyOperations:
-    gen.run(updates)
-    # ping ETL service to do daily update
-    # work on CSV coordination later
-    #  get user input for next day will allow me to test incremental before rest service 
+    data_generator.generate_and_add(updates)
+    
 
 # gen.close()
 # ## what is my ETL going to do?

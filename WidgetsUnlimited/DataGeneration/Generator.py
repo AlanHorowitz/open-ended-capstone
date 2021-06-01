@@ -1,5 +1,5 @@
 from re import U
-from .OperationalSystem import OperationalSystem
+from SourceSystem import OperationalSourceSystem
 from typing import List, Tuple
 from collections import namedtuple
 from util.sqltypes import Table, Column
@@ -26,10 +26,10 @@ class Generator():
         self.connection.commit()
         pass
 
-    def run(self, batch : List[GeneratorItem]) -> None:
+    def generate_and_add(self, batch : List[GeneratorItem]) -> None:
         for b in batch:
             table : Table = b.table_object
-            opSystem : OperationalSystem = table.getOperationalSystem()
+            opSystem : OperationalSourceSystem = table.getOperationalSystem()
             i_rows, u_rows  = self.generate(b.table_object, b.n_inserts, b.n_updates, datetime.now())
             print(b)
             opSystem.insert(table, i_rows)

@@ -1,8 +1,8 @@
 from util.sqltypes import Table, Column
 from typing import List
-from .OperationalSystem import OperationalSystem
+from .OperationalSourceSystem import OperationalSourceSystem
 
-class InStoreOperationalSystem(OperationalSystem):
+class InStoreOperationalSystem(OperationalSourceSystem):
     def __init__(self) -> None:
         # open connection to postgres
         pass
