@@ -1,5 +1,4 @@
-from re import U
-from SourceSystem import OperationalSourceSystem
+from sourcesystems.OperationalSystem import operationalSystem
 from typing import List, Tuple
 from collections import namedtuple
 from util.sqltypes import Table, Column
@@ -10,9 +9,6 @@ import psycopg2
 from psycopg2.extras import DictCursor, DictRow
 from psycopg2.extensions import connection, cursor
 from util.etlutils import create_table
-
-
-GeneratorItem = namedtuple("GeneratorItem", ["table_object", "n_inserts", "n_updates"])
 
 class Generator():
 
@@ -25,30 +21,11 @@ class Generator():
         self.cur.execute("SET SEARCH_PATH TO GENERATOR;")
         self.connection.commit()
         pass
-
-    def generate_and_add(self, batch : List[GeneratorItem]) -> None:
-        for b in batch:
-            table : Table = b.table_object
-            opSystem : OperationalSourceSystem = table.getOperationalSystem()
-            i_rows, u_rows  = self.generate(b.table_object, b.n_inserts, b.n_updates, datetime.now())
-            print(b)
-            opSystem.insert(table, i_rows)
-            opSystem.update(table, u_rows)
-            # opSystem open
-            # while get next update (generator function) looping factor
-                # save local
-                # call opsystemUpdate
-            # while get next insert (generator function)
-                # save local
-                # call opsystemInsert
-            # opsystem close
-        pass
-
+    
     def close():
         pass
 
     def add_tables(self, tables : List[Table]) -> None:
-        # create all the postgres tables
         for table in tables:
             create_table(self.connection, table.get_create_sql_postgres())  
 

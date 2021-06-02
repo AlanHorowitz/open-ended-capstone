@@ -1,39 +1,43 @@
-from collections import namedtuple
-from util.sqltypes import Table
-from SourceSystem.ECommerceSystem import eCommerceOperationalSystem
-from DataGeneration.Generator import Generator, GeneratorItem 
+from sourcesystems.ecommerce import eCommerceSystem
+from sourcesystems.basesystem import TableUpdate
+from DataGeneration.Generator import Generator 
 
-from domain.product import PRODUCT_TABLE
-from domain.store import STORE_TABLE
+from domain.product import ProductTable
+from domain.store import StoreTable
 from domain.store_sales import STORE_SALES_TABLE
 
-data_generator = Generator()
-
-eCommerceOpSystem = eCommerceOperationalSystem() 
-
-# Associate tables with operational systems;  
-eCommerceOpSystem.add_tables([PRODUCT_TABLE, STORE_TABLE, STORE_SALES_TABLE])
-data_generator.add_tables([PRODUCT_TABLE, STORE_TABLE, STORE_SALES_TABLE])
+product_table = ProductTable()
+store_table = StoreTable()
 
 DailyOperations = [
         [   
-            GeneratorItem(PRODUCT_TABLE, 5000, 0), 
-            GeneratorItem(STORE_TABLE, 40, 0)
+            # day 1
+            TableUpdate(product_table, 5000, 0), 
+            TableUpdate(store_table, 40, 0)
         ],
         [
-            GeneratorItem(PRODUCT_TABLE, 5, 50),
-            GeneratorItem(STORE_TABLE, 10, 20),
-            GeneratorItem(STORE_SALES_TABLE, 50000, 0),
+            # day 2
+            TableUpdate(product_table, 5, 50),
+            TableUpdate(store_table, 10, 20),
+            TableUpdate(STORE_SALES_TABLE, 50000, 0),
         ],
         [
-            GeneratorItem(PRODUCT_TABLE, 10, 30),
-            GeneratorItem(STORE_TABLE, 1, 0),
-            GeneratorItem(STORE_SALES_TABLE, 50000, 0),
+            # day 3
+            TableUpdate(product_table, 10, 30),
+            TableUpdate(store_table, 1, 0),
+            TableUpdate(STORE_SALES_TABLE, 50000, 0),
         ],
     ]
 
-for updates in DailyOperations:
-    data_generator.generate_and_add(updates)
+data_generator = Generator()
+eCommerceSys = eCommerceSystem(data_generator) 
+eCommerceSys.add_tables([PRODUCT_TABLE, STORE_TABLE, STORE_SALES_TABLE])
+
+# date = INIT_DATE
+for day in DailyOperations:
+    for table_update in day:
+        table_update.process()
+        # bump time delta one dat
     
 
 # gen.close()
