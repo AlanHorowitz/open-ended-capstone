@@ -1,15 +1,15 @@
-from util.sqltypes import Table, Column
 from typing import List
-from .basesystem import BaseSystem
 
 import psycopg2
 from psycopg2.extras import DictCursor, DictRow
 from psycopg2.extensions import connection, cursor
 
-from util.etlutils import create_table
+from .basesystem import BaseSystem
+from util.sqltypes import Table, Column
+from datageneration.datagenerator import DataGenerator
 
 class eCommerceSystem(BaseSystem):
-    def __init__(self, dataGenerator : Generator) -> None:
+    def __init__(self, dataGenerator : DataGenerator) -> None:
         # open connection to postgres
         super().__init__(dataGenerator)
         self.connection: connection = psycopg2.connect(
@@ -17,20 +17,16 @@ class eCommerceSystem(BaseSystem):
         )
 
         self.cur: cursor = self.connection.cursor(cursor_factory=DictCursor)
-        self.cur.execute("CREATE SCHEMA ECOMMERCE;")
+        self.cur.execute("CREATE SCHEMA IF NOT EXISTS ECOMMERCE;")
         self.cur.execute("SET SEARCH_PATH TO ECOMMERCE;")
         self.connection.commit()
                
     def add_tables(self, tables : List[Table]) -> None:
-        # create all the postgres tables
-        # call super for adding to generator and set OpSys
+        super().add_tables(tables)
         for table in tables:
-            table.setOperationalSystem(self)
-            create_table(self.connection, table.get_create_sql_postgres())         
-
-    def remove_tables():
-        pass
-
+            self.cur.execute(table.get_create_sql_postgres())
+            self.connection.commit()
+    
     def open(table : Table) -> None:
         pass
 

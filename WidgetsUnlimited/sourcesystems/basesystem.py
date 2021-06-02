@@ -1,13 +1,15 @@
-from util.sqltypes import Table, Column
 from typing import List
-from DataGeneration.Generator
+from datetime import datetime
+
+from util.sqltypes import Table, Column
+from datageneration.datagenerator import DataGenerator
 
 class BaseSystem:
-    def __init__(self, dataGenerator : Generator) -> None:
+    def __init__(self, dataGenerator : DataGenerator) -> None:
         self._data_generator = dataGenerator
 
     def add_tables(self, tables : List[Table]) -> None:
-        self.data_generator.add_tables(tables)
+        self._data_generator.add_tables(tables)
         for table in tables:
             table.setOperationalSystem(self)
 
@@ -23,8 +25,8 @@ class BaseSystem:
     def update(self, table, records):
         pass
 
-    def getDataGenerator(self) -> 
-
+    def getDataGenerator(self) -> DataGenerator:
+        return self._data_generator
 
 class TableUpdate():
     def __init__(self, table : Table, n_inserts : int, n_updates : int) -> None:
@@ -33,8 +35,8 @@ class TableUpdate():
         self.n_updates = n_updates
 
     def process(self) -> None:
-        opSystem : OperationalSourceSystem = table.getOperationalSystem()
-        generator : DataGenerator = opSystem.getDataGenerator()
+        op_system : BaseSystem = self.table.getOperationalSystem()
+        generator : DataGenerator = op_system.getDataGenerator()
         i_rows, u_rows  = generator.generate(self.table, self.n_inserts, self.n_updates, datetime.now())
-        opSystem.insert(self.table, i_rows)
-        opSystem.update(self.table, u_rows)
+        op_system.insert(self.table, i_rows)
+        op_system.update(self.table, u_rows)
