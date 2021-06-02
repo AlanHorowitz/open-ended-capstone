@@ -1,6 +1,4 @@
-from sourcesystems.OperationalSystem import operationalSystem
 from typing import List, Tuple
-from collections import namedtuple
 from util.sqltypes import Table, Column
 from datetime import datetime
 import random
@@ -8,26 +6,25 @@ import random
 import psycopg2
 from psycopg2.extras import DictCursor, DictRow
 from psycopg2.extensions import connection, cursor
-from util.etlutils import create_table
 
-class Generator():
+class DataGenerator():
 
     def __init__(self) -> None:
         self.connection: connection = psycopg2.connect(
         "dbname=retaildw host=172.17.0.1 user=user1 password=user1"
         )
         self.cur: cursor = self.connection.cursor(cursor_factory=DictCursor)
-        self.cur.execute("CREATE SCHEMA GENERATOR;")
-        self.cur.execute("SET SEARCH_PATH TO GENERATOR;")
-        self.connection.commit()
-        pass
+        self.cur.execute("CREATE SCHEMA IF NOT EXISTS GENERATOR;")   
+        self.cur.execute("SET SEARCH_PATH TO GENERATOR;")     
+        self.connection.commit()        
     
     def close():
         pass
 
     def add_tables(self, tables : List[Table]) -> None:
-        for table in tables:
-            create_table(self.connection, table.get_create_sql_postgres())  
+        for table in tables:            
+            self.cur.execute(table.get_create_sql_postgres())
+            self.connection.commit()  
 
     def generate(self,        
         table: Table,

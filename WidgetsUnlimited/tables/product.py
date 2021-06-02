@@ -45,7 +45,7 @@ class ProductTable(Table):
     """
 
     def __init__(self):
-        super.__init__(
+        super().__init__(
             ProductTable.NAME,
             ProductTable.CREATE_SQL_PG,
             ProductTable.CREATE_SQL_MYSQL,
