@@ -4,9 +4,9 @@ import psycopg2
 from psycopg2.extras import DictCursor, DictRow
 from psycopg2.extensions import connection, cursor
 
-from .basesystem import BaseSystem
+from .base import BaseSystem
 from util.sqltypes import Table, Column
-from datageneration.datagenerator import DataGenerator
+from .generator import DataGenerator
 
 class eCommerceSystem(BaseSystem):
     def __init__(self, dataGenerator : DataGenerator) -> None:

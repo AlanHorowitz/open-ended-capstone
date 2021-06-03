@@ -2,7 +2,7 @@ from typing import List
 from datetime import datetime
 
 from util.sqltypes import Table, Column
-from datageneration.datagenerator import DataGenerator
+from .generator import DataGenerator
 
 class BaseSystem:
     def __init__(self, dataGenerator : DataGenerator) -> None:
