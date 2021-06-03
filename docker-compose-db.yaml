@@ -1,4 +1,4 @@
-version: "2"
+version: "3"
 services:
   postgres:
     image: postgres
@@ -24,8 +24,9 @@ services:
   #     - MYSQL_USER=user1
   #     - MYSQL_PASSWORD=user1
   #     - MYSQL_DATABASE=retaildw
-  # networks: 
-  #   default:
-  #       external:
-  #           name: widgets-unlimited-network
-            
+
+networks: 
+  default:
+      external:
+          name: widgets-unlimited-network
+          
