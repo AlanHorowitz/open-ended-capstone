@@ -1,26 +1,12 @@
 version: "2"
 services:
-  source_systems:
-    image: postgres
-    ports:
-      - "5432:5432"
-    environment: 
-      - POSTGRES_USER=user1
-      - POSTGRES_PASSWORD=user1
-      - POSTGRES_DB=retaildw
-  pgadmin:
-    image: dpage/pgadmin4
-    ports: 
-      - "80:80"
-    environment: 
-      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
-      - PGADMIN_DEFAULT_PASSWORD=admin
-  # mysql:
-  #   image: mysql:8.0.23
-  #   ports:
-  #     - "3306:3306"
-  #   environment: 
-  #     - MYSQL_ROOT_PASSWORD=root
-  #     - MYSQL_USER=user1
-  #     - MYSQL_PASSWORD=user1
-  #     - MYSQL_DATABASE=retaildw
+  sourcesystems:
+    build:
+      context: .
+      dockerfile: Dockerfile-sourcesystems
+          
+networks: 
+    default:
+        external:
+            name: widgets-unlimited-network
+            

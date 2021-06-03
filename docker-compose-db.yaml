@@ -24,3 +24,8 @@ services:
   #     - MYSQL_USER=user1
   #     - MYSQL_PASSWORD=user1
   #     - MYSQL_DATABASE=retaildw
+  # networks: 
+  #   default:
+  #       external:
+  #           name: widgets-unlimited-network
+            
