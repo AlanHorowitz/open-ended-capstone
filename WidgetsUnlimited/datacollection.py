@@ -9,6 +9,7 @@
 # - Monotonically increasing primary keys
 # - Hard-coded values (of the appropriate type) are used for the data columns. This will be replaced by randomized 
 #   ranges including some "dirty data" later in the project.
+# - Updates append '_UPD' to randomly selected text columns.  
 # - Real foreign key references are used for product and store in store sales.
 # - Generated data us writen to postgres.
 
