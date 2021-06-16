@@ -1,4 +1,5 @@
 from typing import List
+import os
 
 import psycopg2
 from psycopg2.extras import DictCursor, DictRow
@@ -13,12 +14,18 @@ class eCommerceSystem(BaseSystem):
         # open connection to postgres
         super().__init__(dataGenerator)
         self.connection: connection = psycopg2.connect(
-        "dbname=retaildw host=172.17.0.1 user=user1 password=user1"
+            dbname = os.environ['E_COMMERCE_DB'],
+            host = os.environ['E_COMMERCE_HOST'],
+            port = os.environ['E_COMMERCE_PORT'],
+            user = os.environ['E_COMMERCE_USER'],
+            password = os.environ['E_COMMERCE_PASSWORD'],
         )
-
+        
+        schema = os.environ['E_COMMERCE_SCHEMA']
         self.cur: cursor = self.connection.cursor(cursor_factory=DictCursor)
-        self.cur.execute("CREATE SCHEMA IF NOT EXISTS ECOMMERCE;")
-        self.cur.execute("SET SEARCH_PATH TO ECOMMERCE;")
+        self.cur.execute(f"CREATE SCHEMA IF NOT EXISTS {schema};")   
+        self.cur.execute(f"SET SEARCH_PATH TO {schema};")     
+
         self.connection.commit()
                
     def add_tables(self, tables : List[Table]) -> None:
@@ -66,9 +73,7 @@ class eCommerceSystem(BaseSystem):
                 f"DELETE FROM {table_name} WHERE {primary_key_column} in %s;",
                 (keys,),
             )
-
-            print(self.cur.rowcount, 'deleted')
-
+           
             self.connection.commit()            
             insert_records = [tuple(dr.values()) for dr in records] # DictRow to tuple
             self.insert(table, insert_records)

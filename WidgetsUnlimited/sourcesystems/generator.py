@@ -2,20 +2,26 @@ from typing import List, Tuple
 from util.sqltypes import Table, Column
 from datetime import datetime
 import random
+import os
 
 import psycopg2
 from psycopg2.extras import DictCursor, DictRow
 from psycopg2.extensions import connection, cursor
 
 class DataGenerator():
-
-    def __init__(self) -> None:
+# "dbname=retaildw host=172.17.0.1 user=user1 password=user1"
+    def __init__(self) -> None:        
         self.connection: connection = psycopg2.connect(
-        "dbname=retaildw host=172.17.0.1 user=user1 password=user1"
+            dbname = os.environ['DATA_GENERATOR_DB'],
+            host = os.environ['DATA_GENERATOR_HOST'],
+            port = os.environ['DATA_GENERATOR_PORT'],
+            user = os.environ['DATA_GENERATOR_USER'],
+            password = os.environ['DATA_GENERATOR_PASSWORD'],
         )
+        schema = os.environ['DATA_GENERATOR_SCHEMA']
         self.cur: cursor = self.connection.cursor(cursor_factory=DictCursor)
-        self.cur.execute("CREATE SCHEMA IF NOT EXISTS GENERATOR;")   
-        self.cur.execute("SET SEARCH_PATH TO GENERATOR;")     
+        self.cur.execute(f"CREATE SCHEMA IF NOT EXISTS {schema};")   
+        self.cur.execute(f"SET SEARCH_PATH TO {schema};")     
         self.connection.commit()        
     
     def close():

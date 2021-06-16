@@ -4,6 +4,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-sourcesystems
+    environment: 
+      DATA_GENERATOR_HOST : postgres
+      DATA_GENERATOR_PORT : 5432
+      DATA_GENERATOR_DB: retaildw
+      DATA_GENERATOR_SCHEMA: generator
+      DATA_GENERATOR_USER: user1
+      DATA_GENERATOR_PASSWORD: user1
+      E_COMMERCE_HOST : postgres
+      E_COMMERCE_PORT : 5432
+      E_COMMERCE_DB: retaildw
+      E_COMMERCE_SCHEMA: ecommerce
+      E_COMMERCE_USER: user1
+      E_COMMERCE_PASSWORD: user1
           
 networks: 
     default:
