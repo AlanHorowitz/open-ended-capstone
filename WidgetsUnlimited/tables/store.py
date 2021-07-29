@@ -33,8 +33,6 @@ class StoreTable(Table):
     def __init__(self):
         super().__init__(
             StoreTable.NAME,
-            StoreTable.CREATE_SQL_PG,
-            StoreTable.CREATE_SQL_MYSQL,
             Column("store_id", "INTEGER", isPrimaryKey=True),
             Column("store_name", "VARCHAR"),
             Column("store_manager_name", "VARCHAR"),

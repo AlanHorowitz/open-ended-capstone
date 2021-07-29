@@ -39,9 +39,7 @@ class StoreSalesTable(Table):
     def __init__(self):
 
         super().__init__(
-            StoreSalesTable.NAME,
-            StoreSalesTable.CREATE_SQL_PG,
-            StoreSalesTable.CREATE_SQL_MYSQL,
+            StoreSalesTable.NAME,            
             Column("store_sales_id", "INTEGER", isPrimaryKey=True),
             Column(
                 "store_sales_store_id",

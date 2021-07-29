@@ -100,9 +100,7 @@ class Table:
 
     def __init__(
         self,
-        name: str,
-        create_sql_postgres: str,
-        create_sql_mysql: str,
+        name: str,        
         *columns: Column,
     ):
         """Instatiate a table metadata object.
@@ -111,9 +109,7 @@ class Table:
         and at least one VARCHAR column.
         """
 
-        self._name = name
-        self._create_sql_postgres = create_sql_postgres
-        self._create_sql_mysql = create_sql_mysql
+        self._name = name        
         self._columns = [col for col in columns]
         primary_keys = [col.get_name() for col in columns if col.isPrimaryKey()]
         inserted_ats = [col.get_name() for col in columns if col.isInsertedAt()]
@@ -203,12 +199,36 @@ class Table:
         return self._updated_at
 
     def get_create_sql_mysql(self) -> str:
+        mysql_dict = {'INTEGER' : 'INT',
+                      'VARCHAR' : 'VARCHAR(80)',
+                      'FLOAT' : 'DOUBLE',
+                      'DATE' : 'DATE',
+                      'BOOLEAN' : 'TINYINT(1)',
+                      'TIMESTAMP' : 'TIMESTAMP(6)'}
+        
+        create_table = "CREATE TABLE IF NOT EXISTS {} ( \n".format(self.get_name()) 
+        columns = "\n".join(["{} {},".format(col.get_name(), mysql_dict[col.get_type()])
+                                  for col in self.get_columns()])
+        primary_key = "PRIMARY KEY ({}));".format(self.get_primary_key())
+        
+        return create_table + columns + primary_key
 
-        return self._create_sql_mysql
 
     def get_create_sql_postgres(self) -> str:
 
-        return self._create_sql_postgres
+        postgres_dict = {'INTEGER' : 'INTEGER',
+                         'VARCHAR' : 'VARCHAR(80)',
+                         'FLOAT' : 'FLOAT(11)',
+                         'DATE' : 'DATE',
+                         'BOOLEAN' : 'BOOLEAN',
+                         'TIMESTAMP' : 'TIMESTAMP'}
+        
+        create_table = "CREATE TABLE IF NOT EXISTS {} ( \n".format(self.get_name()) 
+        columns = "\n".join(["{} {},".format(col.get_name(), postgres_dict[col.get_type()])
+                                  for col in self.get_columns()])
+        primary_key = "PRIMARY KEY ({}));".format(self.get_primary_key())
+        
+        return create_table + columns + primary_key
 
     def get_column_names(self) -> List[str]:
         """ Return a complete list of Column names for the table."""
