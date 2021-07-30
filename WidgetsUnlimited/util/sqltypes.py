@@ -23,20 +23,58 @@ class Column:
         self,
         column_name: str,
         column_type: str,
+        column_type_length = None,
         isPrimaryKey: bool = False,
         isInsertedAt: bool = False,
         isUpdatedAt: bool = False,
         xref_table: str = "",
-        xref_column: str = "",
+        xref_column: str = "",        
     ):
 
         self._name = column_name
         self._type = column_type
+        self._type_length = column_type_length
         self._isPrimaryKey = isPrimaryKey
         self._isInsertedAt = isInsertedAt
         self._isUpdatedAt = isUpdatedAt
         self._xref_table = xref_table
         self._xref_column = xref_column
+
+    @staticmethod
+    def make_type(type, type_len, type_dict) -> str:
+        print('XXX', type)
+        suffix = ""
+        type_trans = type_dict[type][0]
+        type_len_default = type_dict[type][1]
+
+        if type_len or type_len_default:
+            suffix = "(" + (str(type_len) if type_len else type_len_default) + ")"
+
+        return type_trans + suffix
+
+    def get_column_def_mysql(self) -> str:
+
+        mysql_dict = {'INTEGER'   : ('INT', None),
+                      'VARCHAR'   : ('VARCHAR', '80'),
+                      'FLOAT'     : ('DOUBLE', None),
+                      'DATE'      : ('DATE', None),
+                      'BOOLEAN'   : ('TINYINT', '1'),
+                      'TIMESTAMP' : ('TIMESTAMP', '6')}
+
+        return Column.make_type(self.get_type(), self.get_type_length(), mysql_dict)
+        
+                                
+    def get_column_def_postgres(self) -> str:
+       
+        postgres_dict = {'INTEGER'   : ('INTEGER', None),
+                         'VARCHAR'   : ('VARCHAR', '80'),
+                         'FLOAT'     : ('FLOAT', '11'),
+                         'DATE'      : ('DATE', None),
+                         'BOOLEAN'   : ('BOOLEAN', None),
+                         'TIMESTAMP' : ('TIMESTAMP', None)}
+
+        return Column.make_type(self.get_type(), self.get_type_length(), postgres_dict)
+
 
     def get_name(self) -> str:
 
@@ -45,6 +83,10 @@ class Column:
     def get_type(self) -> str:
 
         return self._type
+
+    def get_type_length(self) -> str:
+
+        return self._type_length
 
     def isPrimaryKey(self) -> bool:
 
@@ -199,35 +241,20 @@ class Table:
         return self._updated_at
 
     def get_create_sql_mysql(self) -> str:
-        mysql_dict = {'INTEGER' : 'INT',
-                      'VARCHAR' : 'VARCHAR(80)',
-                      'FLOAT' : 'DOUBLE',
-                      'DATE' : 'DATE',
-                      'BOOLEAN' : 'TINYINT(1)',
-                      'TIMESTAMP' : 'TIMESTAMP(6)'}
-        
+                
         create_table = "CREATE TABLE IF NOT EXISTS {} ( \n".format(self.get_name()) 
-        columns = "\n".join(["{} {},".format(col.get_name(), mysql_dict[col.get_type()])
-                                  for col in self.get_columns()])
-        primary_key = "PRIMARY KEY ({}));".format(self.get_primary_key())
-        
+        columns = "\n".join(["{} {},".format(col.get_name(), col.get_column_def_mysql())
+                                             for col in self.get_columns()])
+        primary_key = "\nPRIMARY KEY ({}));".format(self.get_primary_key())
         return create_table + columns + primary_key
 
 
     def get_create_sql_postgres(self) -> str:
 
-        postgres_dict = {'INTEGER' : 'INTEGER',
-                         'VARCHAR' : 'VARCHAR(80)',
-                         'FLOAT' : 'FLOAT(11)',
-                         'DATE' : 'DATE',
-                         'BOOLEAN' : 'BOOLEAN',
-                         'TIMESTAMP' : 'TIMESTAMP'}
-        
         create_table = "CREATE TABLE IF NOT EXISTS {} ( \n".format(self.get_name()) 
-        columns = "\n".join(["{} {},".format(col.get_name(), postgres_dict[col.get_type()])
-                                  for col in self.get_columns()])
-        primary_key = "PRIMARY KEY ({}));".format(self.get_primary_key())
-        
+        columns = "\n".join(["{} {},".format(col.get_name(), col.get_column_def_postgres())
+                                             for col in self.get_columns()])
+        primary_key = "\nPRIMARY KEY ({}));".format(self.get_primary_key())
         return create_table + columns + primary_key
 
     def get_column_names(self) -> List[str]:
