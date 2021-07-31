@@ -42,7 +42,7 @@ class Column:
 
     @staticmethod
     def make_type(type, type_len, type_dict) -> str:
-        print('XXX', type)
+        
         suffix = ""
         type_trans = type_dict[type][0]
         type_len_default = type_dict[type][1]
