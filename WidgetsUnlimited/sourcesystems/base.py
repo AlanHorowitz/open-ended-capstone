@@ -29,14 +29,17 @@ class BaseSystem:
         return self._data_generator
 
 class TableUpdate():
-    def __init__(self, table : Table, n_inserts : int, n_updates : int) -> None:
+    def __init__(self, table : Table, n_inserts : int, n_updates : int,
+    batch_id: int = None, link_parent: bool = False) -> None:
         self.table = table
         self.n_inserts = n_inserts
         self.n_updates = n_updates
+        self.batch_id = batch_id
+        self.link_parent = link_parent
 
     def process(self) -> None:
         op_system : BaseSystem = self.table.getOperationalSystem()
         generator : DataGenerator = op_system.getDataGenerator()
-        i_rows, u_rows  = generator.generate(self.table, self.n_inserts, self.n_updates, datetime.now())
+        i_rows, u_rows  = generator.generate(self)
         op_system.insert(self.table, i_rows)
         op_system.update(self.table, u_rows)

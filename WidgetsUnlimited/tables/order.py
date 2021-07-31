@@ -10,7 +10,7 @@ class OrderTable(Table):
 
         super().__init__(
             OrderTable.NAME,            
-            Column("order_line_item_id", "INTEGER", isPrimaryKey=True),            
+            Column("order_id", "INTEGER", isPrimaryKey=True),            
             Column(
                 "customer_id",
                 "INTEGER",

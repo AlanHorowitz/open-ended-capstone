@@ -1,6 +1,7 @@
 from typing import List, Tuple
 from util.sqltypes import Table, Column
 from datetime import datetime
+from base import TableUpdate
 import random
 import os
 
@@ -32,12 +33,7 @@ class DataGenerator():
             self.cur.execute(table.get_create_sql_postgres())
             self.connection.commit()  
 
-    def generate(self,        
-        table: Table,
-        n_inserts: int,
-        n_updates: int,
-        timestamp: datetime = datetime.now(),
-    ) -> List[DictRow]:
+    def generate(self, table_update : TableUpdate) -> List[DictRow]:
         """
         Insert and update the given numbers of sythesized records to a table.
 
@@ -61,6 +57,19 @@ class DataGenerator():
 
         conn = self.connection
         cur: cursor = conn.cursor(cursor_factory=DictCursor)
+        table = table_update.table
+        n_inserts = table_update.n_inserts 
+        n_updates = table_update.n_updates
+        batch_id = table_update.batch_id
+        link_parent = table_update.link_parent
+        timestamp = datetime.now()
+
+        linked_rs = None
+        if link_parent:
+            # execute
+            # SELECT parent_column from parent_table where batch_id = batch_id
+            pass
+
         table.preload(cur)
 
         table_name = table.get_name()
@@ -103,19 +112,28 @@ class DataGenerator():
             conn.commit()            
 
         if n_inserts > 0:
-
+            # if there is a parent_link, read the keys from the parent table 
+            # modified already in the current batch. Insert n_insert records per parent key, 
+            # using parent_key attribute of column (foreign key v. parent key)
             insert_records = []
-            for pk in range(next_key, next_key + n_inserts):
-                insert_records.append(table.getNewRow(pk, timestamp))
 
-            values_substitutions = ",".join(
-                ["%s"] * n_inserts
-            )  # each %s holds one tuple row
+            if linked_rs is None:
+                for pk in range(next_key, next_key + n_inserts):
+                    insert_records.append(table.getNewRow(pk, timestamp))
 
-            cur.execute(
-                f"INSERT INTO {table_name} ({column_names}) values {values_substitutions}",
-                insert_records,
-            )
+                values_substitutions = ",".join(
+                    ["%s"] * n_inserts
+                )  # each %s holds one tuple row
+
+                cur.execute(
+                    f"INSERT INTO {table_name} ({column_names}) values {values_substitutions}",
+                    insert_records,
+                )
+            else:
+                for row in linked_rs:
+                    for _ in range(n_inserts):
+                        insert_records.append(table.getNewRow(next_key, row[0], timestamp))
+                        next_key += 1
 
             conn.commit()
 

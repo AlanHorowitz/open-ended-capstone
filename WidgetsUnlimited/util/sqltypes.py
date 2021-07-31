@@ -117,6 +117,7 @@ class Table:
     """Database Table metadata"""
 
     class XrefTableData:
+        """ helper object for xref data """
         def __init__(
             self, column_list=[], result_set=[], next_random_row=0, num_rows=0
         ):

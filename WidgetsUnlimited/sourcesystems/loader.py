@@ -20,7 +20,7 @@ class SourceSystemLoader:
 
         daily_operations = [
             [   
-                # day 1
+                # day 1  
                 TableUpdate(product_table, n_inserts=5000, n_updates=0), 
                 TableUpdate(store_table, n_inserts=40, n_updates=0),
                 TableUpdate(supplier_table, n_inserts=40, n_updates=0)

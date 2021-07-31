@@ -1,5 +1,6 @@
 from util.sqltypes import Table, Column
 from .product import ProductTable
+from .order import OrderTable
 
 class OrderLineItemTable(Table):
 
@@ -9,7 +10,13 @@ class OrderLineItemTable(Table):
 
         super().__init__(
             OrderLineItemTable.NAME,            
-            Column("order_line_item_id", "INTEGER", isPrimaryKey=True),            
+            Column("order_line_item_id", "INTEGER", isPrimaryKey=True), 
+            Column(
+                "order_id",
+                "INTEGER",
+                parent_table=OrderTable.NAME,
+                parent_column="order_id",
+            ),           
             Column(
                 "order_line_item_product_id",
                 "INTEGER",
