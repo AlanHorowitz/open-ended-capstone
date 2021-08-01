@@ -28,7 +28,9 @@ class Column:
         isInsertedAt: bool = False,
         isUpdatedAt: bool = False,
         xref_table: str = "",
-        xref_column: str = "",        
+        xref_column: str = "", 
+        parent_table: str = "",
+        parent_key: str = "",          
     ):
 
         self._name = column_name
@@ -39,6 +41,8 @@ class Column:
         self._isUpdatedAt = isUpdatedAt
         self._xref_table = xref_table
         self._xref_column = xref_column
+        self._parent_table = parent_table
+        self._parent_key = parent_key
 
     @staticmethod
     def make_type(type, type_len, type_dict) -> str:
@@ -91,7 +95,7 @@ class Column:
     def isPrimaryKey(self) -> bool:
 
         return self._isPrimaryKey
-
+   
     def isInsertedAt(self) -> bool:
 
         return self._isInsertedAt
@@ -112,6 +116,17 @@ class Column:
 
         return self._xref_table != "" and self._xref_column != ""
 
+    def get_parent_table(self) -> str:
+
+        return self._parent_table
+
+    def get_parent_key(self) -> str:
+
+        return self.__parent_key
+
+    def isParentKey(self) -> bool:
+
+        return self._parent_table != "" and self.__parent_key != ""
 
 class Table:
     """Database Table metadata"""
@@ -158,6 +173,7 @@ class Table:
         inserted_ats = [col.get_name() for col in columns if col.isInsertedAt()]
         updated_ats = [col.get_name() for col in columns if col.isUpdatedAt()]
         parent_keys = [col for col in columns if col.isParentKey()]
+
         if (len(primary_keys), len(inserted_ats), len(updated_ats)) != (1, 1, 1):
             raise Exception(
                 "Simulator requires exactly one primary key, inserted_at and updated_at column"
@@ -171,8 +187,8 @@ class Table:
             raise Exception(
                 "Simulator requires exactly one primary key, inserted_at and updated_at column")
         elif len(parent_keys == 1):
-            self._parent_key = parent_keys[0].getParentKey()
-            self._parent_table = parent_keys[0].getParentTable()
+            self._parent_key = parent_keys[0].get_parent_key()
+            self._parent_table = parent_keys[0].get_parent_table()
 
         self._update_columns = [
             col for col in columns if col.get_type() == "VARCHAR"

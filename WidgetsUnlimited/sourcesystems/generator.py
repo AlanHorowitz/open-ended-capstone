@@ -59,8 +59,14 @@ class DataGenerator():
         cur: cursor = conn.cursor(cursor_factory=DictCursor)
         table = table_update.table
         n_inserts = table_update.n_inserts 
-        n_updates = table_update.n_updates        
-        timestamp = datetime.now()        
+        n_updates = table_update.n_updates
+        link_parent = table_update.link_parent        
+        timestamp = datetime.now()    
+
+        if link_parent and not table.has_parent():
+            raise Exception(
+                f"Invalid Request. No parent for table {table.get_name()}"
+            )    
 
         table.preload(cur)
 
@@ -110,10 +116,10 @@ class DataGenerator():
             insert_records = []
             
             # Generate n_inserts inserts
-            if table_update.link_parent is None:                
+            if not link_parent:                
                 
                 for pk in range(next_key, next_key + n_inserts):
-                    insert_records.append(table.getNewRow(pk, timestamp))
+                    insert_records.append(table.getNewRow(pk, None, timestamp))
 
                 values_substitutions = ",".join(
                     ["%s"] * n_inserts
@@ -128,17 +134,30 @@ class DataGenerator():
             else:
                 
                 cur.execute(f"SELECT {table.get_parent_key()}"
-                            f"FROM   {table.get_parent_table_name()}" 
+                            f"FROM   {table.get_parent_name()}" 
                             f"WHERE   batch_id = {table_update.batch_id};")
                 linked_rs = cur.fetchall()
+                if len(linked_rs) == 0:
+                    raise Exception(
+                "Invalid request.  No parent records discovered in batch")
+
                 for row in linked_rs:
                     for _ in range(n_inserts):
                         insert_records.append(table.getNewRow(next_key, row[0], timestamp))
                         next_key += 1
 
+                values_substitutions = ",".join(
+                    ["%s"] * (n_inserts * len(linked_rs))
+                )  # each %s holds one tuple row
+
+                cur.execute(
+                    f"INSERT INTO {table_name} ({column_names}) values {values_substitutions}",
+                    insert_records,
+                )
             conn.commit()
 
         table.postload()
 
+        # TODO clean batch_id, not for downstream use. 
         return insert_records, update_records
 
