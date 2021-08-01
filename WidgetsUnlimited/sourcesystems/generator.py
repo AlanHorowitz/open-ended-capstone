@@ -59,16 +59,8 @@ class DataGenerator():
         cur: cursor = conn.cursor(cursor_factory=DictCursor)
         table = table_update.table
         n_inserts = table_update.n_inserts 
-        n_updates = table_update.n_updates
-        batch_id = table_update.batch_id
-        link_parent = table_update.link_parent
-        timestamp = datetime.now()
-
-        linked_rs = None
-        if link_parent:
-            # execute
-            # SELECT parent_column from parent_table where batch_id = batch_id
-            pass
+        n_updates = table_update.n_updates        
+        timestamp = datetime.now()        
 
         table.preload(cur)
 
@@ -116,8 +108,10 @@ class DataGenerator():
             # modified already in the current batch. Insert n_insert records per parent key, 
             # using parent_key attribute of column (foreign key v. parent key)
             insert_records = []
-
-            if linked_rs is None:
+            
+            # Generate n_inserts inserts
+            if table_update.link_parent is None:                
+                
                 for pk in range(next_key, next_key + n_inserts):
                     insert_records.append(table.getNewRow(pk, timestamp))
 
@@ -129,7 +123,14 @@ class DataGenerator():
                     f"INSERT INTO {table_name} ({column_names}) values {values_substitutions}",
                     insert_records,
                 )
+
+            # Generate n_inserts per parent record in batch   
             else:
+                
+                cur.execute(f"SELECT {table.get_parent_key()}"
+                            f"FROM   {table.get_parent_table_name()}" 
+                            f"WHERE   batch_id = {table_update.batch_id};")
+                linked_rs = cur.fetchall()
                 for row in linked_rs:
                     for _ in range(n_inserts):
                         insert_records.append(table.getNewRow(next_key, row[0], timestamp))

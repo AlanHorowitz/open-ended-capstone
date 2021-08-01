@@ -157,13 +157,22 @@ class Table:
         primary_keys = [col.get_name() for col in columns if col.isPrimaryKey()]
         inserted_ats = [col.get_name() for col in columns if col.isInsertedAt()]
         updated_ats = [col.get_name() for col in columns if col.isUpdatedAt()]
+        parent_keys = [col for col in columns if col.isParentKey()]
         if (len(primary_keys), len(inserted_ats), len(updated_ats)) != (1, 1, 1):
             raise Exception(
                 "Simulator requires exactly one primary key, inserted_at and updated_at column"
             )
+                
         self._primary_key = primary_keys[0]
         self._inserted_at = inserted_ats[0]
         self._updated_at = updated_ats[0]
+
+        if len(parent_keys) > 1:
+            raise Exception(
+                "Simulator requires exactly one primary key, inserted_at and updated_at column")
+        elif len(parent_keys == 1):
+            self._parent_key = parent_keys[0].getParentKey()
+            self._parent_table = parent_keys[0].getParentTable()
 
         self._update_columns = [
             col for col in columns if col.get_type() == "VARCHAR"
