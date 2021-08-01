@@ -1,11 +1,13 @@
-from .ecommerce import eCommerceSystem
-from .base import TableUpdate
-from .generator import DataGenerator 
-
 from tables.product import ProductTable
 from tables.store import StoreTable
 from tables.store_sales import StoreSalesTable
 from tables.supplier import SupplierTable 
+
+from .generator import DataGenerator 
+from .ecommerce import eCommerceSystem
+from .table_update import TableUpdate
+from .table_update_processor import TableUpdateProcessor
+
 
 class SourceSystemLoader:
     def load(self) -> None:
@@ -39,7 +41,9 @@ class SourceSystemLoader:
             ],
         ]
 
+        table_update_processor = TableUpdateProcessor()
+
         for day in daily_operations:
             for table_update in day:
-                table_update.process()
+                table_update_processor.process(table_update)
         

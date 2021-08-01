@@ -1,7 +1,7 @@
-from typing import List, Tuple
-from util.sqltypes import Table, Column
+from typing import List
+from util.sqltypes import Table
 from datetime import datetime
-from .base import TableUpdate
+from .table_update import TableUpdate
 import random
 import os
 

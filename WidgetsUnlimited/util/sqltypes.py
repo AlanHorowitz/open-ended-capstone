@@ -175,7 +175,7 @@ class Table:
 
         self._name = name        
         self._columns = [col for col in columns]
-        self._columns.extend(Column("batch_id", "INTEGER", isBatchId=True)) 
+        self._columns.append(Column("batch_id", "INTEGER", isBatchId=True)) 
         primary_keys = [col.get_name() for col in columns if col.isPrimaryKey()]
         inserted_ats = [col.get_name() for col in columns if col.isInsertedAt()]
         updated_ats = [col.get_name() for col in columns if col.isUpdatedAt()]
@@ -193,9 +193,12 @@ class Table:
         if len(parent_keys) > 1:
             raise Exception(
                 "Simulator requires exactly one primary key, inserted_at and updated_at column")
-        elif len(parent_keys == 1):
+        elif len(parent_keys) == 1:
             self._parent_key = parent_keys[0].get_parent_key()
             self._parent_table = parent_keys[0].get_parent_table()
+        else:
+            self._parent_key = "" 
+            self._parent_table = ""
 
         self._update_columns = [
             col for col in columns if col.get_type() == "VARCHAR"
