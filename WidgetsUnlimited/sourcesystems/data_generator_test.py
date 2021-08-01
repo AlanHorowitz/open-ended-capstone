@@ -1,5 +1,5 @@
-from .generator import DataGenerator
-from .base import TableUpdate
+from WidgetsUnlimited.sourcesystems.generator import DataGenerator
+from base import TableUpdate
 from tables.order import OrderTable
 from tables.order_line_item import OrderLineItemTable
 

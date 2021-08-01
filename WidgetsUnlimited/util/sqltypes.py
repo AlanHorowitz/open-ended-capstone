@@ -27,6 +27,7 @@ class Column:
         isPrimaryKey: bool = False,
         isInsertedAt: bool = False,
         isUpdatedAt: bool = False,
+        isBatchId: bool = False,
         xref_table: str = "",
         xref_column: str = "", 
         parent_table: str = "",
@@ -39,6 +40,7 @@ class Column:
         self._isPrimaryKey = isPrimaryKey
         self._isInsertedAt = isInsertedAt
         self._isUpdatedAt = isUpdatedAt
+        self._isBatchId = isBatchId
         self._xref_table = xref_table
         self._xref_column = xref_column
         self._parent_table = parent_table
@@ -103,6 +105,10 @@ class Column:
     def isUpdatedAt(self) -> bool:
 
         return self._isUpdatedAt
+
+    def isBatchId(self) -> bool:
+
+        return self._isBatchId
 
     def get_xref_table(self) -> str:
 
@@ -169,6 +175,7 @@ class Table:
 
         self._name = name        
         self._columns = [col for col in columns]
+        self._columns.extend(Column("batch_id", "INTEGER", isBatchId=True)) 
         primary_keys = [col.get_name() for col in columns if col.isPrimaryKey()]
         inserted_ats = [col.get_name() for col in columns if col.isInsertedAt()]
         updated_ats = [col.get_name() for col in columns if col.isUpdatedAt()]
@@ -219,18 +226,25 @@ class Table:
             table_data._num_rows = 0
             table_data._next_random_row = 0
 
-    def getNewRow(self, pk: int, timestamp: datetime = datetime.now()) -> Tuple:
+    def getNewRow(self, primary_key: int, 
+                        parent_key: int = None,
+                        batch_id: int = None,
+                        timestamp: datetime = datetime.now()) -> Tuple:
 
         d: List[object] = []
         self._setXrefTableRows()
 
         for col in self.get_columns():
             if col.isPrimaryKey():
-                d.append(pk)
+                d.append(primary_key)
+            elif col.isBatchId():
+                d.append(batch_id)
             elif col.isInsertedAt() or col.isUpdatedAt():
                 d.append(timestamp)
             elif col.isXref():
                 d.append(self._getXrefValue(col))
+            elif col.isParentKey() and parent_key is not None:
+                d.append(parent_key)
             else:
                 d.append(DEFAULT_INSERT_VALUES[col.get_type()])
 

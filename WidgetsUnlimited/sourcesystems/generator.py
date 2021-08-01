@@ -1,7 +1,7 @@
 from typing import List, Tuple
 from util.sqltypes import Table, Column
 from datetime import datetime
-from base import TableUpdate
+from .base import TableUpdate
 import random
 import os
 
@@ -119,7 +119,10 @@ class DataGenerator():
             if not link_parent:                
                 
                 for pk in range(next_key, next_key + n_inserts):
-                    insert_records.append(table.getNewRow(pk, None, timestamp))
+                    insert_records.append(table.getNewRow(primary_key=pk,
+                                                          parent_key=None,
+                                                          batch_id=table_update.batch_id,
+                                                          timestamp=timestamp))
 
                 values_substitutions = ",".join(
                     ["%s"] * n_inserts
@@ -143,7 +146,10 @@ class DataGenerator():
 
                 for row in linked_rs:
                     for _ in range(n_inserts):
-                        insert_records.append(table.getNewRow(next_key, row[0], timestamp))
+                        insert_records.append(table.getNewRow(primary_key=next_key,
+                                                              parent_key=row[0],
+                                                              batch_id=table_update.batch_id,
+                                                              timestamp=timestamp))
                         next_key += 1
 
                 values_substitutions = ",".join(
