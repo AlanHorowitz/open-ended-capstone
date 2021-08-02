@@ -4,7 +4,7 @@ from tables.customer_address import CustomerAddressTable
 
 class OrderTable(Table):
 
-    NAME = "order"
+    NAME = "order1"
 
     def __init__(self):
 
@@ -23,7 +23,7 @@ class OrderTable(Table):
             #     xref_table=CustomerAddressTable.NAME,
             #     xref_column="customer_address_id",
             # ),
-            Column("order_special_instructions", "VARCHAR"),
+            Column("order_special_instructions", "VARCHAR", column_type_length=200),
             Column("order_shipping_cost", "FLOAT"), 
             Column("order_execution_time", "TIMESTAMP"),
             Column("order_cancelled", "BOOLEAN"),

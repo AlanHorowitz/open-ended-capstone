@@ -1,5 +1,5 @@
-from .generator import DataGenerator
-from .table_update import TableUpdate
+from sourcesystems.generator import DataGenerator
+from sourcesystems.table_update import TableUpdate
 from tables.order import OrderTable
 from tables.order_line_item import OrderLineItemTable
 

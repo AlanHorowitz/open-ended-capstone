@@ -13,6 +13,7 @@ DEFAULT_INSERT_VALUES: Dict[str, object] = {
     "DATE": "2021-02-11 12:52:47",
     "TINYINT": 0,
     "BOOLEAN": True,
+    "TIMESTAMP" : datetime(2020,11,11),
 }
 
 
@@ -128,11 +129,11 @@ class Column:
 
     def get_parent_key(self) -> str:
 
-        return self.__parent_key
+        return self._parent_key
 
     def isParentKey(self) -> bool:
 
-        return self._parent_table != "" and self.__parent_key != ""
+        return self._parent_table != "" and self._parent_key != ""
 
 class Table:
     """Database Table metadata"""
@@ -189,7 +190,7 @@ class Table:
         self._primary_key = primary_keys[0]
         self._inserted_at = inserted_ats[0]
         self._updated_at = updated_ats[0]
-
+        
         if len(parent_keys) > 1:
             raise Exception(
                 "Simulator requires exactly one primary key, inserted_at and updated_at column")
@@ -282,6 +283,18 @@ class Table:
     def get_updated_at(self) -> str:
 
         return self._updated_at
+
+    def get_parent_key(self) -> str:
+
+        return self._parent_key
+
+    def get_parent_table(self) -> str:
+
+        return self._parent_table
+
+    def has_parent(self) -> bool:
+        
+        return self._parent_key != "" and self._parent_table != ""
 
     def get_create_sql_mysql(self) -> str:
                 

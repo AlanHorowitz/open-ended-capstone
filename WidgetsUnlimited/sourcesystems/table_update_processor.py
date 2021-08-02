@@ -5,7 +5,7 @@ from .table_update import TableUpdate
 
 class TableUpdateProcessor():
     
-    def process(table_update: TableUpdate) -> None:
+    def process(self, table_update: TableUpdate) -> None:
         table = table_update.table
         op_system : BaseSystem = table.getOperationalSystem()
         generator : DataGenerator = op_system.getDataGenerator()

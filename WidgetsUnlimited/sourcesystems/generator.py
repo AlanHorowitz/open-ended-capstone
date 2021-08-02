@@ -29,7 +29,8 @@ class DataGenerator():
         pass
 
     def add_tables(self, tables : List[Table]) -> None:
-        for table in tables:            
+        for table in tables: 
+            print(table.get_create_sql_postgres())           
             self.cur.execute(table.get_create_sql_postgres())
             self.connection.commit()  
 
@@ -137,8 +138,8 @@ class DataGenerator():
             else:
                 
                 cur.execute(f"SELECT {table.get_parent_key()}"
-                            f"FROM   {table.get_parent_name()}" 
-                            f"WHERE   batch_id = {table_update.batch_id};")
+                            f" FROM   {table.get_parent_table()}" 
+                            f" WHERE batch_id = {table_update.batch_id};")
                 linked_rs = cur.fetchall()
                 if len(linked_rs) == 0:
                     raise Exception(

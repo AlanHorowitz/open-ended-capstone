@@ -15,8 +15,7 @@ class OrderLineItemTable(Table):
                 "order_id",
                 "INTEGER",
                 parent_table=OrderTable.NAME,
-                parent_key="order_id",
-                isParentKey=True
+                parent_key="order_id",                
             ),           
             # Column(
             #     "order_line_item_product_id",
@@ -31,7 +30,8 @@ class OrderLineItemTable(Table):
             #     xref_table=ProductTable.NAME,
             #     xref_column="product_unit_cost",
             # ),
-            Column("order_line_item_total_price", "FLOAT"),            
+            Column("order_line_item_total_price", "FLOAT"),
+            Column("order_line_comments", "VARCHAR"),            
             Column("order_line_item_inserted_at", "TIMESTAMP", isInsertedAt=True),
             Column("order_line_item_updated_at", "TIMESTAMP", isUpdatedAt=True),
         )
