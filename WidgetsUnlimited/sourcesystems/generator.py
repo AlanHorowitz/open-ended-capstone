@@ -29,8 +29,7 @@ class DataGenerator():
         pass
 
     def add_tables(self, tables : List[Table]) -> None:
-        for table in tables: 
-            print(table.get_create_sql_postgres())           
+        for table in tables:                   
             self.cur.execute(table.get_create_sql_postgres())
             self.connection.commit()  
 

@@ -20,6 +20,7 @@ order_line_item_table = OrderLineItemTable()
 generator.add_tables([order_table, order_line_item_table])
 
 generator.generate(TableUpdate(order_table, n_inserts=10, n_updates=0, batch_id=1))
-generator.generate(TableUpdate(order_line_item_table, n_inserts=3, n_updates=0, batch_id=1, link_parent=True))
+generator.generate(TableUpdate(order_line_item_table, n_inserts=3,
+                               n_updates=0, batch_id=1, link_parent=True))
 
 
