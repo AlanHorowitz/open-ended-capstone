@@ -7,6 +7,7 @@ from util.sqltypes import Table, Column, DEFAULT_INSERT_VALUES
 
 from tables.order import OrderTable
 from tables.order_line_item import OrderLineItemTable
+from tables.product import ProductTable
 from sourcesystems.generator import DataGenerator 
 from sourcesystems.table_update import TableUpdate
 

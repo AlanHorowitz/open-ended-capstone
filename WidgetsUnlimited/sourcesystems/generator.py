@@ -136,14 +136,17 @@ class DataGenerator():
 
             # Generate n_inserts per parent record in batch   
             else:
-                
-                cur.execute(f"SELECT {table.get_parent_key()}"
-                            f" FROM   {table.get_parent_table()}" 
-                            f" WHERE batch_id = {table_update.batch_id};")
-                linked_rs = cur.fetchall()
-                if len(linked_rs) == 0:
+                if table.has_parent():
+                    cur.execute(f"SELECT {table.get_parent_key()}"
+                                f" FROM   {table.get_parent_table()}" 
+                                f" WHERE batch_id = {table_update.batch_id};")
+                    linked_rs = cur.fetchall()
+                    if len(linked_rs) == 0:
+                        raise Exception(
+                        "Invalid request.  No parent records discovered in batch")
+                else:
                     raise Exception(
-                "Invalid request.  No parent records discovered in batch")
+                    "Invalid request.  Table has no parent")
 
                 for row in linked_rs:
                     for _ in range(n_inserts):
