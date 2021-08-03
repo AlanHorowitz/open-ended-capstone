@@ -81,6 +81,7 @@ class DataGenerator():
         next_key = 1 if result[1] == None else result[1] + 1
 
         update_records : List[DictRow] = []
+        insert_records : List[DictRow] = []
 
         if n_updates > 0:
 
@@ -113,7 +114,7 @@ class DataGenerator():
             # if there is a parent_link, read the keys from the parent table 
             # modified already in the current batch. Insert n_insert records per parent key, 
             # using parent_key attribute of column (foreign key v. parent key)
-            insert_records = []
+            
             
             # Generate n_inserts inserts
             if not link_parent:                
