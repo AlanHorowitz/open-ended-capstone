@@ -16,6 +16,7 @@ class CustomerTable(Table):
             Column("customer_sex", "VARCHAR"),            
             Column("customer_date_of_birth", "DATE"),
             Column("customer_loyalty_number", "INTEGER"),
+            Column("customer_credit_card_number", "VARCHAR"),
             Column("customer_is_preferred", "BOOLEAN"),
             Column("customer_is_active", "BOOLEAN"),
             Column("customer_inserted_at", "TIMESTAMP", isInsertedAt=True),
