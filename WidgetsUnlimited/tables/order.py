@@ -11,18 +11,18 @@ class OrderTable(Table):
         super().__init__(
             OrderTable.NAME,            
             Column("order_id", "INTEGER", isPrimaryKey=True),            
-            # Column(
-            #     "customer_id",
-            #     "INTEGER",
-            #     xref_table=CustomerTable.NAME,
-            #     xref_column="customer_id",
-            # ),
-            # Column(
-            #     "order_shipping_address_id",
-            #     "INTEGER",
-            #     xref_table=CustomerAddressTable.NAME,
-            #     xref_column="customer_address_id",
-            # ),
+            Column(
+                "customer_id",
+                "INTEGER",
+                xref_table=CustomerAddressTable.NAME, # id from customerAddress 
+                xref_column="customer_id",
+            ),
+            Column(
+                "order_shipping_address_id",
+                "INTEGER",
+                xref_table=CustomerAddressTable.NAME,
+                xref_column="customer_address_id",
+            ),
             Column("order_special_instructions", "VARCHAR", column_type_length=200),
             Column("order_shipping_cost", "FLOAT"), 
             Column("order_execution_time", "TIMESTAMP"),
