@@ -14,7 +14,7 @@ from tables.order_line_item import OrderLineItemTable
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
 
-from warehouse import create_and_copy_warehouse_tables
+from warehouse import create_and_copy_warehouse_tables, write_parquet_warehouse_tables
 
 # test docker image
 os.environ['DATA_GENERATOR_DB'] = 'postgres'
@@ -67,5 +67,9 @@ data_generator.generate(
     TableUpdate(order_line_item_table, n_inserts=2, batch_id=1, link_parent=True))
 
 create_and_copy_warehouse_tables(data_generator.connection, [product_table, store_table, store_sales_table,
+store_sales_table, store_location_table, order_table, order_line_item_table,
+customer_table, customer_address_table])
+
+write_parquet_warehouse_tables([product_table, store_table, store_sales_table,
 store_sales_table, store_location_table, order_table, order_line_item_table,
 customer_table, customer_address_table])

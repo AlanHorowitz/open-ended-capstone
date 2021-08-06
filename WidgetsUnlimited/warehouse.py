@@ -1,8 +1,39 @@
 from util.sqltypes import Table
 from typing import List
+import os 
 
 import mysql.connector
 from mysql.connector import connect
+from sqlalchemy import create_engine, event
+
+import pandas as pd
+
+os.environ['DATA_GENERATOR_DB'] = 'postgres'
+os.environ['DATA_GENERATOR_HOST'] = '172.17.0.2'
+os.environ['DATA_GENERATOR_PORT'] = '5432'
+os.environ['DATA_GENERATOR_USER'] = 'postgres'
+os.environ['DATA_GENERATOR_PASSWORD'] = 'postgres'
+os.environ['DATA_GENERATOR_SCHEMA'] = 'test'
+
+postgres_str = ('postgresql+psycopg2://{username}:{password}@{ipaddress}:{port}/{dbname}'
+.format(username=os.environ['DATA_GENERATOR_USER'],
+password=os.environ['DATA_GENERATOR_PASSWORD'],
+ipaddress=os.environ['DATA_GENERATOR_HOST'],
+port=os.environ['DATA_GENERATOR_PORT'],
+dbname=os.environ['DATA_GENERATOR_PASSWORD'] ))
+
+cnx = create_engine(postgres_str)
+
+@event.listens_for(cnx, "connect", insert=True)    
+def set_search_path(dbapi_connection, connection_record):
+    print("ANHANHANH" * 10)
+    existing_autocommit = dbapi_connection.autocommit
+    dbapi_connection.autocommit = True
+    cursor = dbapi_connection.cursor()
+    cursor.execute("SET SESSION search_path='test'")
+    cursor.close()
+    dbapi_connection.autocommit = existing_autocommit
+
 
 ms_connection = connect(
         host="localhost",
@@ -44,3 +75,17 @@ def create_and_copy_warehouse_tables(pg_conn, tables : List[Table]):
             r,
         )
         ms_connection.commit()
+
+def write_parquet_warehouse_tables(tables : List[Table]):    
+
+    for table in tables:
+        table_name = table.get_name()
+        column_names = ",".join(table.get_column_names())
+                
+        sql = f"SELECT {column_names} from {table_name};"
+                
+        df = pd.read_sql_query(sql, con=cnx)
+        print(df.head(1))
+
+    
+    
