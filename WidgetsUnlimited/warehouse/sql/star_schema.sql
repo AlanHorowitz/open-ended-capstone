@@ -20,7 +20,9 @@ primary key(id)
 
 create table if not exists location_dim (
 id integer NOT NULL auto_increment,
-name varchar(255),
+state varchar(20),
+zip_code varchar(10),
+population_density double,
 primary key(id)
 );
 
@@ -31,6 +33,10 @@ product_key integer NOT NULL,
 customer_key integer NOT NULL,
 date_key integer NOT NULL,
 location_key integer NOT NULL,
+quantity integer,
+unit_price double,
+unit_cost double,
+transaction_time timestamp,
 
 primary key(id),
 constraint fk_product_key foreign key (product_key) references product_dim (id),
