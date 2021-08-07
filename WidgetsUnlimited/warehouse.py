@@ -1,3 +1,5 @@
+from pandas.io.sql import table_exists
+from sourcesystems.table_update import TableUpdate
 from util.sqltypes import Table
 from typing import List
 import os 
@@ -24,13 +26,14 @@ dbname=os.environ['DATA_GENERATOR_PASSWORD'] ))
 
 cnx = create_engine(postgres_str)
 
+# 
 @event.listens_for(cnx, "connect", insert=True)    
-def set_search_path(dbapi_connection, connection_record):
-    print("ANHANHANH" * 10)
+def set_search_path(dbapi_connection, connection_record):    
     existing_autocommit = dbapi_connection.autocommit
     dbapi_connection.autocommit = True
     cursor = dbapi_connection.cursor()
-    cursor.execute("SET SESSION search_path='test'")
+    cursor.execute(f"SET SESSION search_path="
+                   f"'{os.environ['DATA_GENERATOR_SCHEMA']}'")
     cursor.close()
     dbapi_connection.autocommit = existing_autocommit
 
@@ -78,6 +81,14 @@ def create_and_copy_warehouse_tables(pg_conn, tables : List[Table]):
 
 def write_parquet_warehouse_tables(tables : List[Table]):    
 
+    pd_types = { 'INTEGER' : 'int64',
+             'VARCHAR'   : 'string' ,
+             'FLOAT'     : 'float64',
+             'DATE'      : 'datetime64[ns]',
+             'BOOLEAN'   : 'bool',
+             'TIMESTAMP' : 'datetime64[ns]'
+            }
+
     for table in tables:
         table_name = table.get_name()
         column_names = ",".join(table.get_column_names())
@@ -85,7 +96,9 @@ def write_parquet_warehouse_tables(tables : List[Table]):
         sql = f"SELECT {column_names} from {table_name};"
                 
         df = pd.read_sql_query(sql, con=cnx)
-        print(df.head(1))
+        dtype1 = {col.get_name() : pd_types[col.get_type()] for col in table.get_columns()}
+        df = df.astype(dtype1)
+        df.to_parquet(f"parquet/{table_name}.pr", compression='gzip')
 
     
     
