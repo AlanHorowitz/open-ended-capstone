@@ -8,6 +8,12 @@ primary key(id)
 
 create table if not exists customer_dim (
 id integer NOT NULL auto_increment,
+billing_address_street varchar(80),
+billing_address_city varchar(80),
+billing_address_zip varchar(80),
+shipping_address_street varchar(80),
+shipping_address_city varchar(80),
+shipping_address_zip varchar(80),
 name varchar(255),
 primary key(id)
 );
@@ -18,6 +24,7 @@ name varchar(255),
 primary key(id)
 );
 
+-- drop table location_dim;
 create table if not exists location_dim (
 id integer NOT NULL auto_increment,
 state varchar(20),
