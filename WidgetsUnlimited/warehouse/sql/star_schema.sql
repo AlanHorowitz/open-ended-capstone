@@ -6,8 +6,13 @@ name varchar(255),
 primary key(id)
 );
 
+drop table customer_dim;
 create table if not exists customer_dim (
 id integer NOT NULL auto_increment,
+is_unknown_customer tinyint(1) default(0),
+first_name varchar(80),
+last_name varchar(80),
+middle_initial varchar(1),
 billing_address_street varchar(80),
 billing_address_city varchar(80),
 billing_address_zip varchar(80),
@@ -17,6 +22,9 @@ shipping_address_zip varchar(80),
 name varchar(255),
 primary key(id)
 );
+
+
+insert into customer_dim (is_unknown_customer) values (1); 
 
 create table if not exists date_dim (
 id integer NOT NULL auto_increment,
