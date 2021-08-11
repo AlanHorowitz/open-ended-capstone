@@ -46,4 +46,5 @@ class SourceSystemLoader:
         for day in daily_operations:
             for table_update in day:
                 table_update_processor.process(table_update)
-        
+            # future synchronous test    
+            # warehouse.run(generator.connection, generator.tables, batch_id)

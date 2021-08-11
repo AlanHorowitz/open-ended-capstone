@@ -8,7 +8,7 @@ from typing import Tuple
 import pandas as pd
 
 customer_dim_columns = []
-customer_dim_types = []
+customer_dim_types = {}
 
 customer_stage_columns = []
 customer_stage_types = {}
@@ -17,7 +17,14 @@ customer_address_stage_columns = []
 customer_address_stage_types = {}
 con = None
 
+def create_customer_dim_table():
+    pass
+
 def update_customer_dim(batch_id):
+    """
+    Assumes that all dependant ingested, stage data has been persisted in the sepcified location.
+    This persistence is handled by different code
+    """
     customer_stage_df = pd.read_parquet('stage/b' + str(batch_id) + '/customer.pq')
     customer_stage_df = customer_stage_df.astype(customer_stage_types)
     customer_address_stage_df = pd.read_parquet('stage/b' + str(batch_id) + '/customer_address.pq')
@@ -32,11 +39,11 @@ def update_customer_dim(batch_id):
 
 def get_customer_keys_incremental(customer : pd.DataFrame, 
                                   customer_address : pd.DataFrame) -> pd.Series:
-    customer_keys = customer['customer_id'].append(customer_address['customer_id']).unique()
+    customer_keys = customer['customer_id'].append(customer_address['customer_id']).drop_duplicates()
     customer_keys.name = 'customer_key'
     return customer_keys
 
-
+# customer keys must be unique
 def get_new_keys_and_updates(customer_keys : pd.Series,
                              customer_dim : pd.DataFrame)-> Tuple[pd.Series, pd.DataFrame]:
 
@@ -48,7 +55,13 @@ def get_new_keys_and_updates(customer_keys : pd.Series,
 
 # combine customer and customer address into new customer_dim entry
 def build_new_dimension(new_keys, customer, customer_address):
-    merged = pd.merge(new_keys, customer, left_on='customer_key', right_on='customer_id', how='inner')
+    merged_cust = pd.merge(new_keys, customer, left_on='customer_key', right_on='customer_id', how='inner')
+    merged_cust_address = pd.merge(new_keys, customer_address,
+     left_on='customer_key', right_on='customer_id', how='inner')
+    # if multiple addresses of a type come in, take the most recent date
+
+    customer_dim_insert = pd.DataFrame(new_keys, index='customer_key')
+    
 
     pass
 
