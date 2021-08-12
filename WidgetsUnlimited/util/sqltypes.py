@@ -167,6 +167,7 @@ class Table:
         self,
         name: str,        
         *columns: Column,
+        generation = True
     ):
         """Instatiate a table metadata object.
 
@@ -175,6 +176,7 @@ class Table:
         """
 
         self._name = name        
+        self._generation = generation
         self._columns = [col for col in columns]
         self._columns.append(Column("batch_id", "INTEGER", isBatchId=True)) 
         primary_keys = [col.get_name() for col in columns if col.isPrimaryKey()]
@@ -182,34 +184,40 @@ class Table:
         updated_ats = [col.get_name() for col in columns if col.isUpdatedAt()]
         parent_keys = [col for col in columns if col.isParentKey()]
 
-        if (len(primary_keys), len(inserted_ats), len(updated_ats)) != (1, 1, 1):
+        if len(primary_keys) != 1:
             raise Exception(
-                "Simulator requires exactly one primary key, inserted_at and updated_at column"
-            )
-                
+                    "Generator requires exactly one primary key."
+                )
         self._primary_key = primary_keys[0]
-        self._inserted_at = inserted_ats[0]
-        self._updated_at = updated_ats[0]
         
-        if len(parent_keys) > 1:
-            raise Exception(
-                "Simulator requires exactly one primary key, inserted_at and updated_at column")
-        elif len(parent_keys) == 1:
-            self._parent_key = parent_keys[0].get_parent_key()
-            self._parent_table = parent_keys[0].get_parent_table()
-        else:
-            self._parent_key = "" 
-            self._parent_table = ""
+        if self._generation == True:
+            if (len(inserted_ats), len(updated_ats)) != (1, 1):
+                raise Exception(
+                    "Generator requires exactly one inserted_at and updated_at column"
+                )                    
+            
+            self._inserted_at = inserted_ats[0]
+            self._updated_at = updated_ats[0]
+            
+            if len(parent_keys) > 1:
+                raise Exception(
+                    "Generator may accept at most one parent key")
+            elif len(parent_keys) == 1:
+                self._parent_key = parent_keys[0].get_parent_key()
+                self._parent_table = parent_keys[0].get_parent_table()
+            else:
+                self._parent_key = "" 
+                self._parent_table = ""
 
-        self._update_columns = [
-            col for col in columns if col.get_type() == "VARCHAR"
-        ]  # restrict to VARCHAR update
-        if len(self._update_columns) == 0:
-            raise Exception("Need at least one VARCHAR for update")
+            self._update_columns = [
+                col for col in columns if col.get_type() == "VARCHAR"
+            ]  # restrict to VARCHAR update
+            if len(self._update_columns) == 0:
+                raise Exception("Need at least one VARCHAR for update")
 
-        self._xrefDict: Dict[str, Table.XrefTableData] = Table._initXrefDict(
-            self._columns
-        )
+            self._xrefDict: Dict[str, Table.XrefTableData] = Table._initXrefDict(
+                self._columns
+            )
 
         self.operationalSystem = None
 

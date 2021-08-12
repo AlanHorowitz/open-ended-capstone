@@ -55,12 +55,12 @@ def get_new_keys_and_updates(customer_keys : pd.Series,
 
 # combine customer and customer address into new customer_dim entry
 def build_new_dimension(new_keys, customer, customer_address):
-    merged_cust = pd.merge(new_keys, customer, left_on='customer_key', right_on='customer_id', how='inner')
-    merged_cust_address = pd.merge(new_keys, customer_address,
-     left_on='customer_key', right_on='customer_id', how='inner')
     # if multiple addresses of a type come in, take the most recent date
 
-    customer_dim_insert = pd.DataFrame(new_keys, index='customer_key')
+    customer_dim_insert = pd.DataFrame([], columns=[], index='customer_key')
+    # straight copy
+    customer_dim_insert['customer_key'] = customer['customer_id']
+    customer_dim_insert['name'] = customer['customer_name']
     
 
     pass

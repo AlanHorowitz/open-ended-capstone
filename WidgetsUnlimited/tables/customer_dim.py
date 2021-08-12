@@ -6,16 +6,16 @@ class CustomerDimTable(Table):
 
     def __init__(self):
         super().__init__(
-            CustomerDimTable.NAME,
+            CustomerDimTable.NAME,            
 
         # dimension control     
             Column("id", "INTEGER", isPrimaryKey=True),  # surrogate key
-            Column("inserted_at", "VARCHAR"),
-            Column("updated_at", "VARCHAR"),
-            Column("is_current", "VARCHAR"),  # type 2 scd
+            Column("inserted_at", "TIMESTAMP"),
+            Column("updated_at", "TIMESTAMP"),
+            Column("is_current", "BOOLEAN"),  # type 2 scd
 
         # customer columns
-            Column("key", "INTEGER", isPrimaryKey=True),      # natural key 
+            Column("customer_key", "INTEGER"),      # natural key -- Add index
             Column("name", "VARCHAR"),
             Column("user_id", "VARCHAR"),
             Column("password", "VARCHAR"),
@@ -27,18 +27,19 @@ class CustomerDimTable(Table):
             Column("credit_card_number", "VARCHAR"),
             Column("is_preferred", "BOOLEAN"),
             Column("is_active", "BOOLEAN"),
-            Column("activation_date", "DATE", isInsertedAt=True),
-            Column("deactivation_date", "DATE", isInsertedAt=True),            
-            Column("billing_street_number", "INTEGER", isPrimaryKey=True),
+            Column("activation_date", "DATE"),
+            Column("deactivation_date", "DATE"),            
+            Column("billing_street_number", "INTEGER",),
             Column("billing_state", "VARCHAR", 255),
             Column("billing_zip", "VARCHAR"), 
-            Column("billing_last_update", "TIMESTAMP", isUpdatedAt=True),
+            Column("billing_last_update", "TIMESTAMP"),
             Column("billing_number_of_updates", "INTEGER")  ,
-            Column("shipping street number", "INTEGER", isPrimaryKey=True),
-            Column("shipping state", "VARCHAR", 255),
+            Column("shipping_street_number", "VARCHAR"),
+            Column("shipping_state", "VARCHAR", 255),
             Column("shipping_zip", "VARCHAR"),   
-            Column("shipping_last_update", "TIMESTAMP", isUpdatedAt=True),
-            Column("shipping_number_of_updates", "INTEGER"))
+            Column("shipping_last_update", "TIMESTAMP"),
+            Column("shipping_number_of_updates", "INTEGER"),
+            generation=False)
               
              
-        )
+    
