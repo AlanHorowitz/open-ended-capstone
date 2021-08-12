@@ -1,4 +1,4 @@
-##  RetailDW Module
+##  RetailDW Module (test)
 
 ###  A simulated data warehouse in the retail domain.  Add records to a product table on a postgres source system and extract them to a MySQL target system.
 
