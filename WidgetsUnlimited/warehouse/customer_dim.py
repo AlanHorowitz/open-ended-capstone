@@ -5,6 +5,7 @@
 # update existing record (type 2 SCD comes later)
 
 from typing import Tuple
+from numpy.testing._private.utils import tempdir
 import pandas as pd
 
 customer_dim_columns = []
@@ -61,9 +62,26 @@ def build_new_dimension(new_keys, customer, customer_address):
     # straight copy
     customer_dim_insert['customer_key'] = customer['customer_id']
     customer_dim_insert['name'] = customer['customer_name']
-    
 
-    pass
+    # customer_address    
+    
+    billing =  customer_address.loc[new_keys]\
+        [customer_address.customer_address_type == 'B']\
+        ['customer_address'].apply(parse_address)
+    
+    shipping =  customer_address.loc[new_keys]\
+        [customer_address.customer_address_type == 'S']\
+        ['customer_address'].apply(parse_address)
+
+    customer_dim_insert['billing_street_number'] = billing['street_number']
+    customer_dim_insert['billing_state'] = billing['state']
+    customer_dim_insert['billing_zip'] = billing['zip']
+
+    customer_dim_insert['shipping_street_number'] = shipping['street_number']
+    customer_dim_insert['shipping_state'] = shipping['state']
+    customer_dim_insert['shipping_zip'] = shipping['zip']
+
+    return customer_dim_insert
 
 def build_update_dimension(updates, customer, customer_address):
     
