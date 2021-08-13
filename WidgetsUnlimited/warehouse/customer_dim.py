@@ -54,6 +54,13 @@ def get_new_keys_and_updates(customer_keys : pd.Series,
     updates = merged[~new_mask]
     return new_keys, updates
 
+referrals = {'OA' : 'Online Advertising',
+             'AM' : 'Affiliate Marketing',
+             ''   : 'None' }
+             
+def decode_referral(s):
+    return referrals.get(s.strip().upper(), default='Unknown')
+
 def parse_address(s : str) -> pd.Series:
     """ Parse the address and return a series correctly labeled.
     For our purposes the address is a string with the format
@@ -86,6 +93,8 @@ def build_new_dimension(new_keys, customer, customer_address):
     # straight copy
     # customer_dim_insert['customer_key'] = customer['customer_id']
     customer_dim_insert['name'] = customer['customer_name']
+    customer_dim_insert['referral_type'] = \
+    customer['customer_referral_type'].map(decode_referral)
 
     # customer_address    
     
