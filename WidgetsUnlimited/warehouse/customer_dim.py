@@ -77,21 +77,22 @@ def build_new_dimension(new_keys, customer, customer_address):
     # Todo if multiple addresses of a type come in, take the most recent date
 
     # align two inputs and outputs by customer_id, renamed customer key in dimension
+    customer = customer[customer['customer_id'].isin(new_keys.values)]
     customer = customer.set_index('customer_id')
-    customer_address = customer_address.set_index('customer_id')
+    customer_address = customer_address[customer_address['customer_id'].isin(new_keys.values)]
+    customer_address = customer_address.set_index('customer_id', drop=False)
     customer_dim_insert = pd.DataFrame([], columns=[], index=new_keys)
 
     # straight copy
-    customer_dim_insert['customer_key'] = customer['customer_id']
+    # customer_dim_insert['customer_key'] = customer['customer_id']
     customer_dim_insert['name'] = customer['customer_name']
 
     # customer_address    
     
-    billing = customer_address.loc[new_keys]\
-        [customer_address.customer_address_type == 'B']\
+    billing = customer_address[customer_address.customer_address_type == 'B']\
         ['customer_address'].apply(parse_address)
     
-    shipping = customer_address.loc[new_keys]\
+    shipping = customer_address.loc[new_keys.values]\
         [customer_address.customer_address_type == 'S']\
         ['customer_address'].apply(parse_address)
 

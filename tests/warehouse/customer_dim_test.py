@@ -15,6 +15,7 @@ from .context import (
 
 from datetime import date, datetime
 import pandas as pd
+from math import isnan
 
 cust_dim_cols = ['surrogate_key', 'customer_key', 'customer_name', 'customer_address_id', 'customer_address']
 
@@ -86,11 +87,11 @@ def test_get_new_keys_and_updates_3():
     assert update_df.at['cust_key_2', 'customer_name'] == 'name_2'
     assert update_df.at['cust_key_3', 'customer_address'] == 'address_3'
 
+TEST_ADDRESS = "First Middle Last\n123 Snickersnack Lane\nBrooklyn, NY 11229"
 # test change
 def test_parse_address():
-
-    s = "First Middle Last\n123 Snickersnack Lane\nBrooklyn, NY 11229"
-    ser = parse_address(s)
+    
+    ser = parse_address(TEST_ADDRESS)
     assert(ser['name'] == "First Middle Last")
     assert(ser['street_number'] == "123 Snickersnack Lane") 
     assert(ser['city'] == "Brooklyn")
@@ -105,6 +106,7 @@ def test_build_new_dimension():
 
     day = date(2020,10,10)
     dt_tm = datetime.now()
+    ta = TEST_ADDRESS
     customer_stage_data  = \
                 {"customer_id" : [1,3,4,5],
                 "customer_name" : ['c1', 'c3', 'c4', 'c5'],
@@ -126,7 +128,7 @@ def test_build_new_dimension():
     customer_stage_address_data = \
         {"customer_id" : [1,2,3,3,4,5,5],
          "customer_address_id" : [1,2,3,4,5,6,7],
-         "customer_address" : ['XXX','XXX', 'XXX','XXX','XXX','XXX','XXX'],
+         "customer_address" : [ta] *7,
          "customer_address_type" : ['S','B', 'S','B','B','S','B'],             
          "customer_inserted_at" : [dt_tm, dt_tm, dt_tm, dt_tm, dt_tm, dt_tm, dt_tm],
          "customer_updated_at" :  [dt_tm, dt_tm, dt_tm, dt_tm, dt_tm, dt_tm, dt_tm],
@@ -143,6 +145,8 @@ def test_build_new_dimension():
     customer_address_stage_df = pd.DataFrame(customer_stage_address_data)
 
     inserts = build_new_dimension(new_keys, customer_stage_df, customer_address_stage_df)
-    assert(inserts.count == 4)
-    # assert desired rows
+    assert(inserts.shape[0] == 3)
+    assert(inserts.at[3,'name'] == 'c3')
+    assert(inserts.at[4,'billing_city'] == 'Brooklyn')
+    assert(isnan(inserts.at[4,'shipping_city']))  #Format checking later
 
