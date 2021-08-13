@@ -99,7 +99,7 @@ def test_parse_address():
     assert(ser['zip'] == "11229")
 
 # Since this is for actual structured object, use full column list
-def test_build_new_dimension():
+def test_build_new_dimension_1():
 
     customer_table_cols = CustomerTable().get_column_names
     customer_address_table_cols = CustomerAddressTable().get_column_names
@@ -114,7 +114,7 @@ def test_build_new_dimension():
                 "customer_password" : ['XXX','XXX', 'XXX','XXX'],
                 "customer_email" : ['aaa@gmail.com', 'bbb@gmail.com', 'ccc@gmail.com', 'ddd@gmail.com'],
                 "customer_user_id" : ['u1','u2', 'u3','u4'],
-                "customer_referral_type" : [None, None,'OnlineAd',None],
+                "customer_referral_type" : [None, ' ','OA','AM'],
                 "customer_sex" : ['F','f', 'M',None],            
                 "customer_date_of_birth" : [day, day, day, day],
                 "customer_loyalty_number" : [1001,1002,1003,1004],
@@ -149,4 +149,32 @@ def test_build_new_dimension():
     assert(inserts.at[3,'name'] == 'c3')
     assert(inserts.at[4,'billing_city'] == 'Brooklyn')
     assert(isnan(inserts.at[4,'shipping_city']))  #Format checking later
+
+def test_build_new_dimension_2():
+    customer_stage_data  = \
+                {"customer_id" : [1,2,3,4],
+                "customer_name" : ['c1', 'c2', 'c3', 'c4'],
+                "customer_referral_type" : ['ll', ' ','OA','AM']}
+
+    customer_stage_address_data = \
+        {"customer_id" : [],
+         "customer_address_id" : [],
+         "customer_address" : [] ,
+         "customer_address_type" : [],             
+         "customer_inserted_at" : [],
+         "customer_updated_at" :  [],
+         "batch_id" : [] }
+
+    new_keys = pd.Series([1,2,3,4], name='customer_key')
+    customer_stage_df = pd.DataFrame(customer_stage_data)
+    customer_address_stage_df = pd.DataFrame(customer_stage_address_data)
+
+    inserts = build_new_dimension(new_keys, customer_stage_df, customer_address_stage_df)
+
+    assert(inserts.shape[0] == 4)
+    assert(inserts.at[1,'referral_type'] == 'Unknown')
+    assert(inserts.at[2,'referral_type'] == 'None')
+    assert(inserts.at[3,'referral_type'] == 'Online Advertising')
+    assert(inserts.at[4,'referral_type'] == 'Affiliate Marketing')
+    
 

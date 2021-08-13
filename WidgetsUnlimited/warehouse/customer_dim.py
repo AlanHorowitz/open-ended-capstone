@@ -53,13 +53,13 @@ def get_new_keys_and_updates(customer_keys : pd.Series,
     new_keys = merged[new_mask]['customer_key']
     updates = merged[~new_mask]
     return new_keys, updates
-
-referrals = {'OA' : 'Online Advertising',
-             'AM' : 'Affiliate Marketing',
-             ''   : 'None' }
              
 def decode_referral(s):
-    return referrals.get(s.strip().upper(), default='Unknown')
+
+    referrals = {'OA' : 'Online Advertising',
+                 'AM' : 'Affiliate Marketing',
+                 ''   : 'None'}
+    return referrals.get(s.strip().upper(),'Unknown')
 
 def parse_address(s : str) -> pd.Series:
     """ Parse the address and return a series correctly labeled.
@@ -101,21 +101,22 @@ def build_new_dimension(new_keys, customer, customer_address):
     billing = customer_address[customer_address.customer_address_type == 'B']\
         ['customer_address'].apply(parse_address)
     
-    shipping = customer_address.loc[new_keys.values]\
-        [customer_address.customer_address_type == 'S']\
+    shipping = customer_address[customer_address.customer_address_type == 'S']\
         ['customer_address'].apply(parse_address)
 
-    customer_dim_insert['billing_name'] = billing['name']
-    customer_dim_insert['billing_street_number'] = billing['street_number']
-    customer_dim_insert['billing_city'] = billing['city']
-    customer_dim_insert['billing_state'] = billing['state']
-    customer_dim_insert['billing_zip'] = billing['zip']
+    if billing.size != 0:
+        customer_dim_insert['billing_name'] = billing['name']
+        customer_dim_insert['billing_street_number'] = billing['street_number']
+        customer_dim_insert['billing_city'] = billing['city']
+        customer_dim_insert['billing_state'] = billing['state']
+        customer_dim_insert['billing_zip'] = billing['zip']
 
-    customer_dim_insert['shipping_name'] = shipping['name']
-    customer_dim_insert['shipping_street_number'] = shipping['street_number']
-    customer_dim_insert['shipping_city'] = shipping['city']
-    customer_dim_insert['shipping_state'] = shipping['state']
-    customer_dim_insert['shipping_zip'] = shipping['zip']
+    if shipping.size != 0:
+        customer_dim_insert['shipping_name'] = shipping['name']
+        customer_dim_insert['shipping_street_number'] = shipping['street_number']
+        customer_dim_insert['shipping_city'] = shipping['city']
+        customer_dim_insert['shipping_state'] = shipping['state']
+        customer_dim_insert['shipping_zip'] = shipping['zip']
 
     return customer_dim_insert
 
