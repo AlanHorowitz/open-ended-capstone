@@ -12,7 +12,8 @@ from warehouse.customer_dim import (
     customer_stage_columns,
     customer_stage_types,
     customer_address_stage_columns,
-    customer_address_stage_types
+    customer_address_stage_types,
+    parse_address
 )
 
 from tables.customer import CustomerTable

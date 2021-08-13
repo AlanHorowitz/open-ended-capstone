@@ -54,6 +54,24 @@ def get_new_keys_and_updates(customer_keys : pd.Series,
     updates = merged[~new_mask]
     return new_keys, updates
 
+def parse_address(s : str) -> pd.Series:
+    """ Parse the address and return a series correctly labeled.
+    For our purposes the address is a string with the format
+    name\nstreet_address\ncity, state zip
+    """
+    name, street_number, rest = s.split("\n")
+    city, rest = rest.split(',')
+    state, zip = rest.strip().split()
+
+    return pd.Series({'name' : name,
+                      'street_number' : street_number,
+                      'city' : city,
+                      'state' : state,
+                      'zip' : zip
+                     })
+
+
+
 # combine customer and customer address into new customer_dim entry
 def build_new_dimension(new_keys, customer, customer_address):
     # if multiple addresses of a type come in, take the most recent date
@@ -73,11 +91,15 @@ def build_new_dimension(new_keys, customer, customer_address):
         [customer_address.customer_address_type == 'S']\
         ['customer_address'].apply(parse_address)
 
+    customer_dim_insert['billing_name'] = billing['name']
     customer_dim_insert['billing_street_number'] = billing['street_number']
+    customer_dim_insert['billing_city'] = billing['city']
     customer_dim_insert['billing_state'] = billing['state']
     customer_dim_insert['billing_zip'] = billing['zip']
 
+    customer_dim_insert['shipping_name'] = shipping['name']
     customer_dim_insert['shipping_street_number'] = shipping['street_number']
+    customer_dim_insert['shipping_city'] = shipping['city']
     customer_dim_insert['shipping_state'] = shipping['state']
     customer_dim_insert['shipping_zip'] = shipping['zip']
 
