@@ -74,20 +74,24 @@ def parse_address(s : str) -> pd.Series:
 
 # combine customer and customer address into new customer_dim entry
 def build_new_dimension(new_keys, customer, customer_address):
-    # if multiple addresses of a type come in, take the most recent date
+    # Todo if multiple addresses of a type come in, take the most recent date
 
-    customer_dim_insert = pd.DataFrame([], columns=[], index='customer_key')
+    # align two inputs and outputs by customer_id, renamed customer key in dimension
+    customer = customer.set_index('customer_id')
+    customer_address = customer_address.set_index('customer_id')
+    customer_dim_insert = pd.DataFrame([], columns=[], index=new_keys)
+
     # straight copy
     customer_dim_insert['customer_key'] = customer['customer_id']
     customer_dim_insert['name'] = customer['customer_name']
 
     # customer_address    
     
-    billing =  customer_address.loc[new_keys]\
+    billing = customer_address.loc[new_keys]\
         [customer_address.customer_address_type == 'B']\
         ['customer_address'].apply(parse_address)
     
-    shipping =  customer_address.loc[new_keys]\
+    shipping = customer_address.loc[new_keys]\
         [customer_address.customer_address_type == 'S']\
         ['customer_address'].apply(parse_address)
 
