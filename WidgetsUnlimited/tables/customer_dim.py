@@ -10,9 +10,9 @@ class CustomerDimTable(Table):
 
         # dimension control     
             Column("id", "INTEGER", isPrimaryKey=True),  # surrogate key
-            Column("inserted_at", "TIMESTAMP"),
-            Column("updated_at", "TIMESTAMP"),
-            Column("is_current", "BOOLEAN"),  # type 2 scd
+            Column("effecive_date", "DATE"),
+            Column("expiration_date", "DATE"),
+            Column("is_current_row", "BOOLEAN"),  # type 2 scd
 
         # customer columns
             Column("customer_key", "INTEGER"),      # natural key -- Add index

@@ -5,8 +5,8 @@
 # update existing record (type 2 SCD comes later)
 
 from typing import Tuple
-from numpy.testing._private.utils import tempdir
 import pandas as pd
+from datetime import date
 
 customer_dim_columns = []
 customer_dim_types = {}
@@ -93,6 +93,7 @@ def build_new_dimension(new_keys, customer, customer_address):
     # straight copy
     # customer_dim_insert['customer_key'] = customer['customer_id']
     customer_dim_insert['name'] = customer['customer_name']
+
     customer_dim_insert['referral_type'] = \
     customer['customer_referral_type'].map(decode_referral)
 
@@ -118,8 +119,19 @@ def build_new_dimension(new_keys, customer, customer_address):
         customer_dim_insert['shipping_state'] = shipping['state']
         customer_dim_insert['shipping_zip'] = shipping['zip']
 
+    next_surrogate_key = 1  # update after successful insert
+    num_inserts = customer_dim_insert.shape[0]
+
+    customer_dim_insert['id'] = (range(next_surrogate_key, num_inserts)) 
+    customer_dim_insert['effective_date'] = [date(2020,10,10)] 
+    customer_dim_insert['expiration_date'] = None 
+    customer_dim_insert['is_current_row'] = 'Y'
     return customer_dim_insert
 
 def build_update_dimension(updates, customer, customer_address):
-    
+    """
+    Seems like we would need to do the same transforms for the update keys.
+
+
+    """
     pass
