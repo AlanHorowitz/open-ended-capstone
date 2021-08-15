@@ -19,44 +19,45 @@ customer_address_stage_types = {}
 
 class CustomerDimension():
 
-    def __init__(self, connection):
+    def __init__(self, connection, stage_location):
         self._connection = connection
+        self._stage_location = stage_location
 
     def process_update(self, batch_id):
-        self._update_customer_dim(batch_id)
+        self._load_dataframes(batch_id)
+        self._update_customer_dim()
+        self._cleanup(batch_id)
 
-    def create_table():
+    def create_table(self):
         pass
 
-    con = None
+    def _cleanup(self, batch_id):
+        pass
+
+    def _load_dataframes(self, batch_id):
+        # get files
+        self._customer_stage_df = pd.read_parquet('stage/b' + str(batch_id) + '/customer.pq')
+        self._customer_stage_df = self._customer_stage_df.astype(customer_stage_types)
+        self._customer_address_stage_df = pd.read_parquet('stage/b' + str(batch_id) + '/customer_address.pq')
+        self._customer_address_stage_df = self._customer_address_stage_df.astype(customer_address_stage_types)
+        self._customer_dim_df = pd.read_sql_query("select * from customer_dim", self._connection, index_col='customer_key')
 
     def create_customer_dim_table():
         pass
 
-    def _update_customer_dim(self, batch_id):
+    def _update_customer_dim(self):
         """
         Assumes that all dependant ingested, stage data has been persisted in the specified location.
         This persistence is handled by different code
         """
-
-        # get files
-        customer_stage_df = pd.read_parquet('stage/b' + str(batch_id) + '/customer.pq')
-        customer_stage_df = customer_stage_df.astype(customer_stage_types)
-        customer_address_stage_df = pd.read_parquet('stage/b' + str(batch_id) + '/customer_address.pq')
-        customer_address_stage_df = customer_address_stage_df.astype(customer_address_stage_types)
-        customer_dim_df = pd.read_sql_query("select * from customer_dim", con, index_col='customer_key')
-        self.new_func(customer_stage_df, customer_address_stage_df, customer_dim_df)
-
-    def new_func(self, customer_stage_df, customer_address_stage_df, customer_dim_df):   
-
-        customer_keys =  self.get_customer_keys_incremental(customer_stage_df, customer_address_stage_df)
+        customer_keys =  self.get_customer_keys_incremental(self._customer_stage_df, self._customer_address_stage_df)
         if customer_keys.size == 0:
             return
-        new_keys, updates = self.get_new_keys_and_updates(customer_keys, customer_dim_df)
-        new_cust = self.build_update_dimensionbuild_new_dimension(new_keys, customer_stage_df, customer_address_stage_df)    
-        update_cust = self.build_update_dimension(updates, customer_stage_df, customer_address_stage_df)
-        persist(new_cust)
-        persist(update_cust)
+        new_keys, updates = self.get_new_keys_and_updates(customer_keys, self._customer_dim_df)
+        new_cust = self.build_update_dimensionbuild_new_dimension(new_keys, self._customer_stage_df, self._customer_address_stage_df)    
+        update_cust = self.build_update_dimension(updates, self._customer_stage_df, self._customer_address_stage_df)
+        # persist(new_cust)
+        # persist(update_cust)
 
     def get_customer_keys_incremental(self, customer : pd.DataFrame, 
                                     customer_address : pd.DataFrame) -> pd.Series:
@@ -74,7 +75,8 @@ class CustomerDimension():
         new_keys = merged[new_mask]['customer_key']
         updates = merged[~new_mask]
         return new_keys, updates
-                
+
+    @staticmethod            
     def decode_referral(s):
 
         referrals = {'OA' : 'Online Advertising',
@@ -82,6 +84,7 @@ class CustomerDimension():
                     ''   : 'None'}
         return referrals.get(s.strip().upper(),'Unknown')
 
+    @staticmethod
     def parse_address(s : str) -> pd.Series:
         """ Parse the address and return a series correctly labeled.
         For our purposes the address is a string with the format
@@ -116,22 +119,22 @@ class CustomerDimension():
         customer_dim_insert['name'] = customer['customer_name']
 
         customer_dim_insert['referral_type'] = \
-        customer['customer_referral_type'].map(decode_referral)
+        customer['customer_referral_type'].map(CustomerDimension.decode_referral)
 
         # customer_address    
         
         billing = customer_address[customer_address.customer_address_type == 'B']\
-            ['customer_address'].apply(self.parse_address)
+            ['customer_address'].apply(CustomerDimension.parse_address)        
         
-        shipping = customer_address[customer_address.customer_address_type == 'S']\
-            ['customer_address'].apply(self.parse_address)
-
         if billing.size != 0:
             customer_dim_insert['billing_name'] = billing['name']
             customer_dim_insert['billing_street_number'] = billing['street_number']
             customer_dim_insert['billing_city'] = billing['city']
             customer_dim_insert['billing_state'] = billing['state']
             customer_dim_insert['billing_zip'] = billing['zip']
+
+        shipping = customer_address[customer_address.customer_address_type == 'S']\
+            ['customer_address'].apply(CustomerDimension.parse_address)
 
         if shipping.size != 0:
             customer_dim_insert['shipping_name'] = shipping['name']
@@ -143,8 +146,8 @@ class CustomerDimension():
         next_surrogate_key = 1  # update after successful insert
         num_inserts = customer_dim_insert.shape[0]
 
-        customer_dim_insert['id'] = (range(next_surrogate_key, num_inserts)) 
-        customer_dim_insert['effective_date'] = [date(2020,10,10)] 
+        customer_dim_insert['id'] = range(next_surrogate_key, next_surrogate_key+num_inserts)
+        customer_dim_insert['effective_date'] = date(2020,10,10)
         customer_dim_insert['expiration_date'] = None 
         customer_dim_insert['is_current_row'] = 'Y'
 

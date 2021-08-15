@@ -1,17 +1,4 @@
-from .context import (
-    get_customer_keys_incremental,
-    get_new_keys_and_updates,
-    build_new_dimension,
-    customer_dim_columns,
-    customer_dim_types,
-    customer_stage_columns,
-    customer_stage_types,
-    customer_address_stage_columns,
-    customer_address_stage_types,
-    CustomerTable,
-    CustomerAddressTable,
-    parse_address
-)
+from .context import CustomerDimension    
 
 import pandas as pd
 from datetime import date, datetime
@@ -19,6 +6,7 @@ from math import isnan
 
 # simplify test with simple representative structure
 cust_dim_cols = ['surrogate_key', 'customer_key', 'customer_name', 'customer_address_id', 'customer_address']
+c = CustomerDimension(None)
 
 # union of customer_id from two tables
 def test_get_customer_keys_incremental():
@@ -34,7 +22,7 @@ def test_get_customer_keys_incremental():
     pd_cust = pd.DataFrame(customers, columns=['customer_id', 'name'])
     pd_cust_address = pd.DataFrame(customer_addresses, columns=['address_id', 'name', 'customer_id'])
 
-    incremental_keys = get_customer_keys_incremental(pd_cust, pd_cust_address)
+    incremental_keys = c.get_customer_keys_incremental(pd_cust, pd_cust_address)
     assert sorted(incremental_keys.tolist()) == [1,2,3,4,6]
 
 # only updates
@@ -48,7 +36,7 @@ def test_get_new_keys_and_updates_1():
     incremental_keys = pd.Series(['cust_key_1', 'cust_key_2', 'cust_key_3'],
         name='customer_key')
 
-    new_keys, updates_df = get_new_keys_and_updates(incremental_keys, df_cust_dim) 
+    new_keys, updates_df = c.get_new_keys_and_updates(incremental_keys, df_cust_dim) 
 
     assert sorted(new_keys.to_list()) == []
     assert updates_df.size == 15     
@@ -66,7 +54,7 @@ def test_get_new_keys_and_updates_2():
     df_cust_dim = pd.DataFrame(cust_dim_data, columns=cust_dim_cols)
     incremental_keys = pd.Series(['cust_key_4', 'cust_key_5', 'cust_key_6'], name='customer_key')
 
-    new_keys, updates_df = get_new_keys_and_updates(incremental_keys, df_cust_dim) 
+    new_keys, updates_df = c.get_new_keys_and_updates(incremental_keys, df_cust_dim) 
 
     assert sorted(new_keys.to_list()) == ['cust_key_4', 'cust_key_5', 'cust_key_6']
     assert updates_df.size == 0  
@@ -81,7 +69,7 @@ def test_get_new_keys_and_updates_3():
     df_cust_dim = pd.DataFrame(cust_dim_data, columns=cust_dim_cols)
     incremental_keys = pd.Series(['cust_key_2', 'cust_key_3', 'cust_key_4'], name='customer_key')
 
-    new_keys, updates_df = get_new_keys_and_updates(incremental_keys, df_cust_dim) 
+    new_keys, updates_df = c.get_new_keys_and_updates(incremental_keys, df_cust_dim) 
 
     assert sorted(new_keys.to_list()) == ['cust_key_4']
     assert updates_df.size == 10   # 5 * 2
@@ -95,7 +83,7 @@ TEST_SHIPPING_ADDRESS = "First Middle Last\n15 Jones Boulevard\nFair Lawn,NJ 074
 # test change
 def test_parse_address():
     
-    ser = parse_address(TEST_BILLING_ADDRESS)
+    ser = c.parse_address(TEST_BILLING_ADDRESS)
     assert(ser['name'] == "First Middle Last")
     assert(ser['street_number'] == "123 Snickersnack Lane") 
     assert(ser['city'] == "Brooklyn")
@@ -142,7 +130,7 @@ def test_build_new_dimension_1():
     customer_stage_df = pd.DataFrame(customer_stage_data)
     customer_address_stage_df = pd.DataFrame(customer_stage_address_data)
 
-    inserts = build_new_dimension(new_keys, customer_stage_df, customer_address_stage_df)
+    inserts = c.build_new_dimension(new_keys, customer_stage_df, customer_address_stage_df)
     assert(inserts.shape[0] == 3)
     assert(inserts.at[3,'name'] == 'c3')
     assert(inserts.at[3,'billing_state'] == 'NY')
@@ -170,7 +158,7 @@ def test_build_new_dimension_2():
     customer_stage_df = pd.DataFrame(customer_stage_data)
     customer_address_stage_df = pd.DataFrame(customer_stage_address_data)
 
-    inserts = build_new_dimension(new_keys, customer_stage_df, customer_address_stage_df)
+    inserts = c.build_new_dimension(new_keys, customer_stage_df, customer_address_stage_df)
 
     assert(inserts.shape[0] == 4)
     assert(inserts.at[1,'referral_type'] == 'Unknown')
