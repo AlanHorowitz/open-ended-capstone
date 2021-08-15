@@ -73,3 +73,4 @@ customer_table, customer_address_table])
 write_parquet_warehouse_tables([product_table, store_table, store_sales_table,
 store_sales_table, store_location_table, order_table, order_line_item_table,
 customer_table, customer_address_table])
+
