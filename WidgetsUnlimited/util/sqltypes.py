@@ -141,7 +141,7 @@ class Column:
 
     def get_default(self) -> Any:
 
-        return self.__default
+        return self._default
 
     def hasDefault(self) -> bool:
 

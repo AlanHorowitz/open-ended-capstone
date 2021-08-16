@@ -140,6 +140,13 @@ def test_generate_link_parent_invalid(data_generator, product_table):
     cursor.execute(f"select * from {product_table.get_name()}")
     assert len(cursor.fetchall()) == 0 
 
+def test_set_default(data_generator, customer_table):
+    data_generator.generate(TableUpdate(customer_table, n_inserts=1, n_updates=0, batch_id=1))
+    cursor = data_generator.cur
+    cursor.execute(f"select customer_referral_type, customer_sex from {customer_table.get_name()}")
+    rs = cursor.fetchone()
+    assert rs == ['OA', 'F']
+
 def test_generate_single_xref():
     pass
 
