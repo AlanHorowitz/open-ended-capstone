@@ -11,7 +11,7 @@ class CustomerTable(Table):
             Column("customer_name", "VARCHAR"),
             Column("customer_user_id", "VARCHAR"),
             Column("customer_password", "VARCHAR"),
-            Column("customer_email", "VARCHAR"),            
+            Column("customer_email", "VARCHAR", isUpdateable=True),            
             Column("customer_referral_type", "VARCHAR"),
             Column("customer_sex", "VARCHAR"),            
             Column("customer_date_of_birth", "DATE"),

@@ -9,6 +9,7 @@ from .context import DataGenerator
 from .context import TableUpdate
 from .context import OrderTable
 from .context import ProductTable
+from .context import CustomerTable
 from .context import OrderLineItemTable
 
 def create_and_return_table(cursor, table):
@@ -33,6 +34,7 @@ def data_generator():
 
 @pytest.fixture
 def order_table(data_generator):
+    print("In order table")
     yield create_and_return_table(data_generator.cur, OrderTable())
 
 @pytest.fixture
@@ -43,6 +45,9 @@ def order_line_item_table(data_generator):
 def product_table(data_generator):    
     yield create_and_return_table(data_generator.cur, ProductTable())
 
+@pytest.fixture
+def customer_table(data_generator):    
+    yield create_and_return_table(data_generator.cur, CustomerTable())
 
 def make_rows(cursor, table : Table, n_rows :int=10, 
               start_key :int = 1, batch_id :int = 0):
@@ -67,38 +72,39 @@ def make_rows(cursor, table : Table, n_rows :int=10,
     cursor.execute(f"INSERT INTO {table_name} ({column_names}) "
                        f" values {values_substitutions}", insert_rows)
 
-def test_generate_insert(data_generator, order_table):    
+def test_generate_insert(data_generator, customer_table):    
     
-    data_generator.generate(TableUpdate(order_table, n_inserts=10, n_updates=0, batch_id=1))
+    data_generator.generate(TableUpdate(customer_table, n_inserts=10, n_updates=0, batch_id=1))
     cursor = data_generator.cur
-    cursor.execute(f"select * from {order_table.get_name()}")
+    cursor.execute(f"select * from {customer_table.get_name()}")
     assert len(cursor.fetchall()) == 10
 
-def test_generate_update(data_generator, order_table):
+def test_generate_update(data_generator, customer_table):
 
     cursor = data_generator.cur
-    make_rows(cursor, order_table, n_rows = 10, start_key = 1)
-    data_generator.generate(TableUpdate(order_table, n_inserts=0, n_updates=5, batch_id=1))    
-    cursor.execute(f"select * from {order_table.get_name()}")
+    make_rows(cursor, customer_table, n_rows = 10, start_key = 1)
+    data_generator.generate(TableUpdate(customer_table, n_inserts=0, n_updates=5, batch_id=1))    
+    cursor.execute(f"select * from {customer_table.get_name()}")
     assert len(cursor.fetchall()) == 10
-    cursor.execute(f"select * from {order_table.get_name()} "
-                   f"WHERE order_special_instructions LIKE '%_UPD'")
+    cursor.execute(f"select * from {customer_table.get_name()} "
+                   f"WHERE customer_email LIKE '%_UPD'")
     assert len(cursor.fetchall()) == 5    
 
-def test_generate_insert_and_update(data_generator, order_table):
+def test_generate_insert_and_update(data_generator, customer_table):
 
     cursor = data_generator.cur
-    make_rows(cursor, order_table, n_rows = 10, start_key = 1)
-    data_generator.generate(TableUpdate(order_table, n_inserts=15, n_updates=5, batch_id=1))    
-    cursor.execute(f"select * from {order_table.get_name()}")
+    make_rows(cursor, customer_table, n_rows = 10, start_key = 1)
+    data_generator.generate(TableUpdate(customer_table, n_inserts=15, n_updates=5, batch_id=1))    
+    cursor.execute(f"select * from {customer_table.get_name()}")
     assert len(cursor.fetchall()) == 25
-    cursor.execute(f"select * from {order_table.get_name()} "
-                   f"WHERE order_special_instructions LIKE '%_UPD'")
+    cursor.execute(f"select * from {customer_table.get_name()} "
+                   f"WHERE customer_email LIKE '%_UPD'")
     assert len(cursor.fetchall()) == 5 
 
-def test_generate_link_parent(data_generator, order_table, order_line_item_table):
+def test_generate_link_parent(data_generator, order_table, order_line_item_table, product_table):
     cursor = data_generator.cur
 
+    make_rows(cursor, product_table, n_rows = 5, start_key = 1, batch_id = 1)
     make_rows(cursor, order_table, n_rows = 10, start_key = 1, batch_id = 1)
     data_generator.generate(TableUpdate(order_line_item_table,
                    n_inserts=3, n_updates=0, batch_id=1, link_parent=True))

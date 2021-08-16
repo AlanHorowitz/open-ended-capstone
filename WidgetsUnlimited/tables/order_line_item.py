@@ -31,7 +31,7 @@ class OrderLineItemTable(Table):
               xref_column="product_unit_cost",
             ),
             Column("order_line_item_total_price", "FLOAT"),
-            Column("order_line_comments", "VARCHAR"),            
+            Column("order_line_comments", "VARCHAR", isUpdateable=True),            
             Column("order_line_item_inserted_at", "TIMESTAMP", isInsertedAt=True),
             Column("order_line_item_updated_at", "TIMESTAMP", isUpdatedAt=True),
         )

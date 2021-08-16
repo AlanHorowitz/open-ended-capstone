@@ -1,5 +1,5 @@
 import random
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Any
 from psycopg2.extensions import cursor
 
 from datetime import datetime
@@ -29,10 +29,12 @@ class Column:
         isInsertedAt: bool = False,
         isUpdatedAt: bool = False,
         isBatchId: bool = False,
+        isUpdateable: bool = False,
         xref_table: str = "",
         xref_column: str = "", 
         parent_table: str = "",
-        parent_key: str = "",          
+        parent_key: str = "", 
+        default: Any = None         
     ):
 
         self._name = column_name
@@ -42,10 +44,12 @@ class Column:
         self._isInsertedAt = isInsertedAt
         self._isUpdatedAt = isUpdatedAt
         self._isBatchId = isBatchId
+        self._isUpdateable = isUpdateable
         self._xref_table = xref_table
         self._xref_column = xref_column
         self._parent_table = parent_table
         self._parent_key = parent_key
+        self._default = default
 
     @staticmethod
     def make_type(type, type_len, type_dict) -> str:
@@ -135,6 +139,18 @@ class Column:
 
         return self._parent_table != "" and self._parent_key != ""
 
+    def get_default(self) -> Any:
+
+        return self.__default
+
+    def hasDefault(self) -> bool:
+
+        return self._default != None
+
+    def isUpdateable(self) -> bool:
+
+        return self._isUpdateable
+
 class Table:
     """Database Table metadata"""
 
@@ -210,7 +226,7 @@ class Table:
                 self._parent_table = ""
 
             self._update_columns = [
-                col for col in columns if col.get_type() == "VARCHAR"
+                col for col in columns if col.isUpdateable()
             ]  # restrict to VARCHAR update
             if len(self._update_columns) == 0:
                 raise Exception("Need at least one VARCHAR for update")
@@ -247,7 +263,9 @@ class Table:
         self._setXrefTableRows()
 
         for col in self.get_columns():
-            if col.isPrimaryKey():
+            if col.hasDefault():
+                d.append(col.get_default())
+            elif col.isPrimaryKey():
                 d.append(primary_key)
             elif col.isBatchId():
                 d.append(batch_id)
