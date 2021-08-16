@@ -7,6 +7,9 @@
 from typing import Tuple
 import pandas as pd
 from datetime import date
+from .util import STAGE_DIRECTORY_PREFIX, clean_stage_dir, get_stage_dir
+from tables.customer_dim import CustomerDimTable
+
 
 customer_dim_columns = []
 customer_dim_types = {}
@@ -19,26 +22,30 @@ customer_address_stage_types = {}
 
 class CustomerDimension():
 
-    def __init__(self, connection, stage_location):
+    def __init__(self, connection):
         self._connection = connection
-        self._stage_location = stage_location
-
+        self._create_table()
+    
     def process_update(self, batch_id):
         self._load_dataframes(batch_id)
-        self._update_customer_dim()
-        self._cleanup(batch_id)
+        new_df, update_df = self._update_customer_dim()
+        return new_df, update_df
+        # self._cleanup(batch_id)
 
-    def create_table(self):
-        pass
+    def _create_table(self):
+        customer_dim_table = CustomerDimTable()
+        cur = self._connection.cursor()
+        cur.execute(f"DROP TABLE IF EXISTS {customer_dim_table.get_name()};")
+        cur.execute(customer_dim_table.get_create_sql_mysql())
 
     def _cleanup(self, batch_id):
         pass
 
     def _load_dataframes(self, batch_id):
         # get files
-        self._customer_stage_df = pd.read_parquet('stage/b' + str(batch_id) + '/customer.pq')
+        self._customer_stage_df = pd.read_parquet(get_stage_dir(batch_id) + '/customer.pr')
         self._customer_stage_df = self._customer_stage_df.astype(customer_stage_types)
-        self._customer_address_stage_df = pd.read_parquet('stage/b' + str(batch_id) + '/customer_address.pq')
+        self._customer_address_stage_df = pd.read_parquet(get_stage_dir(batch_id) + '/customer_address.pr')
         self._customer_address_stage_df = self._customer_address_stage_df.astype(customer_address_stage_types)
         self._customer_dim_df = pd.read_sql_query("select * from customer_dim", self._connection, index_col='customer_key')
 
@@ -54,8 +61,10 @@ class CustomerDimension():
         if customer_keys.size == 0:
             return
         new_keys, updates = self.get_new_keys_and_updates(customer_keys, self._customer_dim_df)
-        new_cust = self.build_update_dimensionbuild_new_dimension(new_keys, self._customer_stage_df, self._customer_address_stage_df)    
+        new_cust = self.build_new_dimension(new_keys, self._customer_stage_df, self._customer_address_stage_df)    
         update_cust = self.build_update_dimension(updates, self._customer_stage_df, self._customer_address_stage_df)
+
+        return new_cust, update_cust
         # persist(new_cust)
         # persist(update_cust)
 

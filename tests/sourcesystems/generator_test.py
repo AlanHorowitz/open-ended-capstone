@@ -147,10 +147,18 @@ def test_set_default(data_generator, customer_table):
     rs = cursor.fetchone()
     assert rs == ['OA', 'F']
 
-def test_generate_single_xref():
-    pass
+def test_generate_multiple_xref(data_generator, order_table, order_line_item_table, product_table):
+    cursor = data_generator.cur
+    make_rows(cursor, product_table, n_rows = 5, start_key = 1, batch_id = 1)
+    make_rows(cursor, order_table, n_rows = 10, start_key = 1, batch_id = 1)
+    cursor.execute(f"update {product_table.get_name()} set product_unit_cost = product_id;")
+    data_generator.generate(TableUpdate(order_line_item_table,
+                   n_inserts=3, n_updates=0, batch_id=1, link_parent=True))
 
-def test_generate_multiple_xref():
-    pass
+    count_correct_xref = f" SELECT count(order_line_item_id) from {order_line_item_table.get_name()}"\
+    f" WHERE order_line_item_product_id = order_line_item_unit_price; "
+    cursor.execute(count_correct_xref)
+    rs = cursor.fetchone()
+    assert rs[0] == 30 
 
 

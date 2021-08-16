@@ -3,6 +3,8 @@
 import os
 from datetime import datetime
 
+from mysql.connector import connect
+
 from sourcesystems.generator import DataGenerator, TableUpdate
 
 from tables.product import ProductTable
@@ -14,7 +16,9 @@ from tables.order_line_item import OrderLineItemTable
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
 
-from warehouse import create_and_copy_warehouse_tables, write_parquet_warehouse_tables
+from warehouse.customer_dim import CustomerDimension
+
+from warehouse2 import create_and_copy_warehouse_tables, write_parquet_warehouse_tables
 
 # test docker image
 os.environ['DATA_GENERATOR_DB'] = 'postgres'
@@ -23,6 +27,14 @@ os.environ['DATA_GENERATOR_PORT'] = '5432'
 os.environ['DATA_GENERATOR_USER'] = 'postgres'
 os.environ['DATA_GENERATOR_PASSWORD'] = 'postgres'
 os.environ['DATA_GENERATOR_SCHEMA'] = 'test'
+
+ms_connection = connect(
+        host="localhost",
+        user="alan",
+        password="alan",
+        database="edw",
+        charset="utf8",
+    )
 
 data_generator : DataGenerator = DataGenerator()
 
@@ -34,6 +46,8 @@ order_table = OrderTable()
 order_line_item_table = OrderLineItemTable()
 customer_table = CustomerTable()
 customer_address_table = CustomerAddressTable()
+
+customer_dimesion = CustomerDimension(ms_connection)
 
 print(store_location_table.get_create_sql_postgres())
 
@@ -70,7 +84,11 @@ create_and_copy_warehouse_tables(data_generator.connection, [product_table, stor
 store_sales_table, store_location_table, order_table, order_line_item_table,
 customer_table, customer_address_table])
 
-write_parquet_warehouse_tables([product_table, store_table, store_sales_table,
+write_parquet_warehouse_tables(1, [product_table, store_table, store_sales_table,
 store_sales_table, store_location_table, order_table, order_line_item_table,
 customer_table, customer_address_table])
+
+new, update = customer_dimesion.process_update(1)
+
+print("New columns = ", new.columns, new.count)
 
