@@ -111,8 +111,6 @@ class CustomerDimension():
                         'zip' : zip
                         })
 
-
-
     # combine customer and customer address into new customer_dim entry
     def build_new_dimension(self, new_keys, customer, customer_address):
         # Todo if multiple addresses of a type come in, take the most recent date
@@ -125,14 +123,30 @@ class CustomerDimension():
         customer_dim_insert = pd.DataFrame([], 
         columns=self._customer_dim_table.get_column_names(), index=new_keys)
 
-        # straight copy
-        
-        customer_dim_insert['name'] = customer['customer_name']
+        # straight copy        
+       
         customer_dim_insert['customer_key'] = customer['customer_id']
-
+        customer_dim_insert['name'] = customer['customer_name']
+        customer_dim_insert['user_id'] = customer['customer_user_id']
+        customer_dim_insert['password'] = customer['customer_password']
+        customer_dim_insert['email'] = customer['customer_email']        
 
         customer_dim_insert['referral_type'] = \
         customer['customer_referral_type'].map(CustomerDimension.decode_referral)
+
+        customer_dim_insert['sex'] = customer['customer_sex']
+        customer_dim_insert['date_of_birth'] = customer['customer_date_of_birth']
+        customer_dim_insert['age_cohort'] = 'n/a'
+
+        customer_dim_insert['loyalty_number'] = customer['customer_loyalty']
+        customer_dim_insert['credit_card_number'] = customer['customer_credit_card_number']
+        customer_dim_insert['is_preferred'] = customer['customer_is_preferred']
+        customer_dim_insert['is_active'] = customer['customer_is_active']
+
+        customer_dim_insert['activation_date'] = customer['customer_name']
+        customer_dim_insert['deactivation_date'] = customer['customer_name']
+        customer_dim_insert['start_date'] = customer['customer_name']
+        customer_dim_insert['last_update_date'] = customer['customer_name']
 
         # customer_address    
         
@@ -164,7 +178,7 @@ class CustomerDimension():
         customer_dim_insert['expiration_date'] = None 
         customer_dim_insert['is_current_row'] = 'Y'
 
-        customer_dim_insert = customer_dim_insert.set_index('surrogate_key')
+        # customer_dim_insert = customer_dim_insert.set_index('surrogate_key')
 
         return customer_dim_insert
 
