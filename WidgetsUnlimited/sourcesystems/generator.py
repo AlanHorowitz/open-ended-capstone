@@ -29,7 +29,8 @@ class DataGenerator():
         pass
 
     def add_tables(self, tables : List[Table]) -> None:
-        for table in tables:                   
+        for table in tables:  
+            self.cur.execute(f"DROP TABLE IF EXISTS {table.get_name()};")               
             self.cur.execute(table.get_create_sql_postgres())
             self.connection.commit()  
 

@@ -49,8 +49,6 @@ customer_address_table = CustomerAddressTable()
 
 customer_dimesion = CustomerDimension(ms_connection)
 
-print(store_location_table.get_create_sql_postgres())
-
 data_generator.add_tables([product_table, store_table, store_sales_table,
 store_sales_table, store_location_table, order_table, order_line_item_table,
 customer_table, customer_address_table])
@@ -88,7 +86,10 @@ write_parquet_warehouse_tables(1, [product_table, store_table, store_sales_table
 store_sales_table, store_location_table, order_table, order_line_item_table,
 customer_table, customer_address_table])
 
-new, update = customer_dimesion.process_update(1)
+new, update = customer_dimesion.process_update(1)    
 
-print("New columns = ", new.columns, new.count)
+print("dtypes =", new.dtypes)
+print(new.loc[:5,['customer_key', 'is_current_row']])
+
+
 

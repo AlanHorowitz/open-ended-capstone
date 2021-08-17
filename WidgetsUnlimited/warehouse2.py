@@ -99,7 +99,7 @@ def write_parquet_warehouse_tables(batch_id: int, tables : List[Table]):
         sql = f"SELECT {column_names} from {table_name};"
                 
         df = pd.read_sql_query(sql, con=cnx)
-        dtype1 = {col.get_name() : pd_types[col.get_type()] for col in table.get_columns()}
-        df = df.astype(dtype1)              
+        dtype1 = {col.get_name() : pd_types[col.get_type()] for col in table.get_columns()}        
+        df = df.astype(dtype1)         
         df.to_parquet(os.path.join(get_stage_dir(batch_id),f"{table_name}.pr"), compression='gzip')
-
+        

@@ -22,9 +22,11 @@ customer_address_stage_types = {}
 
 class CustomerDimension():
 
-    def __init__(self, connection):
+    def __init__(self, connection=None):
         self._connection = connection
-        self._create_table()
+        self._customer_dim_table = CustomerDimTable()
+        if connection:
+            self._create_table()
     
     def process_update(self, batch_id):
         self._load_dataframes(batch_id)
@@ -32,11 +34,10 @@ class CustomerDimension():
         return new_df, update_df
         # self._cleanup(batch_id)
 
-    def _create_table(self):
-        customer_dim_table = CustomerDimTable()
+    def _create_table(self):        
         cur = self._connection.cursor()
-        cur.execute(f"DROP TABLE IF EXISTS {customer_dim_table.get_name()};")
-        cur.execute(customer_dim_table.get_create_sql_mysql())
+        cur.execute(f"DROP TABLE IF EXISTS {self._customer_dim_table.get_name()};")
+        cur.execute(self._customer_dim_table.get_create_sql_mysql())
 
     def _cleanup(self, batch_id):
         pass
@@ -64,7 +65,7 @@ class CustomerDimension():
         new_cust = self.build_new_dimension(new_keys, self._customer_stage_df, self._customer_address_stage_df)    
         update_cust = self.build_update_dimension(updates, self._customer_stage_df, self._customer_address_stage_df)
 
-        return new_cust, update_cust
+        return new_cust, updates
         # persist(new_cust)
         # persist(update_cust)
 
@@ -118,14 +119,17 @@ class CustomerDimension():
 
         # align two inputs and outputs by customer_id, renamed customer key in dimension
         customer = customer[customer['customer_id'].isin(new_keys.values)]
-        customer = customer.set_index('customer_id')
+        customer = customer.set_index('customer_id', drop=False)
         customer_address = customer_address[customer_address['customer_id'].isin(new_keys.values)]
         customer_address = customer_address.set_index('customer_id', drop=False)
-        customer_dim_insert = pd.DataFrame([], columns=[], index=new_keys)
+        customer_dim_insert = pd.DataFrame([], 
+        columns=self._customer_dim_table.get_column_names(), index=new_keys)
 
         # straight copy
-        # customer_dim_insert['customer_key'] = customer['customer_id']
+        
         customer_dim_insert['name'] = customer['customer_name']
+        customer_dim_insert['customer_key'] = customer['customer_id']
+
 
         customer_dim_insert['referral_type'] = \
         customer['customer_referral_type'].map(CustomerDimension.decode_referral)
@@ -155,10 +159,12 @@ class CustomerDimension():
         next_surrogate_key = 1  # update after successful insert
         num_inserts = customer_dim_insert.shape[0]
 
-        customer_dim_insert['id'] = range(next_surrogate_key, next_surrogate_key+num_inserts)
+        customer_dim_insert['surrogate_key'] = range(next_surrogate_key, next_surrogate_key+num_inserts)
         customer_dim_insert['effective_date'] = date(2020,10,10)
         customer_dim_insert['expiration_date'] = None 
         customer_dim_insert['is_current_row'] = 'Y'
+
+        customer_dim_insert = customer_dim_insert.set_index('surrogate_key')
 
         return customer_dim_insert
 
