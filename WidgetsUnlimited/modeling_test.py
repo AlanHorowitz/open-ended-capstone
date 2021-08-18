@@ -86,10 +86,12 @@ write_parquet_warehouse_tables(1, [product_table, store_table, store_sales_table
 store_sales_table, store_location_table, order_table, order_line_item_table,
 customer_table, customer_address_table])
 
-new, update = customer_dimesion.process_update(1)    
+customer_dimesion.process_update(1)
 
-print("dtypes =", new.dtypes)
-print(new.loc[:, ['billing_zip', 'shipping_zip']])
+# new, update = customer_dimesion.process_update(1)    
+
+# print("dtypes =", new.dtypes)
+# print(new.loc[:, ['billing_zip', 'shipping_zip']])
 
 
 

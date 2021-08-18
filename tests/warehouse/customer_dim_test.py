@@ -3,7 +3,6 @@ from .context import CustomerDimension, CustomerAddressTable, CustomerTable
 
 import pandas as pd
 from datetime import date, datetime
-from math import isnan
 
 # simplify test with simple representative structure
 cust_dim_cols = ['surrogate_key', 'customer_key', 'customer_name', 'customer_address_id', 'customer_address']
@@ -92,6 +91,7 @@ def test_parse_address():
     assert(ser['zip'] == "11229")
 
 # test billing/shipping address parsing
+# new dimension tessts require complete customers and customer addresses
 def test_build_new_dimension_1():
 
     day = date(2020,10,10)
