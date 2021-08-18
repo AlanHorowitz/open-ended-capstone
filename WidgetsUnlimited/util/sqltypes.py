@@ -183,7 +183,8 @@ class Table:
         self,
         name: str,        
         *columns: Column,
-        generation = True
+        generation = True,
+        batchId=True
     ):
         """Instatiate a table metadata object.
 
@@ -193,8 +194,10 @@ class Table:
 
         self._name = name        
         self._generation = generation
+        self._batchId = batchId
         self._columns = [col for col in columns]
-        self._columns.append(Column("batch_id", "INTEGER", isBatchId=True)) 
+        if self._batchId == True:
+            self._columns.append(Column("batch_id", "INTEGER", isBatchId=True)) 
         primary_keys = [col.get_name() for col in columns if col.isPrimaryKey()]
         inserted_ats = [col.get_name() for col in columns if col.isInsertedAt()]
         updated_ats = [col.get_name() for col in columns if col.isUpdatedAt()]
@@ -342,6 +345,19 @@ class Table:
     def get_column_names(self) -> List[str]:
         """ Return a complete list of Column names for the table."""
         return [col.get_name() for col in self._columns]
+    
+    def get_column_pandas_types(self) -> Dict[str,str]:
+        """ Return a complete list of Column names for the table."""
+
+        pd_types = { 'INTEGER' : 'int64',
+             'VARCHAR'   : 'string' ,
+             'FLOAT'     : 'float64',
+             'DATE'      : 'datetime64[ns]',
+             'BOOLEAN'   : 'bool',
+             'TIMESTAMP' : 'datetime64[ns]'
+            }
+
+        return  {col.get_name() : pd_types[col.get_type()] for col in self._columns}
 
     def get_update_column(self) -> Column:
         """ Return a random eligible update column."""

@@ -10,7 +10,7 @@ class CustomerDimTable(Table):
 
         # dimension control     
             Column("surrogate_key", "INTEGER", isPrimaryKey=True),  # surrogate key
-            Column("effecive_date", "DATE"),
+            Column("effective_date", "DATE"),
             Column("expiration_date", "DATE"),
             Column("is_current_row", "BOOLEAN"),  # type 2 scd
 
@@ -33,7 +33,7 @@ class CustomerDimTable(Table):
             Column("start_date", "DATE"), 
             Column("last_update_date", "DATE"),
             Column("billing_name", "VARCHAR", 255),         
-            Column("billing_street_number", "INTEGER",),
+            Column("billing_street_number", "VARCHAR",),
             Column("billing_city", "VARCHAR", 255),
             Column("billing_state", "VARCHAR", 255),
             Column("billing_zip", "VARCHAR"), 
@@ -46,7 +46,8 @@ class CustomerDimTable(Table):
             Column("shipping_zip", "VARCHAR"),   
             # Column("shipping_last_update", "TIMESTAMP"),
             # Column("shipping_number_of_updates", "INTEGER"),
-            generation=False)
+            generation=False,
+            batchId=False)
               
              
     

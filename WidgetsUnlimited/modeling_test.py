@@ -89,7 +89,7 @@ customer_table, customer_address_table])
 new, update = customer_dimesion.process_update(1)    
 
 print("dtypes =", new.dtypes)
-print(new.loc[:5,['customer_key', 'is_current_row']])
+print(new.loc[:, ['billing_zip', 'shipping_zip']])
 
 
 

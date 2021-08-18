@@ -9,16 +9,18 @@ import pandas as pd
 from datetime import date
 from .util import STAGE_DIRECTORY_PREFIX, clean_stage_dir, get_stage_dir
 from tables.customer_dim import CustomerDimTable
+from tables.customer import CustomerTable
+from tables.customer_address import CustomerAddressTable
 
 
 customer_dim_columns = []
 customer_dim_types = {}
 
 customer_stage_columns = []
-customer_stage_types = {}
+customer_stage_types = CustomerTable().get_column_pandas_types()
 
 customer_address_stage_columns = []
-customer_address_stage_types = {}
+customer_address_stage_types = CustomerAddressTable().get_column_pandas_types()
 
 class CustomerDimension():
 
@@ -49,6 +51,14 @@ class CustomerDimension():
         self._customer_address_stage_df = pd.read_parquet(get_stage_dir(batch_id) + '/customer_address.pr')
         self._customer_address_stage_df = self._customer_address_stage_df.astype(customer_address_stage_types)
         self._customer_dim_df = pd.read_sql_query("select * from customer_dim", self._connection, index_col='customer_key')
+        print(self._customer_stage_df.dtypes)
+        print("+" *25)
+        print(self._customer_address_stage_df.dtypes)
+        print("+" *25)
+        print(self._customer_dim_df.dtypes)
+        print("+" *25)
+
+        print("size", self._customer_dim_df.size )
 
     def create_customer_dim_table():
         pass
@@ -111,7 +121,7 @@ class CustomerDimension():
                         'zip' : zip
                         })
 
-    # combine customer and customer address into new customer_dim entry
+    # new customer_dim entry for an unseen natural key
     def build_new_dimension(self, new_keys, customer, customer_address):
         # Todo if multiple addresses of a type come in, take the most recent date
 
@@ -120,9 +130,13 @@ class CustomerDimension():
         customer = customer.set_index('customer_id', drop=False)
         customer_address = customer_address[customer_address['customer_id'].isin(new_keys.values)]
         customer_address = customer_address.set_index('customer_id', drop=False)
-        customer_dim_insert = pd.DataFrame([], 
-        columns=self._customer_dim_table.get_column_names(), index=new_keys)
-
+        # customer_dim_insert = pd.DataFrame([], 
+        #                       columns=self._customer_dim_table.get_column_names())                             
+        pandas_types = self._customer_dim_table.get_column_pandas_types()
+        print("pandas_data_types", pandas_types)
+        customer_dim_insert = pd.DataFrame([])
+        # customer_dim_insert = customer_dim_insert.astype(pandas_types)
+        # customer_dim_insert.set_index(new_keys, inplace=True)
         # straight copy        
        
         customer_dim_insert['customer_key'] = customer['customer_id']
@@ -138,15 +152,15 @@ class CustomerDimension():
         customer_dim_insert['date_of_birth'] = customer['customer_date_of_birth']
         customer_dim_insert['age_cohort'] = 'n/a'
 
-        customer_dim_insert['loyalty_number'] = customer['customer_loyalty']
+        customer_dim_insert['loyalty_number'] = customer['customer_loyalty_number']
         customer_dim_insert['credit_card_number'] = customer['customer_credit_card_number']
         customer_dim_insert['is_preferred'] = customer['customer_is_preferred']
         customer_dim_insert['is_active'] = customer['customer_is_active']
 
-        customer_dim_insert['activation_date'] = customer['customer_name']
-        customer_dim_insert['deactivation_date'] = customer['customer_name']
-        customer_dim_insert['start_date'] = customer['customer_name']
-        customer_dim_insert['last_update_date'] = customer['customer_name']
+        customer_dim_insert['activation_date'] = customer['customer_inserted_at']
+        customer_dim_insert['deactivation_date'] = None
+        customer_dim_insert['start_date'] = customer['customer_inserted_at']
+        customer_dim_insert['last_update_date'] = customer['customer_inserted_at']
 
         # customer_address    
         
@@ -176,10 +190,9 @@ class CustomerDimension():
         customer_dim_insert['surrogate_key'] = range(next_surrogate_key, next_surrogate_key+num_inserts)
         customer_dim_insert['effective_date'] = date(2020,10,10)
         customer_dim_insert['expiration_date'] = None 
-        customer_dim_insert['is_current_row'] = 'Y'
-
-        # customer_dim_insert = customer_dim_insert.set_index('surrogate_key')
-
+        customer_dim_insert['is_current_row'] = 'Y'    
+        customer_dim_insert = pd.DataFrame(customer_dim_insert, columns=self._customer_dim_table.get_column_names())    
+        customer_dim_insert = customer_dim_insert.astype(pandas_types)
         return customer_dim_insert
 
     def build_update_dimension(self, updates, customer, customer_address):

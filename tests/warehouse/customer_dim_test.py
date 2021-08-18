@@ -1,4 +1,5 @@
-from .context import CustomerDimension    
+from numpy.testing._private.utils import tempdir
+from .context import CustomerDimension, CustomerAddressTable, CustomerTable   
 
 import pandas as pd
 from datetime import date, datetime
@@ -136,14 +137,29 @@ def test_build_new_dimension_1():
     assert(inserts.at[3,'billing_state'] == 'NY')
     assert(inserts.at[3,'shipping_state'] == 'NJ')
     assert(inserts.at[4,'billing_city'] == 'Brooklyn')
-    assert(isnan(inserts.at[4,'shipping_city']))  #Format checking later
+    assert(pd.isna(inserts.at[4,'shipping_city']))
 
 # isolated referral_type parsing
 def test_build_new_dimension_2():
+
+    customer_table = CustomerTable()
     customer_stage_data  = \
                 {"customer_id" : [1,2,3,4],
                 "customer_name" : ['c1', 'c2', 'c3', 'c4'],
-                "customer_referral_type" : ['ll', ' ','OA','AM']}
+                "customer_referral_type" : ['ll', ' ','OA','AM'],
+                "customer_user_id" : [pd.NA] * 4,
+                "customer_password" : [pd.NA] * 4,
+                "customer_email" : [pd.NA] * 4,
+                "customer_user_id" : [pd.NA] * 4,     
+                "customer_sex" : [pd.NA] * 4,
+                "customer_date_of_birth" : [pd.NA] * 4,
+                "customer_loyalty_number" : [0] * 4,
+                "customer_credit_card_number" :[pd.NA] * 4,
+                "customer_is_preferred" :[True] * 4,
+                "customer_is_active" : [True] * 4,
+                "customer_inserted_at" : [pd.NA] * 4,
+                "customer_updated_at" :  [pd.NA] * 4,
+                "batch_id" : [1,1,1,1] }
 
     customer_stage_address_data = \
         {"customer_id" : [],
@@ -155,7 +171,9 @@ def test_build_new_dimension_2():
          "batch_id" : [] }
 
     new_keys = pd.Series([1,2,3,4], name='customer_key')
-    customer_stage_df = pd.DataFrame(customer_stage_data)
+    customer_stage_df = pd.DataFrame(customer_stage_data, columns=customer_table.get_column_names())
+    customer_stage_df = customer_stage_df.astype(customer_table.get_column_pandas_types())
+    
     customer_address_stage_df = pd.DataFrame(customer_stage_address_data)
 
     inserts = c.build_new_dimension(new_keys, customer_stage_df, customer_address_stage_df)
