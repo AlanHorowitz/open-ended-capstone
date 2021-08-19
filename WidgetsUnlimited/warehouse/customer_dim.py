@@ -7,6 +7,8 @@
 from typing import Tuple
 import pandas as pd
 from datetime import date
+
+from pandas.core.frame import DataFrame
 from .util import STAGE_DIRECTORY_PREFIX, clean_stage_dir, get_stage_dir
 from tables.customer_dim import CustomerDimTable
 from tables.customer import CustomerTable
@@ -21,6 +23,37 @@ customer_stage_types = CustomerTable().get_column_pandas_types()
 
 customer_address_stage_columns = []
 customer_address_stage_types = CustomerAddressTable().get_column_pandas_types()
+
+customer_to_customer_dim_mappings = {
+        'customer_key'  : 'customer_id',
+        'name'          : 'customer_name',
+        'user_id'       : 'customer_user_id',
+        'password'      : 'customer_password',
+        'email'         : 'customer_email',
+        'referral_type' : 'customer_referral_type', 
+        'sex'           : 'customer_sex',
+        'date_of_birth' : 'customer_date_of_birth',
+        'loyalty_number': 'customer_loyalty_number',
+        'credit_card_number' : 'customer_credit_card_number',
+        'is_preferred'  : 'customer_is_preferred',
+        'is_active'     : 'customer_is_active'       
+    }
+
+billing_to_customer_dim_mappings = {
+        'billing_name'  : 'name',
+        'billing_street_number' : 'street_number',
+        'billing_city'  : 'city',
+        'billing_state' : 'state',
+        'billing_zip'   : 'zip'
+    }
+
+shipping_to_customer_dim_mappings = {
+        'shipping_name'  : 'name',
+        'shipping_street_number' : 'street_number',
+        'shipping_city'  : 'city',
+        'shipping_state' : 'state',
+        'shipping_zip'   : 'zip'
+    }
 
 class CustomerDimension():
 
@@ -135,8 +168,35 @@ class CustomerDimension():
                         'state' : state,
                         'zip' : zip
                         })
-
     
+    @staticmethod
+    def customer_transform(customer : DataFrame, customer_address: DataFrame) -> DataFrame:
+        
+        customer_dim = pd.DataFrame()
+        mask = pd.notnull(customer)
+
+        for k,v in customer_to_customer_dim_mappings.items():
+            customer_dim[k] = customer[v][mask[v]]
+
+        customer_dim.referral_type = customer_dim.referral_type.map(CustomerDimension.decode_referral)
+                
+        # customer_address - mask not needed because screening condition is sufficient    
+        
+        billing = customer_address[customer_address.customer_address_type == 'B']\
+            ['customer_address'].apply(CustomerDimension.parse_address)        
+        
+        if billing.size != 0:
+            for k,v in billing_to_customer_dim_mappings.items():
+                customer_dim[k] = billing[v]            
+        
+        shipping = customer_address[customer_address.customer_address_type == 'S']\
+            ['customer_address'].apply(CustomerDimension.parse_address)
+
+        if shipping.size != 0:
+            for k,v in shipping_to_customer_dim_mappings.items():
+                customer_dim[k] = shipping[v]           
+
+        return customer_dim
 
     # new customer_dim entry for an unseen natural key
     def build_new_dimension(self, new_keys, customer, customer_address):
@@ -151,56 +211,22 @@ class CustomerDimension():
         #                       columns=self._customer_dim_table.get_column_names())                             
         pandas_types = self._customer_dim_table.get_column_pandas_types()
         print("pandas_data_types", pandas_types)
-        customer_dim_insert = pd.DataFrame([])
+        
         # customer_dim_insert = customer_dim_insert.astype(pandas_types)
         # customer_dim_insert.set_index(new_keys, inplace=True)
         # straight copy        
-       
-        customer_dim_insert['customer_key'] = customer['customer_id']
-        customer_dim_insert['name'] = customer['customer_name']
-        customer_dim_insert['user_id'] = customer['customer_user_id']
-        customer_dim_insert['password'] = customer['customer_password']
-        customer_dim_insert['email'] = customer['customer_email']        
 
-        customer_dim_insert['referral_type'] = \
-        customer['customer_referral_type'].map(CustomerDimension.decode_referral)
-
-        customer_dim_insert['sex'] = customer['customer_sex']
-        customer_dim_insert['date_of_birth'] = customer['customer_date_of_birth']
+        # inherit the types from customer/customer address -- conform at end
+        # customer_id is the alignment index
+        
+        customer_dim_insert = CustomerDimension.customer_transform(customer, customer_address)
+        
         customer_dim_insert['age_cohort'] = 'n/a'
-
-        customer_dim_insert['loyalty_number'] = customer['customer_loyalty_number']
-        customer_dim_insert['credit_card_number'] = customer['customer_credit_card_number']
-        customer_dim_insert['is_preferred'] = customer['customer_is_preferred']
-        customer_dim_insert['is_active'] = customer['customer_is_active']
-
         customer_dim_insert['activation_date'] = customer['customer_inserted_at']
         customer_dim_insert['deactivation_date'] = date(2099,12,31) 
         customer_dim_insert['start_date'] = customer['customer_inserted_at']
         customer_dim_insert['last_update_date'] = customer['customer_inserted_at']
-
-        # customer_address    
-        
-        billing = customer_address[customer_address.customer_address_type == 'B']\
-            ['customer_address'].apply(CustomerDimension.parse_address)        
-        
-        if billing.size != 0:
-            customer_dim_insert['billing_name'] = billing['name']
-            customer_dim_insert['billing_street_number'] = billing['street_number']
-            customer_dim_insert['billing_city'] = billing['city']
-            customer_dim_insert['billing_state'] = billing['state']
-            customer_dim_insert['billing_zip'] = billing['zip']
-        
-        shipping = customer_address[customer_address.customer_address_type == 'S']\
-            ['customer_address'].apply(CustomerDimension.parse_address)
-
-        if shipping.size != 0:
-            customer_dim_insert['shipping_name'] = shipping['name']
-            customer_dim_insert['shipping_street_number'] = shipping['street_number']
-            customer_dim_insert['shipping_city'] = shipping['city']
-            customer_dim_insert['shipping_state'] = shipping['state']
-            customer_dim_insert['shipping_zip'] = shipping['zip']
-                
+         
         next_surrogate_key = 1  # update after successful insert
         num_inserts = customer_dim_insert.shape[0]
 
@@ -213,10 +239,29 @@ class CustomerDimension():
         customer_dim_insert = customer_dim_insert.fillna(self._address_defaults)
         return customer_dim_insert
 
-    def build_update_dimension(self, updates, customer, customer_address):
+    def build_update_dimension(self, updates_dim, customer, customer_address):
         """
         Seems like we would need to do the same transforms for the update keys.
-
-
         """
-        pass
+        updates_dim = updates_dim.set_index('customer_key', drop=False)
+        update_keys = updates_dim.index
+        # build updates_incremental
+
+        customer = customer[customer['customer_id'].isin(update_keys.values)]
+        customer = customer.set_index('customer_id', drop=False)
+        customer_address = customer_address[customer_address['customer_id'].isin(update_keys.values)]
+        customer_address = customer_address.set_index('customer_id', drop=False)
+
+        # update will have at least one of customer, billing address or shipping address, but
+        # may not have all the columns.
+
+        customer_incremental = pd.DataFrame()
+        customer_incremental['customer_key'] = pd.notnull(customer['customer_id'])
+        customer_incremental['name'] = pd.notnull(customer['customer_name'])
+        customer_incremental['user_id'] = pd.notnull(customer['customer_user_id'])
+        customer_incremental['password'] = pd.notnull(customer['customer_password'])
+        customer_incremental['email'] = pd.notnull(customer['customer_email'])       
+
+        customer_incremental['referral_type'] = pd.notnull(customer['customer_referral_type'])
+        customer_incremental['referral_type'] = \
+        customer_incremental['referral_type'].map(CustomerDimension.decode_referral)

@@ -137,7 +137,8 @@ def test_build_new_dimension_1():
     assert(inserts.at[3,'billing_state'] == 'NY')
     assert(inserts.at[3,'shipping_state'] == 'NJ')
     assert(inserts.at[4,'billing_city'] == 'Brooklyn')
-    assert(pd.isna(inserts.at[4,'shipping_city']))
+    # assert(pd.isna(inserts.at[4,'shipping_city']))
+    assert(inserts.at[4,'shipping_city'] == 'N/A')
 
 # isolated referral_type parsing
 def test_build_new_dimension_2():
