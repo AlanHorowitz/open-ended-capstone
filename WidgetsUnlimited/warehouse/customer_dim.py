@@ -4,7 +4,7 @@
 # compute new_customers, allocate new surrogate keys, build new dim record
 # update existing record (type 2 SCD comes later)
 
-from typing import Tuple
+from typing import Tuple, Dict
 import pandas as pd
 from datetime import date
 
@@ -61,13 +61,8 @@ class CustomerDimension():
         self._connection = connection
         self._customer_dim_table = CustomerDimTable()
         if connection:
-            self._create_table()
-        self._address_defaults = { col : "N/A" for col in 
-            ['billing_name', 'billing_street_number', 'billing_city', 
-             'billing_state', 'billing_zip',
-             'shipping_name', 'shipping_street_number', 'shipping_city',
-             'shipping_state', 'shipping_zip' ] }
-    
+            self._create_table()       
+           
     def process_update(self, batch_id):
         self._load_dataframes(batch_id)
         self._update_customer_dim()        
@@ -97,7 +92,7 @@ class CustomerDimension():
 
         print("size", self._customer_dim_df.size )
 
-    def persist_new(self, customer_dim : pd.DataFrame):
+    def persist(self, customer_dim : pd.DataFrame, operation : str) -> None:
         table = self._customer_dim_table
         table_name = table.get_name()
         column_names = ",".join(table.get_column_names())  # for SELECT statements
@@ -107,8 +102,10 @@ class CustomerDimension():
         print(rows[0])
         print(type(rows[0][2]))
         cur.executemany(
-            f"INSERT INTO {table_name} ({column_names}) values ({values_substitutions})", rows)
+            f"{operation} INTO {table_name} ({column_names}) values ({values_substitutions})", rows)
         self._connection.commit()
+
+    
 
     def create_customer_dim_table():
         pass
@@ -123,9 +120,9 @@ class CustomerDimension():
             return
         new_keys, updates = self.get_new_keys_and_updates(customer_keys, self._customer_dim_df)
         cust_dim_insert = self.build_new_dimension(new_keys, self._customer_stage_df, self._customer_address_stage_df)    
-        update_cust = self.build_update_dimension(updates, self._customer_stage_df, self._customer_address_stage_df)
-        self.persist_new(cust_dim_insert)        
-        # persist(update_cust)
+        cust_dim_update = self.build_update_dimension(updates, self._customer_stage_df, self._customer_address_stage_df)
+        self.persist(cust_dim_insert, "INSERT")        
+        self.persist(cust_dim_update, "REPLACE")        
 
     def get_customer_keys_incremental(self, customer : pd.DataFrame, 
                                     customer_address : pd.DataFrame) -> pd.Series:
@@ -143,6 +140,14 @@ class CustomerDimension():
         new_keys = merged[new_mask]['customer_key']
         updates = merged[~new_mask]
         return new_keys, updates
+
+    @staticmethod
+    def get_address_defaults() -> Dict[str,str]:
+        return { col : "N/A" for col in 
+            ['billing_name', 'billing_street_number', 'billing_city', 
+             'billing_state', 'billing_zip',
+             'shipping_name', 'shipping_street_number', 'shipping_city',
+             'shipping_state', 'shipping_zip' ] }
 
     @staticmethod            
     def decode_referral(s):
@@ -209,32 +214,18 @@ class CustomerDimension():
 
     # new customer_dim entry for an unseen natural key
     def build_new_dimension(self, new_keys, customer, customer_address):
-        # Todo if multiple addresses of a type come in, take the most recent date
-
-        # align two inputs and outputs by customer_id, renamed customer key in dimension
+       
         customer = customer[customer['customer_id'].isin(new_keys.values)]
         customer = customer.set_index('customer_id', drop=False)
         customer_address = customer_address[customer_address['customer_id'].isin(new_keys.values)]
         customer_address = customer_address.set_index('customer_id', drop=False)
-        # customer_dim_insert = pd.DataFrame([], 
-        #                       columns=self._customer_dim_table.get_column_names())                             
-        pandas_types = self._customer_dim_table.get_column_pandas_types()
-        print("pandas_data_types", pandas_types)
-        
-        # customer_dim_insert = customer_dim_insert.astype(pandas_types)
-        # customer_dim_insert.set_index(new_keys, inplace=True)
-        # straight copy        
-
-        # inherit the types from customer/customer address -- conform at end
-        # customer_id is the alignment index
-        
+                
         customer_dim = CustomerDimension.customer_transform(customer, customer_address)
         
         customer_dim['age_cohort'] = 'n/a'
         customer_dim['activation_date'] = customer['customer_inserted_at']
         customer_dim['deactivation_date'] = date(2099,12,31) 
         customer_dim['start_date'] = customer['customer_inserted_at']
-        # customer_dim['last_update_date'] = customer['customer_inserted_at']
          
         next_surrogate_key = 1  # update after successful insert
         num_inserts = customer_dim.shape[0]
@@ -245,39 +236,38 @@ class CustomerDimension():
         customer_dim['is_current_row'] = 'Y'    
 
         customer_dim = pd.DataFrame(customer_dim, columns=self._customer_dim_table.get_column_names())    
-        customer_dim = customer_dim.astype(pandas_types)
-        customer_dim = customer_dim.fillna(self._address_defaults)
+        customer_dim = customer_dim.astype(self._customer_dim_table.get_column_pandas_types())
+        customer_dim = customer_dim.fillna(CustomerDimension.get_address_defaults())
 
         return customer_dim
 
-    def build_update_dimension(self, updates_dim, customer, customer_address):
-        """
-        Seems like we would need to do the same transforms for the update keys.
-        """
+    def build_update_dimension(self, updates_dim, customer, customer_address):        
+
         updates_dim = updates_dim.set_index('customer_key', drop=False)
         update_keys = updates_dim.index
-        # build updates_incremental
 
         customer = customer[customer['customer_id'].isin(update_keys.values)]
         customer = customer.set_index('customer_id', drop=False)
         customer_address = customer_address[customer_address['customer_id'].isin(update_keys.values)]
         customer_address = customer_address.set_index('customer_id', drop=False)
-
-        # update will have at least one of customer, billing address or shipping address, but
-        # may not have all the columns.
+       
+        print(updates_dim, updates_dim.count(), updates_dim.columns)
+        print(customer, customer.count(), customer.columns)
+        print(customer_address, customer_address.count(), customer_address.columns)
 
         customer_dim = CustomerDimension.customer_transform(customer, customer_address)
         customer_dim['age_cohort'] = 'n/a'
 
-        was_activated = (customer['is_active'] == True) & \
+        was_activated = (customer['customer_is_active'] == True) & \
                         (customer_dim['is_active'] == False)
-        was_deactivated = (customer['is_active'] == False) & \
+        was_deactivated = (customer['customer_is_active'] == False) & \
                           (customer_dim['is_active'] == True) 
 
         customer_dim.loc[was_activated, 'activation_date'] = customer['customer_updated_at']
         customer_dim.loc[was_activated, 'deactivation_date'] = date(2099,12,31)        
         customer_dim.loc[was_deactivated, 'deactivation_date'] = customer['customer_updated_at']
 
-        customer_dim['last_update_date'] = customer['customer_inserted_at']
+        customer_dim = pd.DataFrame(customer_dim, columns=self._customer_dim_table.get_column_names())    
+        customer_dim = customer_dim.astype(self._customer_dim_table.get_column_pandas_types())
 
         return customer_dim
