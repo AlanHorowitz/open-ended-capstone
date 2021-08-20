@@ -122,8 +122,8 @@ def test_build_new_dimension_1():
          "customer_address_id" : [1,2,3,4,5,6,7],
          "customer_address" : [tsa, tba, tsa, tba, tba, tsa, tba],
          "customer_address_type" : ['S','B', 'S','B','B','S','B'],             
-         "customer_inserted_at" : [dt_tm] * 7,
-         "customer_updated_at" :  [dt_tm] * 7,
+         "customer_address_inserted_at" : [dt_tm] * 7,
+         "customer_address_updated_at" :  [dt_tm] * 7,
          "batch_id" : [1,1,1,1,1,1,1] }
 
     new_keys = pd.Series([3,4,5], name='customer_key')
@@ -167,8 +167,8 @@ def test_build_new_dimension_2():
          "customer_address_id" : [],
          "customer_address" : [] ,
          "customer_address_type" : [],             
-         "customer_inserted_at" : [],
-         "customer_updated_at" :  [],
+         "customer_address_inserted_at" : [],
+         "customer_address_updated_at" :  [],
          "batch_id" : [] }
 
     new_keys = pd.Series([1,2,3,4], name='customer_key')
