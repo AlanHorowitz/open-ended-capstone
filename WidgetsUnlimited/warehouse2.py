@@ -96,7 +96,7 @@ def write_parquet_warehouse_tables(batch_id: int, tables : List[Table]):
         table_name = table.get_name()
         column_names = ",".join(table.get_column_names())
                 
-        sql = f"SELECT {column_names} from {table_name};"
+        sql = f"SELECT {column_names} from {table_name} WHERE batch_id = {batch_id};"
                 
         df = pd.read_sql_query(sql, con=cnx)
         dtype1 = {col.get_name() : pd_types[col.get_type()] for col in table.get_columns()}        

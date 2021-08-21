@@ -88,10 +88,12 @@ customer_table, customer_address_table])
 
 customer_dimesion.process_update(1)
 
-# new, update = customer_dimesion.process_update(1)    
+# try modifying two customers
+data_generator.generate(
+    TableUpdate(customer_table, n_inserts=0, n_updates=2, batch_id=2))
 
-# print("dtypes =", new.dtypes)
-# print(new.loc[:, ['billing_zip', 'shipping_zip']])
+write_parquet_warehouse_tables(2, [customer_table, customer_address_table])
 
+customer_dimesion.process_update(2)
 
 

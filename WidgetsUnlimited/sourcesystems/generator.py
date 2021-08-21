@@ -103,10 +103,11 @@ class DataGenerator():
                 r[update_column] = r[update_column] + "_UPD"
                 cur.execute(
                     f"UPDATE {table_name}"
-                    f" SET {update_column} = %s,"
-                    f" {updated_at_column} = %s"
+                    f" SET {update_column} = %s,"                    
+                    f" {updated_at_column} = %s,"
+                    f" batch_id = %s"
                     f" WHERE {primary_key_column} = %s",
-                    [r[update_column], timestamp, r[primary_key_column]],
+                    [r[update_column], timestamp, table_update.batch_id, r[primary_key_column]],
                 )
 
             conn.commit()            
