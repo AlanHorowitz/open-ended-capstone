@@ -124,7 +124,7 @@ def test_parse_address():
 # test billing/shipping address parsing
 # new dimension tessts require complete customers and customer addresses
 def test_build_new_dimension_1():
-    
+
     c = CustomerDimension(None)
     day = date(2020,10,10)
     dt_tm = datetime.now()
@@ -216,7 +216,17 @@ def test_build_new_dimension_2():
     assert(inserts.at[2,'referral_type'] == 'None')
     assert(inserts.at[3,'referral_type'] == 'Online Advertising')
     assert(inserts.at[4,'referral_type'] == 'Affiliate Marketing')
-    
+        
+    customer_stage_df = customer_stage_df.set_index('customer_id', drop=False)
+    customer_address_stage_df = customer_address_stage_df.set_index('customer_id', drop=False)
+                
+    inserts = c.customer_transform(customer_stage_df, customer_address_stage_df)
+
+    assert(inserts.shape[0] == 4)
+    assert(inserts.at[1,'referral_type'] == 'Unknown')
+    assert(inserts.at[2,'referral_type'] == 'None')
+    assert(inserts.at[3,'referral_type'] == 'Online Advertising')
+    assert(inserts.at[4,'referral_type'] == 'Affiliate Marketing')
 
 def test_update_customer_only():
 

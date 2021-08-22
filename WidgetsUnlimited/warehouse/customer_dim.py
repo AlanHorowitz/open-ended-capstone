@@ -176,19 +176,18 @@ class CustomerDimension():
                         })
     
     @staticmethod
-    def customer_transform(index : Index, customer : DataFrame, 
+    def customer_transform(customer : DataFrame, 
                            customer_address: DataFrame) -> DataFrame:
         """ The goal of this one is to make a full customer_dim image
-        .  Any columns unavailable should be null.  Independent of real prior"""
-
-
-        index.name = "customer_id"
+        .  Any columns unavailable should be null.  Independent of real prior
+        
+        Customer and customer address are already reduced to new or update keys"""
+       
         # print(index)
         # print(customer.index)
         # print(customer_address.index)
         customer_dim = pd.DataFrame([], 
-            columns=CustomerDimTable().get_column_names(),
-            index=index)
+            columns=CustomerDimTable().get_column_names())
 
         print("customer_dim index", customer_dim.index)
 
@@ -202,7 +201,7 @@ class CustomerDimension():
                 # print("o" *30)
                 customer_dim[k] = customer[v] # only if not null
 
-        if 'customer_referral_type' in customer:
+        if 'customer_referral_type' in customer.columns:
             customer_dim.referral_type = customer['customer_referral_type']\
             .map(CustomerDimension.decode_referral)
                 
@@ -231,9 +230,9 @@ class CustomerDimension():
         # print('updated_at')
         # print(update_dates.to_numpy())
         customer_dim['last_update_date'] = update_dates.T.max()
-
+        print(customer_dim[['customer_key', 'name','referral_type']])
         return customer_dim
-
+   
     # new customer_dim entry for an unseen natural key
     def build_new_dimension(self, new_keys, customer, customer_address):
         if len(new_keys) == 0:
@@ -244,7 +243,7 @@ class CustomerDimension():
         customer_address = customer_address[customer_address['customer_id'].isin(new_keys.values)]
         customer_address = customer_address.set_index('customer_id', drop=False)
                 
-        customer_dim = CustomerDimension.customer_transform(new_keys, customer, customer_address)
+        customer_dim = CustomerDimension.customer_transform(customer, customer_address)
         
         customer_dim['age_cohort'] = 'n/a'
         customer_dim['activation_date'] = customer['customer_inserted_at']
@@ -281,7 +280,7 @@ class CustomerDimension():
         # print(customer, customer.count(), customer.columns)
         # print(customer_address, customer_address.count(), customer_address.columns)
 
-        customer_dim = CustomerDimension.customer_transform(update_keys, customer, customer_address)
+        customer_dim = CustomerDimension.customer_transform(customer, customer_address)
         # print(customer_dim.to_numpy()[0])
         # print(customer_dim.columns)
         # print('+' * 25)
