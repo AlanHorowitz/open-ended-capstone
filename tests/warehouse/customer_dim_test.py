@@ -53,6 +53,7 @@ def test_get_customer_keys_incremental():
                           [7, 'custaddress7', 4], 
                           [9, 'custaddress9', 6]]
 
+    c = CustomerDimension()
     pd_cust = pd.DataFrame(customers, columns=['customer_id', 'name'])
     pd_cust_address = pd.DataFrame(customer_addresses, columns=['address_id', 'name', 'customer_id'])
 
@@ -60,8 +61,10 @@ def test_get_customer_keys_incremental():
     assert sorted(incremental_keys.tolist()) == [1,2,3,4,6]
 
 # only updates
-def test_get_new_keys_and_updates_1():
-    
+def test_get_new_keys_1():
+
+    c = CustomerDimension()
+
     cust_dim_data = [[1, 'cust_key_1', 'name_1', 'cust_addr_key_1', 'address_1'],
                      [2, 'cust_key_2', 'name_2', 'cust_addr_key_2', 'address_2'],
                      [3, 'cust_key_3', 'name_3', 'cust_addr_key_3', 'address_3']]
@@ -70,16 +73,12 @@ def test_get_new_keys_and_updates_1():
     incremental_keys = pd.Series(['cust_key_1', 'cust_key_2', 'cust_key_3'],
         name='customer_key')
 
-    new_keys, updates_df = c.get_new_keys_and_updates(incremental_keys, df_cust_dim) 
+    new_keys = c.get_new_keys(incremental_keys, df_cust_dim) 
 
     assert sorted(new_keys.to_list()) == []
-    assert updates_df.size == 15     
-    updates_df.set_index('customer_key', inplace=True)
-    assert updates_df.at['cust_key_1', 'customer_name'] == 'name_1'
-    assert updates_df.at['cust_key_3', 'customer_address'] == 'address_3'
-
+    
 #only new
-def test_get_new_keys_and_updates_2():
+def test_get_new_keys_2():
     
     c = CustomerDimension()
     cust_dim_data = [[1, 'cust_key_1', 'name_1', 'cust_addr_key_1', 'address_1'],
@@ -89,14 +88,14 @@ def test_get_new_keys_and_updates_2():
     df_cust_dim = pd.DataFrame(cust_dim_data, columns=cust_dim_cols)
     incremental_keys = pd.Series(['cust_key_4', 'cust_key_5', 'cust_key_6'], name='customer_key')
 
-    new_keys, updates_df = c.get_new_keys_and_updates(incremental_keys, df_cust_dim) 
+    new_keys = c.get_new_keys(incremental_keys, df_cust_dim) 
 
     assert sorted(new_keys.to_list()) == ['cust_key_4', 'cust_key_5', 'cust_key_6']
-    assert updates_df.size == 0  
-    
+        
 # mix of updates and new
-def test_get_new_keys_and_updates_3():
+def test_get_new_keys_3():
     
+    c = CustomerDimension()
     cust_dim_data = [[1, 'cust_key_1', 'name_1', 'cust_addr_key_1', 'address_1'],
                      [2, 'cust_key_2', 'name_2', 'cust_addr_key_2', 'address_2'],
                      [3, 'cust_key_3', 'name_3', 'cust_addr_key_3', 'address_3']]
@@ -104,14 +103,10 @@ def test_get_new_keys_and_updates_3():
     df_cust_dim = pd.DataFrame(cust_dim_data, columns=cust_dim_cols)
     incremental_keys = pd.Series(['cust_key_2', 'cust_key_3', 'cust_key_4'], name='customer_key')
 
-    new_keys, updates_df = c.get_new_keys_and_updates(incremental_keys, df_cust_dim) 
+    new_keys = c.get_new_keys(incremental_keys, df_cust_dim) 
 
     assert sorted(new_keys.to_list()) == ['cust_key_4']
-    assert updates_df.size == 10   # 5 * 2
-    updates_df.set_index('customer_key', inplace=True)
-    assert updates_df.at['cust_key_2', 'customer_name'] == 'name_2'
-    assert updates_df.at['cust_key_3', 'customer_address'] == 'address_3'
-
+    
 TEST_BILLING_ADDRESS = "First Middle Last\n123 Snickersnack Lane\nBrooklyn, NY 11229"
 TEST_SHIPPING_ADDRESS = "First Middle Last\n15 Jones Boulevard\nFair Lawn,NJ 07410"
 
@@ -129,6 +124,7 @@ def test_parse_address():
 # test billing/shipping address parsing
 # new dimension tessts require complete customers and customer addresses
 def test_build_new_dimension_1():
+    
     c = CustomerDimension(None)
     day = date(2020,10,10)
     dt_tm = datetime.now()
@@ -258,8 +254,10 @@ def test_update_customer_only():
     assert update_df.loc[45, 'is_active'] == False
     assert update_df.loc[45, 'deactivation_date'] == test_time 
 
-      
-    
+def test_customer_transform():
+    pass
+
+    # CustomerDimension.customer_transform
 def test_update_customer_address_only():
     pass
 
