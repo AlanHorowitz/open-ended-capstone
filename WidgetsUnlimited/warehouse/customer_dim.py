@@ -264,30 +264,21 @@ class CustomerDimension():
         # print('insert index is', customer_dim.index )
         return customer_dim
 
-    def build_update_dimension(self, prior_customer_dim, customer, customer_address):        
+    def build_update_dimension(self, prior_customer_dim, customer, customer_address):    
+            
         if prior_customer_dim.shape[0] == 0:
             return pd.DataFrame([])
-        print(prior_customer_dim.columns)
-        print(prior_customer_dim.index)
-        print(prior_customer_dim)
+       
         prior_customer_dim = prior_customer_dim.set_index('customer_key', drop=False)
         update_keys = prior_customer_dim.index
-        # print("prior dim index", update_keys)
-        # print("+" * 25)
+         
         customer = customer[customer['customer_id'].isin(update_keys.values)]
         customer = customer.set_index('customer_id', drop=False)
         customer_address = customer_address[customer_address['customer_id'].isin(update_keys.values)]
         customer_address = customer_address.set_index('customer_id', drop=False)
-       
-        # print(updates_dim, updates_dim.count(), updates_dim.columns)
-        # print(customer, customer.count(), customer.columns)
-        # print(customer_address, customer_address.count(), customer_address.columns)
-
+      
         customer_dim = CustomerDimension.customer_transform(customer, customer_address)
-        # print(customer_dim.to_numpy()[0])
-        # print(customer_dim.columns)
-        # print('+' * 25)
-
+        
         customer_dim['age_cohort'] = 'n/a'
 
         was_activated = (customer['customer_is_active'] == True) & \
@@ -298,22 +289,12 @@ class CustomerDimension():
         prior_customer_dim.loc[was_activated, 'activation_date'] = customer['customer_updated_at']
         prior_customer_dim.loc[was_activated, 'deactivation_date'] = date(2099,12,31)        
         prior_customer_dim.loc[was_deactivated, 'deactivation_date'] = customer['customer_updated_at']
-       
-        # prior_customer_dim.index.name="customer_id"
+
+        mask = customer_dim.notnull()
         for col in customer_dim.columns:            
-            mask = customer_dim[col].notnull()                       
-            prior_customer_dim[col][mask] = customer_dim[col]
-
-
-        print(prior_customer_dim.to_numpy()[0]) 
-        print(prior_customer_dim.columns)
-
-        print('+' * 25)      
-
+            prior_customer_dim.loc[mask[col], col] = customer_dim[col]
+       
         customer_dim = pd.DataFrame(prior_customer_dim, columns=self._customer_dim_table.get_column_names())    
-        print(customer_dim.to_numpy()[0])
-        print('+' * 25)      
-
         customer_dim = customer_dim.astype(self._customer_dim_table.get_column_pandas_types())
 
         return customer_dim
