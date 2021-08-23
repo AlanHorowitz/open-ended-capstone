@@ -1,13 +1,18 @@
-from numpy.testing._private.utils import tempdir
+from numpy.lib.twodim_base import triu_indices_from
+from pandas.core.frame import DataFrame
 from .context import CustomerDimension, CustomerAddressTable, CustomerTable   
 
 import pandas as pd
 from datetime import date, datetime
+import pytest
 
 # simplify test with simple representative structure
 cust_dim_cols = ['surrogate_key', 'customer_key', 'customer_name', 'customer_address_id', 'customer_address']
 
-full_record = {
+@pytest.fixture
+def base_dimension_record():
+
+    record = {
     "surrogate_key"    : 1,
     "effective_date"   : date(2020,10,10),
     "expiration_date"   : date(2099,12,31),
@@ -39,7 +44,13 @@ full_record = {
     "shipping_city"      : "St. Joseph",
     "shipping_state"     : "TN",
     "shipping_zip"       : "54321"
-} 
+    } 
+
+    customer_dim = pd.DataFrame([record])
+    customer_dim = customer_dim.set_index('customer_key', drop=False)
+    yield customer_dim
+
+    
         
 
 # union of customer_id from two tables
@@ -194,14 +205,16 @@ def test_build_new_dimension_2():
                 "customer_updated_at" :  [pd.NA] * 4,
                 "batch_id" : [1,1,1,1] }
 
+    
+
     customer_stage_address_data = \
-        {"customer_id" : [],
-         "customer_address_id" : [],
-         "customer_address" : [] ,
-         "customer_address_type" : [],             
-         "customer_address_inserted_at" : [],
-         "customer_address_updated_at" :  [],
-         "batch_id" : [] }
+        {"customer_id" : [1],
+         "customer_address_id" : [1],
+         "customer_address" : [None] ,
+         "customer_address_type" : [None],             
+         "customer_address_inserted_at" : [None],
+         "customer_address_updated_at" :  [None],
+         "batch_id" : [1] }
 
     new_keys = pd.Series([1,2,3,4], name='customer_key')
     customer_stage_df = pd.DataFrame(customer_stage_data, columns=customer_table.get_column_names())
@@ -228,17 +241,17 @@ def test_build_new_dimension_2():
     assert(inserts.at[3,'referral_type'] == 'Online Advertising')
     assert(inserts.at[4,'referral_type'] == 'Affiliate Marketing')
 
-def test_update_customer_only():
+def test_update_customer_only(base_dimension_record):
 
     c = CustomerDimension(None)
     test_time = datetime.now()
+
     customer_stage_data  = \
-                {"customer_id" : [45],                  
-                "customer_email" : ["ellen123@gmail.com"],
-                "customer_updated_at" : test_time,
-                "customer_is_active" : False,
-                "customer_credit_card_number" : None,
-                "batch_id" : [1] }
+        {"customer_id" : [45],                  
+        "customer_email" : ["ellen123@gmail.com"],
+        "customer_updated_at" : test_time,
+        "customer_credit_card_number" : None,
+        "batch_id" : [1] }
 
     customer_stage_address_data = \
         {"customer_id" : [],
@@ -250,19 +263,107 @@ def test_update_customer_only():
          "batch_id" : [] }
 
     customer_stage_df = pd.DataFrame(customer_stage_data)
-    
-    # customer_stage_df = customer_stage_df.astype(customer_table.get_column_pandas_types())
-    
     customer_address_stage_df = pd.DataFrame(customer_stage_address_data)
-    old_dim = pd.DataFrame([full_record])
-    old_dim = old_dim.set_index('customer_key', drop=False)
-    update_df = c.build_update_dimension(old_dim, customer_stage_df, customer_address_stage_df)
-    assert update_df.shape[0]  == 1
-    assert update_df.loc[45, 'credit_card_number'] == '12345678' # unchanged?
-    assert update_df.loc[45, 'email'] == "ellen123@gmail.com"
+    
+    customer_dim = c.build_update_dimension(base_dimension_record, customer_stage_df, customer_address_stage_df)
 
-    assert update_df.loc[45, 'is_active'] == False
-    assert update_df.loc[45, 'deactivation_date'] == test_time 
+    assert customer_dim.shape[0]  == 1
+    assert customer_dim.loc[45, 'credit_card_number'] == '12345678' # None value unchanged
+    assert customer_dim.loc[45, 'email'] == "ellen123@gmail.com"    # Changed value picked uo
+    assert customer_dim.loc[45, 'user_id'] == "Ellen456"            # missing value unchanged 
+
+def test_xx(base_dimension_record):
+    c = CustomerDimension(None)
+    test_time = datetime.now()
+
+    customer_stage_data  = \
+        {"customer_id" : [],
+        "customer_updated_at" : [],
+        "customer_credit_card_number" : [],
+        "batch_id" : [] }
+
+    customer_stage_address_data = \
+        {"customer_id" : [45],
+         "customer_address_id" : [45],
+         "customer_address" : ["Fred Johnson\n77 Eagle Avenue\nSt. Joseph, TN 54322"], #change last digit of zip
+         "customer_address_type" : ['S'],             
+         "customer_address_inserted_at" : [date(2020,10,10)],
+         "customer_address_updated_at" :  [test_time],
+         "batch_id" : [1] }
+    
+    customer_stage_df = pd.DataFrame(customer_stage_data)
+    customer_address_stage_df = pd.DataFrame(customer_stage_address_data)
+    
+    customer_dim = c.build_update_dimension(base_dimension_record, customer_stage_df, customer_address_stage_df)
+    assert customer_dim.shape[0]  == 1
+    assert customer_dim.loc[45, 'shipping_zip'] == '54322' 
+    assert customer_dim.loc[45, 'billing_zip'] == '12345' 
+    assert customer_dim.loc[45, 'user_id'] == "Ellen456"             
+    
+
+def test_deactivate(base_dimension_record):
+
+    c = CustomerDimension(None)
+    test_time = datetime.now()
+
+    customer_stage_data  = \
+        {"customer_id" : [45],                          
+        "customer_updated_at" : test_time,
+        "customer_is_active" : False,
+        "batch_id" : [1] }
+
+    customer_stage_address_data = \
+        {"customer_id" : [],
+         "customer_address_id" : [],
+         "customer_address" : [] ,
+         "customer_address_type" : [],             
+         "customer_address_inserted_at" : [],
+         "customer_address_updated_at" :  [],
+         "batch_id" : [] }
+
+    customer_stage_df = pd.DataFrame(customer_stage_data)
+    customer_address_stage_df = pd.DataFrame(customer_stage_address_data)
+    
+    customer_dim = c.build_update_dimension(base_dimension_record, customer_stage_df, customer_address_stage_df)
+
+    assert customer_dim.shape[0]  == 1
+    assert customer_dim.loc[45, 'is_active'] == False
+    assert customer_dim.loc[45, 'deactivation_date'] == test_time 
+
+def test_activate(base_dimension_record):
+
+    old_dim = base_dimension_record.copy()
+    old_dim['is_active'] = False
+    old_dim['deactivation_date'] = date(2020,10,15)
+
+    c = CustomerDimension(None)
+    test_time = datetime.now()
+
+    customer_stage_data  = \
+        {"customer_id" : [45],                          
+        "customer_updated_at" : test_time,
+        "customer_is_active" : True,
+        "batch_id" : [1] }
+
+    customer_stage_address_data = \
+        {"customer_id" : [],
+         "customer_address_id" : [],
+         "customer_address" : [] ,
+         "customer_address_type" : [],             
+         "customer_address_inserted_at" : [],
+         "customer_address_updated_at" :  [],
+         "batch_id" : [] }
+
+    customer_stage_df = pd.DataFrame(customer_stage_data)
+    customer_address_stage_df = pd.DataFrame(customer_stage_address_data)
+    
+    customer_dim = c.build_update_dimension(old_dim, customer_stage_df, customer_address_stage_df)
+
+    assert customer_dim.shape[0]  == 1
+    assert customer_dim.loc[45, 'is_active'] == True
+    assert customer_dim.loc[45, 'activation_date'] == test_time 
+    assert customer_dim.loc[45, 'deactivation_date'] == date(2099,12,31) 
+
 
 def test_customer_transform():
     pass
@@ -276,13 +377,3 @@ def test_update_billing_and_shipping():
 
 def test_update_all():
     pass
-
-def test_activate_customer():
-    pass
-
-def test_deactivate_customer():
-    pass
-
-
-# mock  Active Customer. Inactive Customer, Full Customer, One Address customer
-#  

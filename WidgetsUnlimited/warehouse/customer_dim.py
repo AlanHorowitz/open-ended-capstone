@@ -80,10 +80,9 @@ class CustomerDimension():
         # get files
         self._customer_stage_df = pd.read_parquet(get_stage_dir(batch_id) + '/customer.pr')
         self._customer_stage_df = self._customer_stage_df.astype(customer_stage_types)
-        print("customers batch", str(batch_id), "len", self._customer_stage_df.shape[0])
         self._customer_address_stage_df = pd.read_parquet(get_stage_dir(batch_id) + '/customer_address.pr')
         self._customer_address_stage_df = self._customer_address_stage_df.astype(customer_address_stage_types)
-        print("customers address batch", str(batch_id), "len", self._customer_address_stage_df.shape[0])
+
 
     def _load_customer_dim(self, customer_keys):
         keys_list = ",".join([str(k) for k in customer_keys])
@@ -178,34 +177,26 @@ class CustomerDimension():
     @staticmethod
     def customer_transform(customer : DataFrame, 
                            customer_address: DataFrame) -> DataFrame:
-        """ The goal of this one is to make a full customer_dim image
-        .  Any columns unavailable should be null.  Independent of real prior
-        
-        Customer and customer address are already reduced to new or update keys"""
-       
-        # print(index)
-        # print(customer.index)
-        # print(customer_address.index)
+        """ Common transformations from ingest formats to customer_dim schema.
+        Logic specific to inputs and updates occur outside.  Presents dim table ready for 
+        further processing.
+        Customer and customer address are already reduced to new or update keys.
+        Name mappings and speical treatments.
+        """
+               
         customer_dim = pd.DataFrame([], 
             columns=CustomerDimTable().get_column_names())
 
-        print("customer_dim index", customer_dim.index)
-
-        # vmask = pd.notnull(customer)
         update_dates = pd.DataFrame([], columns=["billing", "shipping", "customer"])
 
         for k,v in customer_to_customer_dim_mappings.items():
-            if v in customer:
-                # print("o" *30)
-                # print("v is:",v, "k is:", k, 'mask is:', mask[v])
-                # print("o" *30)
-                customer_dim[k] = customer[v] # only if not null
+            if v in customer:                
+                customer_dim[k] = customer[v]
 
+        # todo check column exists with empty referral
         if 'customer_referral_type' in customer.columns:
             customer_dim.referral_type = customer['customer_referral_type']\
-            .map(CustomerDimension.decode_referral)
-                
-        # customer_address - mask not needed because screening condition is sufficient 
+            .map(CustomerDimension.decode_referral)                
          
         is_billing = customer_address['customer_address_type'] == 'B'  
         is_shipping = customer_address['customer_address_type'] == 'S'  
@@ -226,11 +217,9 @@ class CustomerDimension():
             for k,v in shipping_to_customer_dim_mappings.items():
                 customer_dim[k] = shipping[v]  
 
-        update_dates['customer'] = customer['customer_updated_at']  #required
-        # print('updated_at')
-        # print(update_dates.to_numpy())
+        update_dates['customer'] = customer['customer_updated_at']  #required column
         customer_dim['last_update_date'] = update_dates.T.max()
-        print(customer_dim[['customer_key', 'name','referral_type']])
+        
         return customer_dim
    
     # new customer_dim entry for an unseen natural key
@@ -238,14 +227,19 @@ class CustomerDimension():
         if len(new_keys) == 0:
             return pd.DataFrame([])
 
-        customer = customer[customer['customer_id'].isin(new_keys.values)]
+        new_customers = customer['customer_id'].isin(new_keys.values)
+        new_customer_addresses = customer_address['customer_id'].isin(new_keys.values)
+        
+        customer = customer[new_customers]
+        customer_address = customer_address[new_customer_addresses]
+
         customer = customer.set_index('customer_id', drop=False)
-        customer_address = customer_address[customer_address['customer_id'].isin(new_keys.values)]
-        customer_address = customer_address.set_index('customer_id', drop=False)
+        customer_address = customer_address.set_index('customer_id', drop=False)        
                 
         customer_dim = CustomerDimension.customer_transform(customer, customer_address)
         
-        customer_dim['age_cohort'] = 'n/a'
+        customer_dim['age_cohort'] = 'N/A'  # TODO derived column
+
         customer_dim['activation_date'] = customer['customer_inserted_at']
         customer_dim['deactivation_date'] = date(2099,12,31) 
         customer_dim['start_date'] = customer['customer_inserted_at']
@@ -261,11 +255,11 @@ class CustomerDimension():
         customer_dim = pd.DataFrame(customer_dim, columns=self._customer_dim_table.get_column_names())    
         customer_dim = customer_dim.astype(self._customer_dim_table.get_column_pandas_types())
         customer_dim = customer_dim.fillna(CustomerDimension.get_address_defaults())
-        # print('insert index is', customer_dim.index )
+        
         return customer_dim
 
     def build_update_dimension(self, prior_customer_dim, customer, customer_address):    
-            
+
         if prior_customer_dim.shape[0] == 0:
             return pd.DataFrame([])
        
@@ -277,18 +271,17 @@ class CustomerDimension():
         customer_address = customer_address[customer_address['customer_id'].isin(update_keys.values)]
         customer_address = customer_address.set_index('customer_id', drop=False)
       
-        customer_dim = CustomerDimension.customer_transform(customer, customer_address)
-        
-        customer_dim['age_cohort'] = 'n/a'
+        customer_dim = CustomerDimension.customer_transform(customer, customer_address)        
 
-        was_activated = (customer['customer_is_active'] == True) & \
-                        (prior_customer_dim['is_active'] == False)
-        was_deactivated = (customer['customer_is_active'] == False) & \
-                          (prior_customer_dim['is_active'] == True) 
+        if 'customer_is_active' in customer.columns:
+            was_activated = (customer['customer_is_active'] == True) & \
+                            (prior_customer_dim['is_active'] == False)
+            was_deactivated = (customer['customer_is_active'] == False) & \
+                            (prior_customer_dim['is_active'] == True) 
 
-        prior_customer_dim.loc[was_activated, 'activation_date'] = customer['customer_updated_at']
-        prior_customer_dim.loc[was_activated, 'deactivation_date'] = date(2099,12,31)        
-        prior_customer_dim.loc[was_deactivated, 'deactivation_date'] = customer['customer_updated_at']
+            prior_customer_dim.loc[was_activated, 'activation_date'] = customer['customer_updated_at']
+            prior_customer_dim.loc[was_activated, 'deactivation_date'] = date(2099,12,31)        
+            prior_customer_dim.loc[was_deactivated, 'deactivation_date'] = customer['customer_updated_at']
 
         mask = customer_dim.notnull()
         for col in customer_dim.columns:            
