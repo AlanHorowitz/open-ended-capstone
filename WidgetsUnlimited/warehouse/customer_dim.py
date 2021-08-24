@@ -113,7 +113,7 @@ class CustomerDimension():
         Assumes that all dependent ingested, stage data has been persisted in the specified location.
         This persistence is handled by different code
         """
-        incremental_keys = self.get_customer_keys_incremental(self._customer_stage_df, self._customer_address_stage_df)
+        incremental_keys = self.get_incremental_keys(self._customer_stage_df, self._customer_address_stage_df)
         if incremental_keys.size == 0:
             return
         prior_cust_dim = self._load_customer_dim(incremental_keys)
@@ -125,7 +125,7 @@ class CustomerDimension():
         self.persist(cust_dim_insert, "INSERT")        
         self.persist(cust_dim_update, "REPLACE")        
 
-    def get_customer_keys_incremental(self, customer : pd.DataFrame, 
+    def get_incremental_keys(self, customer : pd.DataFrame, 
                                     customer_address : pd.DataFrame) -> pd.Series:
         customer_keys = customer['customer_id'].append(customer_address['customer_id']).drop_duplicates()
         customer_keys.name = 'customer_key'
