@@ -47,6 +47,9 @@ dim_records = {
     "shipping_zip": ["54321", None],
 }
 
+TEST_BILLING_ADDRESS = "First Middle Last\n123 Snickersnack Lane\nBrooklyn, NY 11229"
+TEST_SHIPPING_ADDRESS = "First Middle Last\n15 Jones Boulevard\nFair Lawn,NJ 07410"
+
 
 @pytest.fixture
 def base_dimension_record_45():
@@ -107,7 +110,7 @@ def test_get_new_keys():
     new_keys = c.get_new_keys(incremental_keys, customer_dim)
     assert len(new_keys) == 0
 
-    #new only
+    # new only
     incremental_keys = pd.Series(
         ["cust_key_4", "cust_key_5", "cust_key_6"], name="customer_key"
     )
@@ -124,36 +127,33 @@ def test_get_new_keys():
     assert sorted(new_keys.to_list()) == ["cust_key_4"]
 
 
-TEST_BILLING_ADDRESS = "First Middle Last\n123 Snickersnack Lane\nBrooklyn, NY 11229"
-TEST_SHIPPING_ADDRESS = "First Middle Last\n15 Jones Boulevard\nFair Lawn,NJ 07410"
-
-# test change
 def test_parse_address():
 
     c = CustomerDimension(None)
-    ser = c.parse_address(TEST_BILLING_ADDRESS)
-    assert ser["name"] == "First Middle Last"
-    assert ser["street_number"] == "123 Snickersnack Lane"
-    assert ser["city"] == "Brooklyn"
-    assert ser["state"] == "NY"
-    assert ser["zip"] == "11229"
+    address = c.parse_address(TEST_BILLING_ADDRESS)
+    assert address["name"] == "First Middle Last"
+    assert address["street_number"] == "123 Snickersnack Lane"
+    assert address["city"] == "Brooklyn"
+    assert address["state"] == "NY"
+    assert address["zip"] == "11229"
 
 
-# test billing/shipping address parsing
-# new dimension tessts require complete customers and customer addresses
-def test_build_new_dimension_1():
+# Build new customer_dim from customers and addresses.
+# Customers 3 & 5 have billing and shipping; customer 4, billing only,
+def test_build_new_dimension():
 
     c = CustomerDimension(None)
-    day = date(2020, 10, 10)
-    dt_tm = datetime.now()
+
+    _day = date(2020, 10, 10)
+    _date = datetime.now()
     tba = TEST_BILLING_ADDRESS
     tsa = TEST_SHIPPING_ADDRESS
 
-    customer_stage_data = {
+    customer_data = {
         "customer_id": [1, 3, 4, 5],
         "customer_name": ["c1", "c3", "c4", "c5"],
-        "customer_user_id": ["XXX", "XXX", "XXX", "XXX"],
-        "customer_password": ["XXX", "XXX", "XXX", "XXX"],
+        "customer_user_id": ["XXX"] * 4,
+        "customer_password": ["XXX"] * 4,
         "customer_email": [
             "aaa@gmail.com",
             "bbb@gmail.com",
@@ -163,34 +163,31 @@ def test_build_new_dimension_1():
         "customer_user_id": ["u1", "u2", "u3", "u4"],
         "customer_referral_type": [None, " ", "OA", "AM"],
         "customer_sex": ["F", "f", "M", None],
-        "customer_date_of_birth": [day, day, day, day],
+        "customer_date_of_birth": [_day] * 4,
         "customer_loyalty_number": [1001, 1002, 1003, 1004],
-        "customer_credit_card_number": ["123", "123", "123", "123"],
+        "customer_credit_card_number": ["123"] * 4,
         "customer_is_preferred": [True, False, True, True],
-        "customer_is_active": [True, True, True, True],
-        "customer_inserted_at": [dt_tm, dt_tm, dt_tm, dt_tm],
-        "customer_updated_at": [dt_tm, dt_tm, dt_tm, dt_tm],
-        "batch_id": [1, 1, 1, 1],
+        "customer_is_active": [True] * 4,
+        "customer_inserted_at": [_date] * 4,
+        "customer_updated_at": [_date] * 4,
+        "batch_id": [1] * 4,
     }
-    # new customers 3 & 5 have billing and shipping; customer 4, billing only,
-    customer_stage_address_data = {
+    customer_address_data = {
         "customer_id": [1, 2, 3, 3, 4, 5, 5],
         "customer_address_id": [1, 2, 3, 4, 5, 6, 7],
         "customer_address": [tsa, tba, tsa, tba, tba, tsa, tba],
         "customer_address_type": ["S", "B", "S", "B", "B", "S", "B"],
-        "customer_address_inserted_at": [dt_tm] * 7,
-        "customer_address_updated_at": [dt_tm] * 7,
-        "batch_id": [1, 1, 1, 1, 1, 1, 1],
+        "customer_address_inserted_at": [_date] * 7,
+        "customer_address_updated_at": [_date] * 7,
+        "batch_id": [1] * 7,
     }
 
     new_keys = pd.Series([3, 4, 5], name="customer_key")
 
-    customer_stage_df = pd.DataFrame(customer_stage_data)
-    customer_address_stage_df = pd.DataFrame(customer_stage_address_data)
+    customer = pd.DataFrame(customer_data)
+    customer_address = pd.DataFrame(customer_address_data)
 
-    inserts = c.build_new_dimension(
-        new_keys, customer_stage_df, customer_address_stage_df
-    )
+    inserts = c.build_new_dimension(new_keys, customer, customer_address)
     assert inserts.shape[0] == 3
     assert inserts.at[3, "name"] == "c3"
     assert inserts.at[3, "billing_state"] == "NY"
@@ -199,11 +196,9 @@ def test_build_new_dimension_1():
     assert inserts.at[4, "shipping_city"] == "N/A"
 
 
-# isolated referral_type parsing
-def test_build_new_dimension_2():
-    c = CustomerDimension(None)
-    customer_table = CustomerTable()
-    customer_stage_data = {
+def test_transform_referral_type():
+
+    customer_data = {
         "customer_id": [1, 2, 3, 4],
         "customer_name": ["c1", "c2", "c3", "c4"],
         "customer_referral_type": ["ll", " ", "OA", "AM"],
@@ -222,7 +217,7 @@ def test_build_new_dimension_2():
         "batch_id": [1, 1, 1, 1],
     }
 
-    customer_stage_address_data = {
+    customer_address_data = {
         "customer_id": [1],
         "customer_address_id": [1],
         "customer_address": [None],
@@ -232,38 +227,18 @@ def test_build_new_dimension_2():
         "batch_id": [1],
     }
 
-    new_keys = pd.Series([1, 2, 3, 4], name="customer_key")
-    customer_stage_df = pd.DataFrame(
-        customer_stage_data, columns=customer_table.get_column_names()
-    )
-    customer_stage_df = customer_stage_df.astype(
-        customer_table.get_column_pandas_types()
-    )
-
-    customer_address_stage_df = pd.DataFrame(customer_stage_address_data)
-
-    inserts = c.build_new_dimension(
-        new_keys, customer_stage_df, customer_address_stage_df
-    )
-
-    assert inserts.shape[0] == 4
-    assert inserts.at[1, "referral_type"] == "Unknown"
-    assert inserts.at[2, "referral_type"] == "None"
-    assert inserts.at[3, "referral_type"] == "Online Advertising"
-    assert inserts.at[4, "referral_type"] == "Affiliate Marketing"
-
-    customer_stage_df = customer_stage_df.set_index("customer_id", drop=False)
-    customer_address_stage_df = customer_address_stage_df.set_index(
+    customer = pd.DataFrame(customer_data).set_index("customer_id", drop=False)
+    customer_address = pd.DataFrame(customer_address_data).set_index(
         "customer_id", drop=False
     )
 
-    inserts = c.customer_transform(customer_stage_df, customer_address_stage_df)
+    customer_dim = CustomerDimension.customer_transform(customer, customer_address)
 
-    assert inserts.shape[0] == 4
-    assert inserts.at[1, "referral_type"] == "Unknown"
-    assert inserts.at[2, "referral_type"] == "None"
-    assert inserts.at[3, "referral_type"] == "Online Advertising"
-    assert inserts.at[4, "referral_type"] == "Affiliate Marketing"
+    assert customer_dim.shape[0] == 4
+    assert customer_dim.at[1, "referral_type"] == "Unknown"
+    assert customer_dim.at[2, "referral_type"] == "None"
+    assert customer_dim.at[3, "referral_type"] == "Online Advertising"
+    assert customer_dim.at[4, "referral_type"] == "Affiliate Marketing"
 
 
 def test_update_customer_only(base_dimension_record_45):

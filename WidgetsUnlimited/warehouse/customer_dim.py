@@ -181,7 +181,7 @@ class CustomerDimension():
         Logic specific to inputs and updates occur outside.  Presents dim table ready for 
         further processing.
         Customer and customer address are already reduced to new or update keys.
-        Name mappings and speical treatments.
+        Name mappings and special treatments.
         """
                
         customer_dim = pd.DataFrame([], 
@@ -219,7 +219,8 @@ class CustomerDimension():
 
         update_dates['customer'] = customer['customer_updated_at']  #required column
         customer_dim['last_update_date'] = update_dates.T.max()
-        
+        print(customer_dim.index)
+        print(customer_dim['referral_type'])
         return customer_dim
    
     # new customer_dim entry for an unseen natural key
