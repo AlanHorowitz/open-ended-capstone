@@ -6,7 +6,7 @@ sys.path.insert(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "../../WidgetsUnlimited")),
 )
 
-from warehouse.customer_dim import CustomerDimension
+from warehouse.customer_dimension import CustomerDimension
 
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable

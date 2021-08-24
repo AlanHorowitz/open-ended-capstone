@@ -16,7 +16,7 @@ from tables.order_line_item import OrderLineItemTable
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
 
-from warehouse.customer_dim import CustomerDimension
+from warehouse.customer_dimension import CustomerDimension
 
 from warehouse2 import create_and_copy_warehouse_tables, write_parquet_warehouse_tables
 
