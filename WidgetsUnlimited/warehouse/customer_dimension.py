@@ -219,8 +219,17 @@ class CustomerDimension():
 
         update_dates['customer'] = customer['customer_updated_at']  #required column
         customer_dim['last_update_date'] = update_dates.T.max()
-        print(customer_dim.index)
-        print(customer_dim['referral_type'])
+        print("+" * 10)
+        print('billing:', billing)
+        print('shipping:', shipping)
+        print('customer:', customer['customer_updated_at'])
+
+        print('update_dates billing:', update_dates['billing'])
+        print('update_dates shipping:', update_dates['shipping'])
+        print('update_dates customer:', update_dates['customer'])
+
+        print('last_update_date:', customer_dim['last_update_date'])
+        print("+" * 10)
         return customer_dim
    
     # new customer_dim entry for an unseen natural key
@@ -289,6 +298,11 @@ class CustomerDimension():
             prior_customer_dim.loc[mask[col], col] = customer_dim[col]
        
         customer_dim = pd.DataFrame(prior_customer_dim, columns=self._customer_dim_table.get_column_names())    
+        date_cols = [col.get_name() for col in self._customer_dim_table.get_columns() 
+        if col.get_type() == 'DATE'] 
+        for d in date_cols:
+            print(d, customer_dim[d])
+
         customer_dim = customer_dim.astype(self._customer_dim_table.get_column_pandas_types())
 
         return customer_dim
