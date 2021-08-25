@@ -15,15 +15,16 @@ services:
     environment: 
       - PGADMIN_DEFAULT_EMAIL=admin@admin.com
       - PGADMIN_DEFAULT_PASSWORD=admin
-  # mysql:
-  #   image: mysql:8.0.23
-  #   ports:
-  #     - "3306:3306"
-  #   environment: 
-  #     - MYSQL_ROOT_PASSWORD=root
-  #     - MYSQL_USER=user1
-  #     - MYSQL_PASSWORD=user1
-  #     - MYSQL_DATABASE=retaildw
+      
+  mysql:
+    image: mysql:8.0.23
+    ports:
+      - "3306:3306"
+    environment: 
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=user1
+      - MYSQL_PASSWORD=user1
+      - MYSQL_DATABASE=retaildw
 
 networks: 
   default:
