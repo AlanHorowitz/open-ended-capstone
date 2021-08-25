@@ -11,11 +11,16 @@ from sqlalchemy import create_engine, event
 
 import pandas as pd
 
-os.environ['DATA_GENERATOR_DB'] = 'postgres'
-os.environ['DATA_GENERATOR_HOST'] = '172.17.0.2'
+# test docker image
+ # os.environ['DATA_GENERATOR_DB'] = 'postgres'
+os.environ['DATA_GENERATOR_DB'] = 'retaildw'
+# os.environ['DATA_GENERATOR_HOST'] = '172.17.0.2'
+os.environ['DATA_GENERATOR_HOST'] = '172.18.0.1'
 os.environ['DATA_GENERATOR_PORT'] = '5432'
-os.environ['DATA_GENERATOR_USER'] = 'postgres'
-os.environ['DATA_GENERATOR_PASSWORD'] = 'postgres'
+# os.environ['DATA_GENERATOR_USER'] = 'postgres'
+# os.environ['DATA_GENERATOR_PASSWORD'] = 'postgres'
+os.environ['DATA_GENERATOR_USER'] = 'user1'
+os.environ['DATA_GENERATOR_PASSWORD'] = 'user1'
 os.environ['DATA_GENERATOR_SCHEMA'] = 'test'
 
 postgres_str = ('postgresql+psycopg2://{username}:{password}@{ipaddress}:{port}/{dbname}'
@@ -23,7 +28,7 @@ postgres_str = ('postgresql+psycopg2://{username}:{password}@{ipaddress}:{port}/
 password=os.environ['DATA_GENERATOR_PASSWORD'],
 ipaddress=os.environ['DATA_GENERATOR_HOST'],
 port=os.environ['DATA_GENERATOR_PORT'],
-dbname=os.environ['DATA_GENERATOR_PASSWORD'] ))
+dbname=os.environ['DATA_GENERATOR_DB'] ))
 
 cnx = create_engine(postgres_str)
 
@@ -40,10 +45,14 @@ def set_search_path(dbapi_connection, connection_record):
 
 
 ms_connection = connect(
-        host="localhost",
-        user="alan",
-        password="alan",
-        database="edw",
+        # host="localhost",
+        # user="alan",
+        # password="alan",
+        # database="edw",
+        host="172.18.0.1",
+        user="user1",
+        password="user1",
+        database="retaildw",
         charset="utf8",
     )
 
