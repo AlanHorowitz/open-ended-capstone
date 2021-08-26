@@ -69,6 +69,7 @@ class SourceSystemLoader:
 
         print("loader.load() completed sucessfully.")
             # phase #1 - write parquet
+            # warehouse.direct_extract()
             # warehouse.transform_load()
             # phase #3 -- operational systems expose incremental changes    
             # warehouse.extract()

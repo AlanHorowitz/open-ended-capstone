@@ -18,27 +18,11 @@ def create_and_return_table(cursor, table):
     return table
 
 @pytest.fixture
-def data_generator():
-    
-    # test docker image
-    # os.environ['DATA_GENERATOR_DB'] = 'postgres'
-    os.environ['DATA_GENERATOR_DB'] = 'retaildw'
-    # os.environ['DATA_GENERATOR_HOST'] = '172.17.0.2'
-    os.environ['DATA_GENERATOR_HOST'] = '172.18.0.1'
-    os.environ['DATA_GENERATOR_PORT'] = '5432'
-    # os.environ['DATA_GENERATOR_USER'] = 'postgres'
-    # os.environ['DATA_GENERATOR_PASSWORD'] = 'postgres'
-    os.environ['DATA_GENERATOR_USER'] = 'user1'
-    os.environ['DATA_GENERATOR_PASSWORD'] = 'user1'
-    os.environ['DATA_GENERATOR_SCHEMA'] = 'test'
-
-    generator = DataGenerator()
-
-    yield generator   
+def data_generator():        
+    yield DataGenerator()   
 
 @pytest.fixture
 def order_table(data_generator):
-    print("In order table")
     yield create_and_return_table(data_generator.cur, OrderTable())
 
 @pytest.fixture
