@@ -23,28 +23,36 @@ from warehouse2 import create_and_copy_warehouse_tables, write_parquet_warehouse
 
 # test docker image
  # os.environ['DATA_GENERATOR_DB'] = 'postgres'
-os.environ['DATA_GENERATOR_DB'] = 'retaildw'
-# os.environ['DATA_GENERATOR_HOST'] = '172.17.0.2'
-os.environ['DATA_GENERATOR_HOST'] = '172.18.0.1'
-os.environ['DATA_GENERATOR_PORT'] = '5432'
-# os.environ['DATA_GENERATOR_USER'] = 'postgres'
-# os.environ['DATA_GENERATOR_PASSWORD'] = 'postgres'
-os.environ['DATA_GENERATOR_USER'] = 'user1'
-os.environ['DATA_GENERATOR_PASSWORD'] = 'user1'
-os.environ['DATA_GENERATOR_SCHEMA'] = 'test'
+# os.environ['DATA_GENERATOR_DB'] = 'retaildw'
+# # os.environ['DATA_GENERATOR_HOST'] = '172.17.0.2'
+# os.environ['DATA_GENERATOR_HOST'] = '172.18.0.1'
+# os.environ['DATA_GENERATOR_PORT'] = '5432'
+# # os.environ['DATA_GENERATOR_USER'] = 'postgres'
+# # os.environ['DATA_GENERATOR_PASSWORD'] = 'postgres'
+# os.environ['DATA_GENERATOR_USER'] = 'user1'
+# os.environ['DATA_GENERATOR_PASSWORD'] = 'user1'
+# os.environ['DATA_GENERATOR_SCHEMA'] = 'test'
+
+# ms_connection = connect(
+#         # host="localhost",
+#         # user="alan",
+#         # password="alan",
+#         # database="edw",
+#         host="172.18.0.1",
+#         user="user1",
+#         password="user1",
+#         database="retaildw",
+#         charset="utf8",
+#     )
 
 ms_connection = connect(
-        # host="localhost",
-        # user="alan",
-        # password="alan",
-        # database="edw",
-        host="172.18.0.1",
-        user="user1",
-        password="user1",
-        database="retaildw",
-        charset="utf8",
+    host=os.getenv('WAREHOUSE_HOST'),
+    port=os.getenv('WAREHOUSE_PORT'),
+    user=os.getenv('WAREHOUSE_USER'),
+    password=os.getenv('WAREHOUSE_PASSWORD'),
+    database=os.getenv('WAREHOUSE_DB'),
+    charset="utf8"
     )
-
 data_generator : DataGenerator = DataGenerator()
 
 product_table = ProductTable()
