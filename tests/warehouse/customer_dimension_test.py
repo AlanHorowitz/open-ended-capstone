@@ -443,3 +443,49 @@ def test_update_all(base_dimension_records_all):
     assert customer_dim.loc[46, "billing_street_number"] == "44 Pine Street"
     assert customer_dim.loc[46, "email"] == "henry@hotmail.com"
     assert customer_dim.loc[46, "credit_card_number"] == "88888888"
+
+# change only address on record 45
+def test_update_all_2(base_dimension_records_all):
+
+    c = CustomerDimension(None)
+    test_time = datetime.now()
+
+    customer_stage_data = {
+        "customer_id": [46],
+        "customer_email": [None],
+        "customer_updated_at": [test_time],
+        "customer_credit_card_number": ["88888888"],
+        "batch_id": [1],
+    }
+
+    customer_stage_address_data = {
+        "customer_id": [45, 46, 46],
+        "customer_address_id": [1, 2, 3],
+        "customer_address": [
+            "Fred Johnson\n77 Eagle Avenue\nSt. Joseph, TN 54322",
+            "Henry Higgins\n44 Pine Street\nKenosha, WI 77777",
+            "Mary Higgins\n44 Pine Street\nKenosha, WI 77777",
+        ],
+        "customer_address_type": ["S", "B", "S"],
+        "customer_address_inserted_at": [test_time, test_time, test_time],
+        "customer_address_updated_at": [test_time, test_time, test_time],
+        "batch_id": [1, 1, 1],
+    }
+
+    customer_stage_df = pd.DataFrame(customer_stage_data)
+    customer_address_stage_df = pd.DataFrame(customer_stage_address_data)
+
+    customer_dim = c.build_update_dimension(
+        base_dimension_records_all, customer_stage_df, customer_address_stage_df
+    )
+
+    assert customer_dim.shape[0] == 2
+    assert customer_dim.loc[45, "shipping_zip"] == "54322"
+    assert customer_dim.loc[45, "billing_zip"] == "12345"
+    assert customer_dim.loc[45, "credit_card_number"] == "12345678"
+
+    assert customer_dim.loc[46, "shipping_name"] == "Mary Higgins"
+    assert customer_dim.loc[46, "billing_street_number"] == "44 Pine Street"
+    assert customer_dim.loc[46, "email"] == "henry@hotmail.com"
+    assert customer_dim.loc[46, "credit_card_number"] == "88888888"
+

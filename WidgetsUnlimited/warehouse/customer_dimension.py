@@ -183,11 +183,12 @@ class CustomerDimension():
         Customer and customer address are already reduced to new or update keys.
         Name mappings and special treatments.
         """
-               
+        union_index = customer.index.union(customer_address.index).unique()   
         customer_dim = pd.DataFrame([], 
-            columns=CustomerDimTable().get_column_names())
+            columns=CustomerDimTable().get_column_names(), index=union_index)
 
-        update_dates = pd.DataFrame([], columns=["billing", "shipping", "customer"])
+        update_dates = pd.DataFrame([], columns=["billing", "shipping", "customer"],
+        index=union_index)
 
         for k,v in customer_to_customer_dim_mappings.items():
             if v in customer:                
@@ -294,7 +295,12 @@ class CustomerDimension():
             prior_customer_dim.loc[was_deactivated, 'deactivation_date'] = customer['customer_updated_at']
 
         mask = customer_dim.notnull()
-        for col in customer_dim.columns:            
+        print('mask:', mask)
+        print('prior customer dim:', prior_customer_dim)
+        for col in customer_dim.columns:
+            print('===>', col)     
+            print('customer_dim[col]', customer_dim[col]) 
+            print('mask [col]', mask[col], type(mask[col]) )      
             prior_customer_dim.loc[mask[col], col] = customer_dim[col]
        
         customer_dim = pd.DataFrame(prior_customer_dim, columns=self._customer_dim_table.get_column_names())    
