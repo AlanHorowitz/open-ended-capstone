@@ -75,9 +75,9 @@ data_generator.generate(
 
 # 5 stores with corresponding address
 data_generator.generate(
-    TableUpdate(store_table, n_inserts=5,batch_id=1))
+    TableUpdate(store_table, n_inserts=5),1)
 data_generator.generate(
-    TableUpdate(store_location_table, n_inserts=1, batch_id=1, link_parent=True))
+    TableUpdate(store_location_table, n_inserts=1, link_parent=True), 1)
 
 # 100 sales
 data_generator.generate(
@@ -85,15 +85,15 @@ data_generator.generate(
 
 # 20 customers with corresponding address
 data_generator.generate(
-    TableUpdate(customer_table, n_inserts=20,batch_id=1))
+    TableUpdate(customer_table, n_inserts=20),1)
 data_generator.generate(
-    TableUpdate(customer_address_table, n_inserts=1, batch_id=1, link_parent=True))
+    TableUpdate(customer_address_table, n_inserts=1,link_parent=True),1)
 
 # 50 orders with 2 line items
 data_generator.generate(
-    TableUpdate(order_table, n_inserts=50,batch_id=1))
+    TableUpdate(order_table, n_inserts=50),1)
 data_generator.generate(
-    TableUpdate(order_line_item_table, n_inserts=2, batch_id=1, link_parent=True))
+    TableUpdate(order_line_item_table, n_inserts=2, link_parent=True),1)
 
 create_and_copy_warehouse_tables(data_generator.connection, [product_table, store_table, store_sales_table,
 store_sales_table, store_location_table, order_table, order_line_item_table,
@@ -107,7 +107,7 @@ customer_dimesion.process_update(1)
 
 # try modifying two customers
 data_generator.generate(
-    TableUpdate(customer_table, n_inserts=0, n_updates=2, batch_id=2))
+    TableUpdate(customer_table, n_inserts=0, n_updates=2), batch_id=2)
 
 write_parquet_warehouse_tables(2, [customer_table, customer_address_table])
 

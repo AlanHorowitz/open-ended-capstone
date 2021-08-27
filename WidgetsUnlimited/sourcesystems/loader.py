@@ -1,8 +1,11 @@
+from os import link
 from tables.product import ProductTable
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
 from tables.order import OrderTable
 from tables.order_line_item import OrderLineItemTable
+
+from warehouse.data_warehouse import DataWarehouse
 
 from .generator import DataGenerator 
 from .ecommerce import eCommerceSystem
@@ -26,11 +29,12 @@ class SourceSystemLoader:
         order_line_item_table = OrderLineItemTable()
 
         data_generator = DataGenerator()
+        warehouse = DataWarehouse()
 
         e_commerce_system = eCommerceSystem(data_generator)
         inventory_system = InventorySystem(data_generator)
 
-        # allocate the tables to tehir operational system.
+        # allocate the tables to their operational system.
         e_commerce_system.add_tables([customer_table,
         customer_address_table, order_table, order_line_item_table])
         inventory_system.add_tables([product_table])
@@ -38,34 +42,37 @@ class SourceSystemLoader:
         daily_operations = [
             [   
                 # day 1  
-                TableUpdate(product_table, n_inserts=5000, n_updates=0), 
-                TableUpdate(customer_table, n_inserts=40, n_updates=0),
-                TableUpdate(customer_address_table, n_inserts=40, n_updates=0),
+                TableUpdate(product_table, n_inserts=500, n_updates=0), 
+                TableUpdate(customer_table, n_inserts=200, n_updates=0),
+                TableUpdate(customer_address_table, n_inserts=1, n_updates=0, link_parent=True),
 
             ],
             [
                 # day 2
-                TableUpdate(product_table, n_inserts=5, n_updates=50),
+                TableUpdate(product_table, n_inserts=50, n_updates=0),
                 TableUpdate(customer_table, n_inserts=40, n_updates=0),
-                TableUpdate(customer_address_table, n_inserts=40, n_updates=0),
-                TableUpdate(order_table, n_inserts=40, n_updates=0),
-                TableUpdate(order_line_item_table, n_inserts=40, n_updates=0),
+                TableUpdate(customer_address_table, n_inserts=1, n_updates=0, link_parent=True),
+                TableUpdate(order_table, n_inserts=1000, n_updates=0),
+                TableUpdate(order_line_item_table, n_inserts=5, n_updates=0, link_parent=True),
                 
             ],
             [
                 # day 3
-                TableUpdate(product_table, n_inserts=5, n_updates=50),
-                TableUpdate(customer_table, n_inserts=40, n_updates=0),
-                TableUpdate(customer_address_table, n_inserts=40, n_updates=0),
-                TableUpdate(order_table, n_inserts=40, n_updates=0),
-                TableUpdate(order_line_item_table, n_inserts=40, n_updates=0),           ],
+                TableUpdate(product_table, n_inserts=50, n_updates=0),
+                TableUpdate(customer_table, n_inserts=0, n_updates=5),
+                TableUpdate(customer_address_table, n_inserts=0, n_updates=10),
+                TableUpdate(order_table, n_inserts=1000, n_updates=0),
+                TableUpdate(order_line_item_table, n_inserts=3, n_updates=0, link_parent=True),           ],
         ]
 
         table_update_processor = TableUpdateProcessor()
 
-        for day in daily_operations:
-            for table_update in day:
-                table_update_processor.process(table_update)
+        for day, updates in enumerate(daily_operations, start=1):
+            for table_update in updates:
+                table_update_processor.process(table_update=table_update, batch_id=day)
+
+            warehouse.direct_extract(batch_id=day) # get pg from env
+            warehouse.transform_load(batch_id=day)
 
         print("loader.load() completed sucessfully.")
             # phase #1 - write parquet

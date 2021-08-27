@@ -34,7 +34,7 @@ class DataGenerator():
             self.cur.execute(table.get_create_sql_postgres())
             self.connection.commit()  
 
-    def generate(self, table_update : TableUpdate) -> List[DictRow]:
+    def generate(self, table_update : TableUpdate, batch_id: int = 0) -> List[DictRow]:
         """
         Insert and update the given numbers of sythesized records to a table.
 
@@ -107,7 +107,7 @@ class DataGenerator():
                     f" {updated_at_column} = %s,"
                     f" batch_id = %s"
                     f" WHERE {primary_key_column} = %s",
-                    [r[update_column], timestamp, table_update.batch_id, r[primary_key_column]],
+                    [r[update_column], timestamp, batch_id, r[primary_key_column]],
                 )
 
             conn.commit()            
@@ -124,7 +124,7 @@ class DataGenerator():
                 for pk in range(next_key, next_key + n_inserts):
                     insert_records.append(table.getNewRow(primary_key=pk,
                                                           parent_key=None,
-                                                          batch_id=table_update.batch_id,
+                                                          batch_id=batch_id,
                                                           timestamp=timestamp))
 
                 values_substitutions = ",".join(
@@ -141,7 +141,7 @@ class DataGenerator():
                 if table.has_parent():
                     cur.execute(f"SELECT {table.get_parent_key()}"
                                 f" FROM   {table.get_parent_table()}" 
-                                f" WHERE batch_id = {table_update.batch_id};")
+                                f" WHERE batch_id = {batch_id};")
                     linked_rs = cur.fetchall()
                     if len(linked_rs) == 0:
                         raise Exception(
@@ -154,7 +154,7 @@ class DataGenerator():
                     for _ in range(n_inserts):
                         insert_records.append(table.getNewRow(primary_key=next_key,
                                                               parent_key=row[0],
-                                                              batch_id=table_update.batch_id,
+                                                              batch_id=batch_id,
                                                               timestamp=timestamp))
                         next_key += 1
 
