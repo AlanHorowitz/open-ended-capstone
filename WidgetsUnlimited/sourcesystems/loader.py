@@ -74,7 +74,7 @@ class SourceSystemLoader:
             warehouse.direct_extract(data_generator.get_connection(), batch_id=day) # get pg from env
             warehouse.transform_load(batch_id=day)
 
-        print("loader.load() completed sucessfully.")
+        print("Phase 1 demo completed sucessfully.")
             # phase #1 - write parquet
             # warehouse.direct_extract()
             # warehouse.transform_load()

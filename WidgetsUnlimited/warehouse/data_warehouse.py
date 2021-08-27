@@ -3,10 +3,26 @@ from typing import List
 from util.sqltypes import Column, Table
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
+from .customer_dimension import CustomerDimension
 import os
 import pandas as pd
+from mysql.connector import connect
+
 
 class DataWarehouse:
+
+    def __init__(self) -> None:
+        self.ms_connection = connect(
+        host=os.getenv('WAREHOUSE_HOST'),
+        port=os.getenv('WAREHOUSE_PORT'),
+        user=os.getenv('WAREHOUSE_USER'),
+        password=os.getenv('WAREHOUSE_PASSWORD'),
+        database=os.getenv('WAREHOUSE_DB'),
+        charset="utf8"
+        )
+
+        self.customer_dimesion = CustomerDimension(self.ms_connection)
+
 
     def direct_extract(self, connection, batch_id):
         self.write_parquet_warehouse_tables(connection, batch_id, 
@@ -15,7 +31,7 @@ class DataWarehouse:
         )
 
     def transform_load(self, batch_id):
-        pass
+        self.customer_dimesion.process_update(batch_id=batch_id)
 
     def write_parquet_warehouse_tables(self, connection, batch_id: int, tables : List[Table]):    
 

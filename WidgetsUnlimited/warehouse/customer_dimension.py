@@ -60,6 +60,7 @@ class CustomerDimension():
     def __init__(self, connection=None):
         self._connection = connection
         self._customer_dim_table = CustomerDimTable()
+        self._next_surrogate_key = 1
         if connection:
             self._create_table()       
            
@@ -122,7 +123,8 @@ class CustomerDimension():
         cust_dim_insert = self.build_new_dimension(new_keys, self._customer_stage_df, self._customer_address_stage_df)    
         cust_dim_update = self.build_update_dimension(prior_cust_dim, self._customer_stage_df, self._customer_address_stage_df)
 
-        self.persist(cust_dim_insert, "INSERT")        
+        self.persist(cust_dim_insert, "INSERT")   
+        self._next_surrogate_key += cust_dim_insert.shape[0]     
         self.persist(cust_dim_update, "REPLACE")        
 
     def get_incremental_keys(self, customer : pd.DataFrame, 
@@ -255,7 +257,7 @@ class CustomerDimension():
         customer_dim['deactivation_date'] = date(2099,12,31) 
         customer_dim['start_date'] = customer['customer_inserted_at']
          
-        next_surrogate_key = 1  # update after successful insert
+        next_surrogate_key = self._next_surrogate_key  
         num_inserts = customer_dim.shape[0]
 
         customer_dim['surrogate_key'] = range(next_surrogate_key, next_surrogate_key+num_inserts)
@@ -289,6 +291,10 @@ class CustomerDimension():
                             (prior_customer_dim['is_active'] == False)
             was_deactivated = (customer['customer_is_active'] == False) & \
                             (prior_customer_dim['is_active'] == True) 
+            print("ANH" *10)
+            print('was activated', was_activated)
+            print('customer', customer)
+            print("ANH" *10)
 
             prior_customer_dim.loc[was_activated, 'activation_date'] = customer['customer_updated_at']
             prior_customer_dim.loc[was_activated, 'deactivation_date'] = date(2099,12,31)        

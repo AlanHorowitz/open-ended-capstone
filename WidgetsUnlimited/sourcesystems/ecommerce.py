@@ -31,6 +31,7 @@ class eCommerceSystem(BaseSystem):
     def add_tables(self, tables : List[Table]) -> None:
         super().add_tables(tables)
         for table in tables:
+            self.cur.execute(f"DROP TABLE IF EXISTS {table.get_name()};")               
             self.cur.execute(table.get_create_sql_postgres())
             self.connection.commit()
     
