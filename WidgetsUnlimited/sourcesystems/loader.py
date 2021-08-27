@@ -71,7 +71,7 @@ class SourceSystemLoader:
             for table_update in updates:
                 table_update_processor.process(table_update=table_update, batch_id=day)
 
-            warehouse.direct_extract(batch_id=day) # get pg from env
+            warehouse.direct_extract(data_generator.get_connection(), batch_id=day) # get pg from env
             warehouse.transform_load(batch_id=day)
 
         print("loader.load() completed sucessfully.")

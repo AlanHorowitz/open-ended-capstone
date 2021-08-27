@@ -28,6 +28,9 @@ class DataGenerator():
     def close():
         pass
 
+    def get_connection(self):
+        return self.connection
+
     def add_tables(self, tables : List[Table]) -> None:
         for table in tables:  
             self.cur.execute(f"DROP TABLE IF EXISTS {table.get_name()};")               

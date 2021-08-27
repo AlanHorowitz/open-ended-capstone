@@ -1,6 +1,6 @@
 import os
 
-STAGE_DIRECTORY_PREFIX = "warehouse/stage/batch"
+STAGE_DIRECTORY_PREFIX = "/tmp/warehouse/stage/batch"
 def clean_stage_dir(batch_id):
 
     out_path = STAGE_DIRECTORY_PREFIX + str(batch_id)
