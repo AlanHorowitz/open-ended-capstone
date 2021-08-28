@@ -233,6 +233,10 @@ class CustomerDimension():
 
         print('last_update_date:', customer_dim['last_update_date'])
         print("+" * 10)
+
+        customer = customer.reindex(union_index)
+        print('customer.index(1)', customer.index)
+
         return customer_dim
    
     # new customer_dim entry for an unseen natural key
@@ -285,36 +289,27 @@ class CustomerDimension():
         customer_address = customer_address.set_index('customer_id', drop=False)
       
         customer_dim = CustomerDimension.customer_transform(customer, customer_address)        
+        
+        customer = customer.reindex(update_keys)
 
         if 'customer_is_active' in customer.columns:
             was_activated = (customer['customer_is_active'] == True) & \
                             (prior_customer_dim['is_active'] == False)
             was_deactivated = (customer['customer_is_active'] == False) & \
                             (prior_customer_dim['is_active'] == True) 
-            print("ANH" *10)
-            print('was activated', was_activated)
-            print('customer', customer)
-            print("ANH" *10)
-
+            
             prior_customer_dim.loc[was_activated, 'activation_date'] = customer['customer_updated_at']
-            prior_customer_dim.loc[was_activated, 'deactivation_date'] = date(2099,12,31)        
+            prior_customer_dim.loc[was_activated, 'deactivation_date'] = date(2099,12,31)   
             prior_customer_dim.loc[was_deactivated, 'deactivation_date'] = customer['customer_updated_at']
 
         mask = customer_dim.notnull()
-        print('mask:', mask)
-        print('prior customer dim:', prior_customer_dim)
         for col in customer_dim.columns:
-            print('===>', col)     
-            print('customer_dim[col]', customer_dim[col]) 
-            print('mask [col]', mask[col], type(mask[col]) )      
             prior_customer_dim.loc[mask[col], col] = customer_dim[col]
        
         customer_dim = pd.DataFrame(prior_customer_dim, columns=self._customer_dim_table.get_column_names())    
         date_cols = [col.get_name() for col in self._customer_dim_table.get_columns() 
-        if col.get_type() == 'DATE'] 
-        for d in date_cols:
-            print(d, customer_dim[d])
-
+                                        if col.get_type() == 'DATE'] 
+        
         customer_dim = customer_dim.astype(self._customer_dim_table.get_column_pandas_types())
 
         return customer_dim
