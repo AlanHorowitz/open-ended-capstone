@@ -7,7 +7,7 @@ from tables.order_line_item import OrderLineItemTable
 
 from warehouse.data_warehouse import DataWarehouse
 
-from .generator import DataGenerator 
+from .generator import DataGenerator
 from .ecommerce import eCommerceSystem
 from .inventory import InventorySystem
 from .table_update import TableUpdate
@@ -15,11 +15,12 @@ from .table_update_processor import TableUpdateProcessor
 
 
 class SourceSystemLoader:
-    """ Driver to load the source systems of Widgets Unlimited with sample data over a multi-day peridd.
-        This data will be exposed in various formats as incremental updates to the data warehouse.
+    """Driver to load the source systems of Widgets Unlimited with sample data over a multi-day peridd.
+    This data will be exposed in various formats as incremental updates to the data warehouse.
 
-        phase #1 is confined to customers and orders in the e-commerce system
-    """    
+    phase #1 is confined to customers and orders in the e-commerce system
+    """
+
     def load(self) -> None:
 
         product_table = ProductTable()
@@ -35,26 +36,31 @@ class SourceSystemLoader:
         inventory_system = InventorySystem(data_generator)
 
         # allocate the tables to their operational system.
-        e_commerce_system.add_tables([customer_table,
-        customer_address_table, order_table, order_line_item_table])
+        e_commerce_system.add_tables(
+            [customer_table, customer_address_table, order_table, order_line_item_table]
+        )
         inventory_system.add_tables([product_table])
 
         daily_operations = [
-            [   
-                # day 1  
-                TableUpdate(product_table, n_inserts=500, n_updates=0), 
+            [
+                # day 1
+                TableUpdate(product_table, n_inserts=500, n_updates=0),
                 TableUpdate(customer_table, n_inserts=200, n_updates=0),
-                TableUpdate(customer_address_table, n_inserts=1, n_updates=0, link_parent=True),
-
+                TableUpdate(
+                    customer_address_table, n_inserts=1, n_updates=0, link_parent=True
+                ),
             ],
             [
                 # day 2
                 TableUpdate(product_table, n_inserts=50, n_updates=0),
                 TableUpdate(customer_table, n_inserts=40, n_updates=0),
-                TableUpdate(customer_address_table, n_inserts=1, n_updates=0, link_parent=True),
+                TableUpdate(
+                    customer_address_table, n_inserts=1, n_updates=0, link_parent=True
+                ),
                 TableUpdate(order_table, n_inserts=1000, n_updates=0),
-                TableUpdate(order_line_item_table, n_inserts=5, n_updates=0, link_parent=True),
-                
+                TableUpdate(
+                    order_line_item_table, n_inserts=5, n_updates=0, link_parent=True
+                ),
             ],
             [
                 # day 3
@@ -62,7 +68,10 @@ class SourceSystemLoader:
                 TableUpdate(customer_table, n_inserts=0, n_updates=5),
                 TableUpdate(customer_address_table, n_inserts=0, n_updates=10),
                 TableUpdate(order_table, n_inserts=1000, n_updates=0),
-                TableUpdate(order_line_item_table, n_inserts=3, n_updates=0, link_parent=True),           ],
+                TableUpdate(
+                    order_line_item_table, n_inserts=3, n_updates=0, link_parent=True
+                ),
+            ],
         ]
 
         table_update_processor = TableUpdateProcessor()
@@ -71,15 +80,17 @@ class SourceSystemLoader:
             for table_update in updates:
                 table_update_processor.process(table_update=table_update, batch_id=day)
 
-            warehouse.direct_extract(data_generator.get_connection(), batch_id=day) # get pg from env
+            warehouse.direct_extract(
+                data_generator.get_connection(), batch_id=day
+            )  # get pg from env
             warehouse.transform_load(batch_id=day)
 
         print("Phase 1 demo completed sucessfully.")
-            # phase #1 - write parquet
-            # warehouse.direct_extract()
-            # warehouse.transform_load()
-            # phase #3 -- operational systems expose incremental changes    
-            # warehouse.extract()
-            # warehouse.transform_load()
-            # phase #5 -- ping warehouse as independent system (container)
-            # phase #6 -- no ping (warehouse ingests on its own schedule)
+        # phase #1 - write parquet
+        # warehouse.direct_extract()
+        # warehouse.transform_load()
+        # phase #3 -- operational systems expose incremental changes
+        # warehouse.extract()
+        # warehouse.transform_load()
+        # phase #5 -- ping warehouse as independent system (container)
+        # phase #6 -- no ping (warehouse ingests on its own schedule)
