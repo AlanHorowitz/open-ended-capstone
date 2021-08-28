@@ -1,5 +1,6 @@
 from util.sqltypes import Table, Column
 
+
 class CustomerTable(Table):
 
     NAME = "customer"
@@ -11,9 +12,9 @@ class CustomerTable(Table):
             Column("customer_name", "VARCHAR"),
             Column("customer_user_id", "VARCHAR"),
             Column("customer_password", "VARCHAR"),
-            Column("customer_email", "VARCHAR", isUpdateable=True),            
+            Column("customer_email", "VARCHAR", isUpdateable=True),
             Column("customer_referral_type", "VARCHAR", default="OA"),
-            Column("customer_sex", "VARCHAR", default="F"),            
+            Column("customer_sex", "VARCHAR", default="F"),
             Column("customer_date_of_birth", "DATE"),
             Column("customer_loyalty_number", "INTEGER"),
             Column("customer_credit_card_number", "VARCHAR"),

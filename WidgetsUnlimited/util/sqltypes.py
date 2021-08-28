@@ -13,7 +13,7 @@ DEFAULT_INSERT_VALUES: Dict[str, object] = {
     "DATE": "2021-02-11 12:52:47",
     "TINYINT": 0,
     "BOOLEAN": True,
-    "TIMESTAMP" : datetime(2020,11,11),
+    "TIMESTAMP": datetime(2020, 11, 11),
 }
 
 
@@ -24,17 +24,17 @@ class Column:
         self,
         column_name: str,
         column_type: str,
-        column_type_length = None,
+        column_type_length=None,
         isPrimaryKey: bool = False,
         isInsertedAt: bool = False,
         isUpdatedAt: bool = False,
         isBatchId: bool = False,
         isUpdateable: bool = False,
         xref_table: str = "",
-        xref_column: str = "", 
+        xref_column: str = "",
         parent_table: str = "",
-        parent_key: str = "", 
-        default: Any = None         
+        parent_key: str = "",
+        default: Any = None,
     ):
 
         self._name = column_name
@@ -53,7 +53,7 @@ class Column:
 
     @staticmethod
     def make_type(type, type_len, type_dict) -> str:
-        
+
         suffix = ""
         type_trans = type_dict[type][0]
         type_len_default = type_dict[type][1]
@@ -65,27 +65,29 @@ class Column:
 
     def get_column_def_mysql(self) -> str:
 
-        mysql_dict = {'INTEGER'   : ('INT', None),
-                      'VARCHAR'   : ('VARCHAR', '80'),
-                      'FLOAT'     : ('DOUBLE', None),
-                      'DATE'      : ('DATE', None),
-                      'BOOLEAN'   : ('TINYINT', '1'),
-                      'TIMESTAMP' : ('TIMESTAMP', '6')}
+        mysql_dict = {
+            "INTEGER": ("INT", None),
+            "VARCHAR": ("VARCHAR", "80"),
+            "FLOAT": ("DOUBLE", None),
+            "DATE": ("DATE", None),
+            "BOOLEAN": ("TINYINT", "1"),
+            "TIMESTAMP": ("TIMESTAMP", "6"),
+        }
 
         return Column.make_type(self.get_type(), self.get_type_length(), mysql_dict)
-        
-                                
+
     def get_column_def_postgres(self) -> str:
-       
-        postgres_dict = {'INTEGER'   : ('INTEGER', None),
-                         'VARCHAR'   : ('VARCHAR', '80'),
-                         'FLOAT'     : ('FLOAT', '11'),
-                         'DATE'      : ('DATE', None),
-                         'BOOLEAN'   : ('BOOLEAN', None),
-                         'TIMESTAMP' : ('TIMESTAMP', None)}
+
+        postgres_dict = {
+            "INTEGER": ("INTEGER", None),
+            "VARCHAR": ("VARCHAR", "80"),
+            "FLOAT": ("FLOAT", "11"),
+            "DATE": ("DATE", None),
+            "BOOLEAN": ("BOOLEAN", None),
+            "TIMESTAMP": ("TIMESTAMP", None),
+        }
 
         return Column.make_type(self.get_type(), self.get_type_length(), postgres_dict)
-
 
     def get_name(self) -> str:
 
@@ -102,7 +104,7 @@ class Column:
     def isPrimaryKey(self) -> bool:
 
         return self._isPrimaryKey
-   
+
     def isInsertedAt(self) -> bool:
 
         return self._isInsertedAt
@@ -151,11 +153,13 @@ class Column:
 
         return self._isUpdateable
 
+
 class Table:
     """Database Table metadata"""
 
     class XrefTableData:
-        """ helper object for xref data """
+        """helper object for xref data"""
+
         def __init__(
             self, column_list=[], result_set=[], next_random_row=0, num_rows=0
         ):
@@ -179,53 +183,44 @@ class Table:
                     )
         return xref_dict
 
-    def __init__(
-        self,
-        name: str,        
-        *columns: Column,
-        generation = True,
-        batchId=True
-    ):
+    def __init__(self, name: str, *columns: Column, generation=True, batchId=True):
         """Instatiate a table metadata object.
 
         Note: Source system tables in RetailDW must have a single column integer primary key
         and at least one VARCHAR column.
         """
 
-        self._name = name        
+        self._name = name
         self._generation = generation
         self._batchId = batchId
         self._columns = [col for col in columns]
         if self._batchId == True:
-            self._columns.append(Column("batch_id", "INTEGER", isBatchId=True)) 
+            self._columns.append(Column("batch_id", "INTEGER", isBatchId=True))
         primary_keys = [col.get_name() for col in columns if col.isPrimaryKey()]
         inserted_ats = [col.get_name() for col in columns if col.isInsertedAt()]
         updated_ats = [col.get_name() for col in columns if col.isUpdatedAt()]
         parent_keys = [col for col in columns if col.isParentKey()]
 
         if len(primary_keys) != 1:
-            raise Exception(
-                    "Generator requires exactly one primary key."
-                )
+            raise Exception("Generator requires exactly one primary key.")
         self._primary_key = primary_keys[0]
-        
+
         if self._generation == True:
             if (len(inserted_ats), len(updated_ats)) != (1, 1):
                 raise Exception(
                     "Generator requires exactly one inserted_at and updated_at column"
-                )                    
-            
+                )
+
             self._inserted_at = inserted_ats[0]
             self._updated_at = updated_ats[0]
-            
+
             if len(parent_keys) > 1:
-                raise Exception(
-                    "Generator may accept at most one parent key")
+                raise Exception("Generator may accept at most one parent key")
             elif len(parent_keys) == 1:
                 self._parent_key = parent_keys[0].get_parent_key()
                 self._parent_table = parent_keys[0].get_parent_table()
             else:
-                self._parent_key = "" 
+                self._parent_key = ""
                 self._parent_table = ""
 
             self._update_columns = [
@@ -241,7 +236,7 @@ class Table:
         self.operationalSystem = None
 
     def preload(self, cur: cursor) -> None:
-        """ Load foreign key tables for valid references when generating records.  Assume 
+        """Load foreign key tables for valid references when generating records.  Assume
         these tables fit in memory for now.  Update the xrefDict with result set and count.
         """
         for table_name, table_data in self._xrefDict.items():
@@ -257,10 +252,13 @@ class Table:
             table_data._num_rows = 0
             table_data._next_random_row = 0
 
-    def getNewRow(self, primary_key: int, 
-                        parent_key: int = None,
-                        batch_id: int = None,
-                        timestamp: datetime = datetime.now()) -> Tuple:
+    def getNewRow(
+        self,
+        primary_key: int,
+        parent_key: int = None,
+        batch_id: int = None,
+        timestamp: datetime = datetime.now(),
+    ) -> Tuple:
 
         d: List[object] = []
         self._setXrefTableRows()
@@ -289,7 +287,7 @@ class Table:
             table_data._next_random_row = random.randint(0, table_data._num_rows - 1)
 
     def _getXrefValue(self, col: Column) -> str:
-        """ Return the column's value from the current random DictRow."""
+        """Return the column's value from the current random DictRow."""
 
         row = self._xrefDict[col._xref_table]._next_random_row
         value = self._xrefDict[col._xref_table]._result_set[row][col._xref_column]
@@ -301,7 +299,7 @@ class Table:
         return self._name
 
     def get_columns(self) -> List[Column]:
-        """ Return a complete list of Column objects for the table."""
+        """Return a complete list of Column objects for the table."""
 
         return self._columns
 
@@ -322,52 +320,60 @@ class Table:
         return self._parent_table
 
     def has_parent(self) -> bool:
-        
+
         return self._parent_key != "" and self._parent_table != ""
 
     def get_create_sql_mysql(self) -> str:
-                
-        create_table = "CREATE TABLE IF NOT EXISTS {} ( \n".format(self.get_name()) 
-        columns = "\n".join(["{} {},".format(col.get_name(), col.get_column_def_mysql())
-                                             for col in self.get_columns()])
+
+        create_table = "CREATE TABLE IF NOT EXISTS {} ( \n".format(self.get_name())
+        columns = "\n".join(
+            [
+                "{} {},".format(col.get_name(), col.get_column_def_mysql())
+                for col in self.get_columns()
+            ]
+        )
         primary_key = "\nPRIMARY KEY ({}));".format(self.get_primary_key())
         return create_table + columns + primary_key
 
-
     def get_create_sql_postgres(self) -> str:
 
-        create_table = "CREATE TABLE IF NOT EXISTS {} ( \n".format(self.get_name()) 
-        columns = "\n".join(["{} {},".format(col.get_name(), col.get_column_def_postgres())
-                                             for col in self.get_columns()])
+        create_table = "CREATE TABLE IF NOT EXISTS {} ( \n".format(self.get_name())
+        columns = "\n".join(
+            [
+                "{} {},".format(col.get_name(), col.get_column_def_postgres())
+                for col in self.get_columns()
+            ]
+        )
         primary_key = "\nPRIMARY KEY ({}));".format(self.get_primary_key())
         return create_table + columns + primary_key
 
     def get_column_names(self) -> List[str]:
-        """ Return a complete list of Column names for the table."""
+        """Return a complete list of Column names for the table."""
         return [col.get_name() for col in self._columns]
-    
-    def get_column_pandas_types(self) -> Dict[str,str]:
-        """ Return a complete list of Column names for the table."""
 
-        pd_types = { 'INTEGER' : 'int64',
-             'VARCHAR'   : 'string' ,
-             'FLOAT'     : 'float64',
-             'DATE'      : 'datetime64[ns]',
-             'BOOLEAN'   : 'bool',
-             'TIMESTAMP' : 'datetime64[ns]'
-            }
+    def get_column_pandas_types(self) -> Dict[str, str]:
+        """Return a complete list of Column names for the table."""
 
-        return  {col.get_name() : pd_types[col.get_type()] for col in self._columns}
+        pd_types = {
+            "INTEGER": "int64",
+            "VARCHAR": "string",
+            "FLOAT": "float64",
+            "DATE": "datetime64[ns]",
+            "BOOLEAN": "bool",
+            "TIMESTAMP": "datetime64[ns]",
+        }
+
+        return {col.get_name(): pd_types[col.get_type()] for col in self._columns}
 
     def get_update_column(self) -> Column:
-        """ Return a random eligible update column."""
+        """Return a random eligible update column."""
         i = random.randint(0, len(self._update_columns) - 1)
         return self._update_columns[i]
 
     def setOperationalSystem(self, op: object) -> None:
-        """ Associate table with host operational system."""
+        """Associate table with host operational system."""
         self.operationalSystem = op
 
     def getOperationalSystem(self) -> object:
-        """ Return operational system hosting table."""
+        """Return operational system hosting table."""
         return self.operationalSystem

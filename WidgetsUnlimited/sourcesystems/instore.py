@@ -1,16 +1,17 @@
 from util.sqltypes import Table, Column
 from typing import List
 
-class InStoreSystem():
+
+class InStoreSystem:
     def __init__(self) -> None:
         # open connection to postgres
         pass
 
-    def add_tables(tables : List[Table]) -> None:
+    def add_tables(tables: List[Table]) -> None:
         # create all the kafka topics
         pass
 
-    def open(table : Table) -> None:
+    def open(table: Table) -> None:
         # get kafka producer
         pass
 

@@ -7,14 +7,13 @@ from .base import BaseSystem
 
 class InventorySystem(BaseSystem):
     def __init__(self, data_generator) -> None:
-        super().__init__(data_generator)         
+        super().__init__(data_generator)
 
-    def add_tables(self, tables : List[Table]) -> None:
+    def add_tables(self, tables: List[Table]) -> None:
         # create all the postgres tables
         super().add_tables(tables)
 
-
-    def open(self, table : Table) -> None:
+    def open(self, table: Table) -> None:
         pass
 
     def close(self, table):

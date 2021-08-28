@@ -1,5 +1,6 @@
 from util.sqltypes import Table, Column
 
+
 class InventoryTable(Table):
 
     NAME = "inventory"
@@ -14,7 +15,7 @@ class InventoryTable(Table):
             Column("inventory_warehouse_id", "INTEGER"),
             Column("inventory_quantity", "INTEGER"),
             Column("inventory_ship_address", "VARCHAR"),
-            Column("inventory_ship_customer_id", "INTEGER"),            
+            Column("inventory_ship_customer_id", "INTEGER"),
             Column("inventory_inserted_at", "TIMESTAMP", isInsertedAt=True),
             Column("inventory_updated_at", "TIMESTAMP", isUpdatedAt=True),
         )

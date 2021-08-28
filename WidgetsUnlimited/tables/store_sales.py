@@ -2,14 +2,15 @@ from util.sqltypes import Table, Column
 from .product import ProductTable
 from .store import StoreTable
 
+
 class StoreSalesTable(Table):
 
     NAME = "store_sales"
-    
+
     def __init__(self):
 
         super().__init__(
-            StoreSalesTable.NAME,            
+            StoreSalesTable.NAME,
             Column("store_sales_id", "INTEGER", isPrimaryKey=True),
             Column(
                 "store_sales_store_id",

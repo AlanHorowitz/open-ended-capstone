@@ -1,5 +1,6 @@
 from util.sqltypes import Column, Table
 
+
 class StoreTable(Table):
 
     NAME = "store"

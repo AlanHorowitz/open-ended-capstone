@@ -1,5 +1,6 @@
 from util.sqltypes import Table, Column
 
+
 class SupplierTable(Table):
 
     NAME = "supplier"
@@ -14,7 +15,7 @@ class SupplierTable(Table):
             Column("supplier_primary_contact_phone", "VARCHAR"),
             Column("supplier_secondary_contact_name", "VARCHAR"),
             Column("supplier_secondary_contact_phone", "VARCHAR"),
-            Column("supplier_web_site", "VARCHAR"),            
+            Column("supplier_web_site", "VARCHAR"),
             Column("supplier_introduction_date", "DATE"),
             Column("supplier_is_preferred", "BOOLEAN"),
             Column("supplier_is_active", "BOOLEAN"),

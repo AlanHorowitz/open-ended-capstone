@@ -1,12 +1,13 @@
 from util.sqltypes import Table, Column
 
+
 class ProductTable(Table):
 
-    NAME = "product"    
-    
+    NAME = "product"
+
     def __init__(self):
         super().__init__(
-            ProductTable.NAME,            
+            ProductTable.NAME,
             Column("product_id", "INTEGER", isPrimaryKey=True),
             Column("product_name", "VARCHAR"),
             Column("product_description", "VARCHAR"),
