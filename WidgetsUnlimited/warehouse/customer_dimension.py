@@ -9,8 +9,8 @@ from typing import Tuple, Dict
 import pandas as pd
 from datetime import date
 
-from pandas.core.frame import DataFrame, Index
-from .util import STAGE_DIRECTORY_PREFIX, clean_stage_dir, get_stage_dir
+from pandas.core.frame import DataFrame
+from .util import get_stage_dir, get_new_keys
 from tables.customer_dim import CustomerDimTable
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
@@ -79,8 +79,8 @@ class CustomerDimension:
             return
 
         # use incremental keys to get slice of customer dimension recorded
-        prior_customer_dim = self._load_customer_dim(incremental_keys)
-        new_keys = self.get_new_keys(incremental_keys, prior_customer_dim)
+        prior_customer_dim = self._load_dimension(incremental_keys)
+        new_keys = get_new_keys(incremental_keys, prior_customer_dim, key='customer_key')
 
         inserts = self.build_new_dimension(new_keys, customer, customer_address)
         updates = self.build_update_dimension(prior_customer_dim, customer, customer_address)
@@ -113,7 +113,7 @@ class CustomerDimension:
 
         return customer, customer_address
 
-    def _load_customer_dim(self, customer_keys):
+    def _load_dimension(self, customer_keys):
         keys_list = ",".join([str(k) for k in customer_keys])
         ready_query = f"select * from customer_dim where customer_key in ({keys_list});"
         customer_dim = pd.read_sql_query(ready_query, self._connection)
@@ -146,14 +146,6 @@ class CustomerDimension:
         return customer_keys
 
     # customer keys must be unique
-    def get_new_keys(
-            self, customer_keys: pd.Series, customer_dim: pd.DataFrame
-    ) -> pd.Index:
-
-        merged = pd.merge(customer_keys, customer_dim, on="customer_key", how="left")
-        new_mask = merged["surrogate_key"].isna()
-        new_keys = pd.Index(merged[new_mask]["customer_key"])
-        return new_keys
 
     @staticmethod
     def get_address_defaults() -> Dict[str, str]:
@@ -264,6 +256,7 @@ class CustomerDimension:
 
     # new customer_dim entry for an unseen natural key
     def build_new_dimension(self, new_keys, customer, customer_address):
+
         if len(new_keys) == 0:
             return pd.DataFrame([])
 

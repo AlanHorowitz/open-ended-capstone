@@ -2,6 +2,7 @@ from datetime import date, datetime
 import pandas as pd
 import pytest
 
+from WidgetsUnlimited.warehouse.util import get_new_keys
 from .context import CustomerDimension, CustomerTable
 
 # subset of customer_dim columns for testing
@@ -107,7 +108,7 @@ def test_get_new_keys():
         ["cust_key_1", "cust_key_2", "cust_key_3"], name="customer_key"
     )
 
-    new_keys = c.get_new_keys(incremental_keys, customer_dim)
+    new_keys = get_new_keys(incremental_keys, customer_dim, 'customer_key')
     assert len(new_keys) == 0
 
     # new only
@@ -115,7 +116,7 @@ def test_get_new_keys():
         ["cust_key_4", "cust_key_5", "cust_key_6"], name="customer_key"
     )
 
-    new_keys = c.get_new_keys(incremental_keys, customer_dim)
+    new_keys = get_new_keys(incremental_keys, customer_dim, 'customer_key')
     assert sorted(new_keys.to_list()) == ["cust_key_4", "cust_key_5", "cust_key_6"]
 
     # mix of updates and new
@@ -123,7 +124,7 @@ def test_get_new_keys():
         ["cust_key_2", "cust_key_3", "cust_key_4"], name="customer_key"
     )
 
-    new_keys = c.get_new_keys(incremental_keys, customer_dim)
+    new_keys = get_new_keys(incremental_keys, customer_dim, 'customer_key')
     assert sorted(new_keys.to_list()) == ["cust_key_4"]
 
 
