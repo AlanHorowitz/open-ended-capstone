@@ -85,9 +85,9 @@ class CustomerDimension:
         inserts = self.build_new_dimension(new_keys, customer, customer_address)
         updates = self.build_update_dimension(prior_customer_dim, customer, customer_address)
 
-        self._dimension(inserts, "INSERT")
+        self._persist_dimension(inserts, "INSERT")
         self._next_surrogate_key += inserts.shape[0]
-        self._dimension(updates, "REPLACE")
+        self._persist_dimension(updates, "REPLACE")
         # self._cleanup(batch_id)
 
     def _create_table(self):
@@ -121,7 +121,7 @@ class CustomerDimension:
         customer_dim = pd.read_sql_query(ready_query, self._connection)
         return customer_dim
 
-    def _dimension(self, customer_dim: pd.DataFrame, operation: str) -> None:
+    def _persist_dimension(self, customer_dim: pd.DataFrame, operation: str) -> None:
         if customer_dim.shape[0] > 0:
             table = self._dimension_table
             table_name = table.get_name()
@@ -289,7 +289,7 @@ class CustomerDimension:
 
         return customer_dim
 
-    def build_update_dimension(self, prior_customer_dim, customer, customer_address):
+    def build_update_dimension(self,  prior_customer_dim, customer, customer_address):
 
         if prior_customer_dim.shape[0] == 0:
             return pd.DataFrame([])
