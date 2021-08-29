@@ -3,6 +3,7 @@
 # pull dim for existing customers
 # compute new_customers, allocate new surrogate keys, build new dim record
 # update existing record (type 2 SCD comes later)
+# May be called in a series of updates.
 
 from typing import Tuple, Dict
 import pandas as pd
@@ -73,7 +74,7 @@ class CustomerDimension:
         :return:
         """
         customer, customer_address = self._load_incrementals(batch_id)
-        incremental_keys = self.get_incremental_keys(customer, customer_address)
+        incremental_keys = self._get_incremental_keys(customer, customer_address)
         if incremental_keys.size == 0:
             return
 
@@ -84,9 +85,9 @@ class CustomerDimension:
         inserts = self.build_new_dimension(new_keys, customer, customer_address)
         updates = self.build_update_dimension(prior_customer_dim, customer, customer_address)
 
-        self.persist(inserts, "INSERT")
+        self._persist(inserts, "INSERT")
         self._next_surrogate_key += inserts.shape[0]
-        self.persist(updates, "REPLACE")
+        self._persist(updates, "REPLACE")
         # self._cleanup(batch_id)
 
     def _create_table(self):
@@ -97,6 +98,7 @@ class CustomerDimension:
     def _cleanup(self, batch_id):
         pass
 
+    # move this to util -- all dimension will share it.
     def _load_incrementals(self, batch_id: int) -> Tuple[DataFrame, DataFrame]:
         """
         Load staged incremental customers and customer addresses to dataframes.
@@ -117,7 +119,7 @@ class CustomerDimension:
         customer_dim = pd.read_sql_query(ready_query, self._connection)
         return customer_dim
 
-    def persist(self, customer_dim: pd.DataFrame, operation: str) -> None:
+    def _persist(self, customer_dim: pd.DataFrame, operation: str) -> None:
         if customer_dim.shape[0] > 0:
             table = self._customer_dim_table
             table_name = table.get_name()
@@ -132,14 +134,7 @@ class CustomerDimension:
             )
             self._connection.commit()
 
-    def _update_customer_dim(self):
-        """
-        Assumes that all dependent ingested, stage data has been persisted in the specified location.
-        This persistence is handled by different code
-        """
-
-
-    def get_incremental_keys(
+    def _get_incremental_keys(
             self, customer: pd.DataFrame, customer_address: pd.DataFrame
     ) -> pd.Series:
         customer_keys = (
@@ -353,11 +348,6 @@ class CustomerDimension:
         customer_dim = pd.DataFrame(
             prior_customer_dim, columns=self._customer_dim_table.get_column_names()
         )
-        date_cols = [
-            col.get_name()
-            for col in self._customer_dim_table.get_columns()
-            if col.get_type() == "DATE"
-        ]
 
         customer_dim = customer_dim.astype(
             self._customer_dim_table.get_column_pandas_types()

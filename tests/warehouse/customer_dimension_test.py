@@ -86,7 +86,7 @@ def test_get_incremental_keys():
         customer_address_data, columns=["address_id", "name", "customer_id"]
     )
 
-    incremental_keys = c.get_incremental_keys(customer, customer_address)
+    incremental_keys = c._get_incremental_keys(customer, customer_address)
     assert sorted(incremental_keys.tolist()) == [1, 2, 3, 4, 6]
 
 
