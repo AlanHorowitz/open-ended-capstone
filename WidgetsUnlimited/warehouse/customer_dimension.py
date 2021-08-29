@@ -61,7 +61,7 @@ class CustomerDimension:
 
     def __init__(self, connection=None):
         self._connection = connection
-        self._customer_dim_table = CustomerDimTable()
+        self._dimension_table = CustomerDimTable()
         self._next_surrogate_key = 1
         if connection:
             self._create_table()
@@ -73,33 +73,33 @@ class CustomerDimension:
         :param batch_id:
         :return:
         """
-        customer, customer_address = self._load_incrementals(batch_id)
-        incremental_keys = self._get_incremental_keys(customer, customer_address)
+        customer, customer_address = self._load_incremental(batch_id)
+        incremental_keys = customer.index.intersection(customer_address.index)
         if incremental_keys.size == 0:
             return
 
-        # use incremental keys to get slice of customer dimension recorded
         prior_customer_dim = self._load_dimension(incremental_keys)
-        new_keys = get_new_keys(incremental_keys, prior_customer_dim, key='customer_key')
+        update_keys = prior_customer_dim.index
+        new_keys = incremental_keys.difference(update_keys)
 
         inserts = self.build_new_dimension(new_keys, customer, customer_address)
         updates = self.build_update_dimension(prior_customer_dim, customer, customer_address)
 
-        self._persist(inserts, "INSERT")
+        self._dimension(inserts, "INSERT")
         self._next_surrogate_key += inserts.shape[0]
-        self._persist(updates, "REPLACE")
+        self._dimension(updates, "REPLACE")
         # self._cleanup(batch_id)
 
     def _create_table(self):
         cur = self._connection.cursor()
-        cur.execute(f"DROP TABLE IF EXISTS {self._customer_dim_table.get_name()};")
-        cur.execute(self._customer_dim_table.get_create_sql_mysql())
+        cur.execute(f"DROP TABLE IF EXISTS {self._dimension_table.get_name()};")
+        cur.execute(self._dimension_table.get_create_sql_mysql())
 
     def _cleanup(self, batch_id):
         pass
 
     # move this to util -- all dimension will share it.
-    def _load_incrementals(self, batch_id: int) -> Tuple[DataFrame, DataFrame]:
+    def _load_incremental(self, batch_id: int) -> Tuple[DataFrame, DataFrame]:
         """
         Load staged incremental customers and customer addresses to dataframes.
 
@@ -108,8 +108,10 @@ class CustomerDimension:
         """
         customer = pd.read_parquet(get_stage_dir(batch_id) + "/customer.pr")
         customer = customer.astype(customer_stage_types)
+        customer = customer.set_index('customer_id', drop=False)
         customer_address = pd.read_parquet(get_stage_dir(batch_id) + "/customer_address.pr")
         customer_address = customer_address.astype(customer_address_stage_types)
+        customer_address = customer_address.set_index('customer_id', drop=False)
 
         return customer, customer_address
 
@@ -119,9 +121,9 @@ class CustomerDimension:
         customer_dim = pd.read_sql_query(ready_query, self._connection)
         return customer_dim
 
-    def _persist(self, customer_dim: pd.DataFrame, operation: str) -> None:
+    def _dimension(self, customer_dim: pd.DataFrame, operation: str) -> None:
         if customer_dim.shape[0] > 0:
-            table = self._customer_dim_table
+            table = self._dimension_table
             table_name = table.get_name()
             column_names = ",".join(table.get_column_names())  # for SELECT statements
             values_substitutions = ",".join(["%s"] * len(table.get_column_names()))
@@ -133,19 +135,6 @@ class CustomerDimension:
                 rows,
             )
             self._connection.commit()
-
-    def _get_incremental_keys(
-            self, customer: pd.DataFrame, customer_address: pd.DataFrame
-    ) -> pd.Series:
-        customer_keys = (
-            customer["customer_id"]
-                .append(customer_address["customer_id"])
-                .drop_duplicates()
-        )
-        customer_keys.name = "customer_key"
-        return customer_keys
-
-    # customer keys must be unique
 
     @staticmethod
     def get_address_defaults() -> Dict[str, str]:
@@ -260,14 +249,17 @@ class CustomerDimension:
         if len(new_keys) == 0:
             return pd.DataFrame([])
 
-        new_customers = customer["customer_id"].isin(new_keys.values)
-        new_customer_addresses = customer_address["customer_id"].isin(new_keys.values)
+        # new_customers = customer["customer_id"].isin(new_keys.values)
+        # new_customer_addresses = customer_address["customer_id"].isin(new_keys.values)
+        #
+        # customer = customer[new_customers]
+        # customer_address = customer_address[new_customer_addresses]
 
-        customer = customer[new_customers]
-        customer_address = customer_address[new_customer_addresses]
+        customer = customer.loc[new_keys]
+        customer_address = customer_address.loc[new_keys]
 
-        customer = customer.set_index("customer_id", drop=False)
-        customer_address = customer_address.set_index("customer_id", drop=False)
+        # customer = customer.set_index("customer_id", drop=False)
+        # customer_address = customer_address.set_index("customer_id", drop=False)
 
         customer_dim = CustomerDimension.customer_transform(customer, customer_address)
 
@@ -288,10 +280,10 @@ class CustomerDimension:
         customer_dim["is_current_row"] = "Y"
 
         customer_dim = pd.DataFrame(
-            customer_dim, columns=self._customer_dim_table.get_column_names()
+            customer_dim, columns=self._dimension_table.get_column_names()
         )
         customer_dim = customer_dim.astype(
-            self._customer_dim_table.get_column_pandas_types()
+            self._dimension_table.get_column_pandas_types()
         )
         customer_dim = customer_dim.fillna(CustomerDimension.get_address_defaults())
 
@@ -306,11 +298,11 @@ class CustomerDimension:
         update_keys = prior_customer_dim.index
 
         customer = customer[customer["customer_id"].isin(update_keys.values)]
-        customer = customer.set_index("customer_id", drop=False)
+        # customer = customer.set_index("customer_id", drop=False)
         customer_address = customer_address[
             customer_address["customer_id"].isin(update_keys.values)
         ]
-        customer_address = customer_address.set_index("customer_id", drop=False)
+        # customer_address = customer_address.set_index("customer_id", drop=False)
 
         customer_dim = CustomerDimension.customer_transform(customer, customer_address)
 
@@ -339,11 +331,11 @@ class CustomerDimension:
             prior_customer_dim.loc[mask[col], col] = customer_dim[col]
 
         customer_dim = pd.DataFrame(
-            prior_customer_dim, columns=self._customer_dim_table.get_column_names()
+            prior_customer_dim, columns=self._dimension_table.get_column_names()
         )
 
         customer_dim = customer_dim.astype(
-            self._customer_dim_table.get_column_pandas_types()
+            self._dimension_table.get_column_pandas_types()
         )
 
         return customer_dim
