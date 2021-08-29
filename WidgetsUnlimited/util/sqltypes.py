@@ -184,7 +184,7 @@ class Table:
         return xref_dict
 
     def __init__(self, name: str, *columns: Column, generation=True, batchId=True):
-        """Instatiate a table metadata object.
+        """Instantiate a table metadata object.
 
         Note: Source system tables in RetailDW must have a single column integer primary key
         and at least one VARCHAR column.
@@ -194,7 +194,7 @@ class Table:
         self._generation = generation
         self._batchId = batchId
         self._columns = [col for col in columns]
-        if self._batchId == True:
+        if self._batchId:
             self._columns.append(Column("batch_id", "INTEGER", isBatchId=True))
         primary_keys = [col.get_name() for col in columns if col.isPrimaryKey()]
         inserted_ats = [col.get_name() for col in columns if col.isInsertedAt()]

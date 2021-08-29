@@ -56,6 +56,8 @@ shipping_to_customer_dim_mappings = {
 
 
 class CustomerDimension:
+    """Provide methods of transforming source to dimension"""
+
     def __init__(self, connection=None):
         self._connection = connection
         self._customer_dim_table = CustomerDimTable()
@@ -63,9 +65,28 @@ class CustomerDimension:
         if connection:
             self._create_table()
 
-    def process_update(self, batch_id):
-        self._load_incrementals(batch_id)
-        self._update_customer_dim()
+    def process_update(self, batch_id: int) -> None:
+        """
+        Process all the steps to change the customer_dimension table
+
+        :param batch_id:
+        :return:
+        """
+        customer, customer_address = self._load_incrementals(batch_id)
+        incremental_keys = self.get_incremental_keys(customer, customer_address)
+        if incremental_keys.size == 0:
+            return
+
+        # use incremental keys to get slice of customer dimension recorded
+        prior_customer_dim = self._load_customer_dim(incremental_keys)
+        new_keys = self.get_new_keys(incremental_keys, prior_customer_dim)
+
+        inserts = self.build_new_dimension(new_keys, customer, customer_address)
+        updates = self.build_update_dimension(prior_customer_dim, customer, customer_address)
+
+        self.persist(inserts, "INSERT")
+        self._next_surrogate_key += inserts.shape[0]
+        self.persist(updates, "REPLACE")
         # self._cleanup(batch_id)
 
     def _create_table(self):
@@ -76,18 +97,19 @@ class CustomerDimension:
     def _cleanup(self, batch_id):
         pass
 
-    def _load_incrementals(self, batch_id):
-        # get files
-        self._customer_stage_df = pd.read_parquet(
-            get_stage_dir(batch_id) + "/customer.pr"
-        )
-        self._customer_stage_df = self._customer_stage_df.astype(customer_stage_types)
-        self._customer_address_stage_df = pd.read_parquet(
-            get_stage_dir(batch_id) + "/customer_address.pr"
-        )
-        self._customer_address_stage_df = self._customer_address_stage_df.astype(
-            customer_address_stage_types
-        )
+    def _load_incrementals(self, batch_id: int) -> Tuple[DataFrame, DataFrame]:
+        """
+        Load staged incremental customers and customer addresses to dataframes.
+
+        Args:
+             batch_id - identifier of ingestion
+        """
+        customer = pd.read_parquet(get_stage_dir(batch_id) + "/customer.pr")
+        customer = customer.astype(customer_stage_types)
+        customer_address = pd.read_parquet(get_stage_dir(batch_id) + "/customer_address.pr")
+        customer_address = customer_address.astype(customer_address_stage_types)
+
+        return customer, customer_address
 
     def _load_customer_dim(self, customer_keys):
         keys_list = ",".join([str(k) for k in customer_keys])
@@ -115,39 +137,22 @@ class CustomerDimension:
         Assumes that all dependent ingested, stage data has been persisted in the specified location.
         This persistence is handled by different code
         """
-        incremental_keys = self.get_incremental_keys(
-            self._customer_stage_df, self._customer_address_stage_df
-        )
-        if incremental_keys.size == 0:
-            return
-        prior_cust_dim = self._load_customer_dim(incremental_keys)
-        new_keys = self.get_new_keys(incremental_keys, prior_cust_dim)
 
-        cust_dim_insert = self.build_new_dimension(
-            new_keys, self._customer_stage_df, self._customer_address_stage_df
-        )
-        cust_dim_update = self.build_update_dimension(
-            prior_cust_dim, self._customer_stage_df, self._customer_address_stage_df
-        )
-
-        self.persist(cust_dim_insert, "INSERT")
-        self._next_surrogate_key += cust_dim_insert.shape[0]
-        self.persist(cust_dim_update, "REPLACE")
 
     def get_incremental_keys(
-        self, customer: pd.DataFrame, customer_address: pd.DataFrame
+            self, customer: pd.DataFrame, customer_address: pd.DataFrame
     ) -> pd.Series:
         customer_keys = (
             customer["customer_id"]
-            .append(customer_address["customer_id"])
-            .drop_duplicates()
+                .append(customer_address["customer_id"])
+                .drop_duplicates()
         )
         customer_keys.name = "customer_key"
         return customer_keys
 
     # customer keys must be unique
     def get_new_keys(
-        self, customer_keys: pd.Series, customer_dim: pd.DataFrame
+            self, customer_keys: pd.Series, customer_dim: pd.DataFrame
     ) -> pd.Index:
 
         merged = pd.merge(customer_keys, customer_dim, on="customer_key", how="left")
@@ -205,7 +210,7 @@ class CustomerDimension:
 
     @staticmethod
     def customer_transform(
-        customer: DataFrame, customer_address: DataFrame
+            customer: DataFrame, customer_address: DataFrame
     ) -> DataFrame:
         """Common transformations from ingest formats to customer_dim schema.
         Logic specific to inputs and updates occur outside.  Presents dim table ready for
@@ -325,10 +330,10 @@ class CustomerDimension:
 
         if "customer_is_active" in customer.columns:
             was_activated = (customer["customer_is_active"] == True) & (
-                prior_customer_dim["is_active"] == False
+                    prior_customer_dim["is_active"] == False
             )
             was_deactivated = (customer["customer_is_active"] == False) & (
-                prior_customer_dim["is_active"] == True
+                    prior_customer_dim["is_active"] == True
             )
 
             prior_customer_dim.loc[was_activated, "activation_date"] = customer[
