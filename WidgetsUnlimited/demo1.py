@@ -107,4 +107,4 @@ for day, transactions in enumerate(daily_operations, start=1):
     warehouse.direct_extract(data_generator.get_connection(), batch_id=day)
     warehouse.transform_load(batch_id=day)
 
-print("Phase 1 demo completed sucessfully.")
+print("Phase 1 demo completed successfully.")
