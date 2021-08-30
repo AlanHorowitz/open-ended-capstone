@@ -4,19 +4,18 @@
 # compute new_customers, allocate new surrogate keys, build new dim record
 # update existing record (type 2 SCD comes later)
 # May be called in a series of updates.
+# Take ingested input from source systems and construct updated customer dimension table in data 
+# warehouse.
 
 from typing import Tuple, Dict
 import pandas as pd
 from datetime import date
 
-from pandas.core.frame import DataFrame
+from pandas.core.frame import DataFrame, Index
 from .util import get_stage_dir, get_new_keys
 from tables.customer_dim import CustomerDimTable
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
-
-customer_dim_columns = []
-customer_dim_types = {}
 
 customer_stage_columns = []
 customer_stage_types = CustomerTable().get_column_pandas_types()
@@ -57,18 +56,38 @@ shipping_to_customer_dim_mappings = {
 
 
 class CustomerDimension:
-    """Provide methods of transforming source to dimension"""
+    """Provide methods of transforming source to dimension
+    
+    customer 
+    customer_address
+    customer_dim
+
+    incremental_keys
+    undate_keys
+    new_keys
+
+    """
 
     def __init__(self, connection=None):
+
         self._connection = connection
         self._dimension_table = CustomerDimTable()
         self._next_surrogate_key = 1
         if connection:
-            self._create_table()
+            cur = self._connection.cursor()
+            cur.execute(f"DROP TABLE IF EXISTS {self._dimension_table.get_name()};")
+            cur.execute(self._dimension_table.get_create_sql_mysql())
 
     def process_update(self, batch_id: int) -> None:
         """
-        Process all the steps to change the customer_dimension table
+        Process all the steps to change the customer_dimension table.
+
+        1) Load customer and customer_address from stage area to dataframes
+        2) Compute batch keys
+        3) Load customer_dim from database to dataframe for batch keys
+        4) Compute keys for insert and update records
+        5) Compute input and update customer_dim records from customer, customer_address and customer_dim
+        6) Persist inputs and updates to customer_dim data warehouse
 
         :param batch_id:
         :return:
@@ -88,17 +107,10 @@ class CustomerDimension:
         self._persist_dimension(inserts, "INSERT")
         self._next_surrogate_key += inserts.shape[0]
         self._persist_dimension(updates, "REPLACE")
-        # self._cleanup(batch_id)
+       
 
-    def _create_table(self):
-        cur = self._connection.cursor()
-        cur.execute(f"DROP TABLE IF EXISTS {self._dimension_table.get_name()};")
-        cur.execute(self._dimension_table.get_create_sql_mysql())
-
-    def _cleanup(self, batch_id):
-        pass
-
-    # move this to util -- all dimension will share it.
+    # move this to util -- all dimensions will share it.
+    # should take a list of Table objects and parameter and return list of dfs as output
     def _load_incremental(self, batch_id: int) -> Tuple[DataFrame, DataFrame]:
         """
         Load staged incremental customers and customer addresses to dataframes.
@@ -281,7 +293,7 @@ class CustomerDimension:
 
         return customer_dim
 
-    def _build_update_dimension(self, update_keys, prior_customer_dim, customer, customer_address):
+    def _build_update_dimension(self, update_keys: Index, prior_customer_dim, customer, customer_address):
 
         if prior_customer_dim.shape[0] == 0:
             return pd.DataFrame([])
