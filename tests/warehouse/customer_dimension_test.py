@@ -188,7 +188,7 @@ def test_build_new_dimension():
     customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
     customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
 
-    inserts = c.build_new_dimension(new_keys, customer, customer_address)
+    inserts = c._build_new_dimension(new_keys, customer, customer_address)
 
     assert inserts.shape[0] == 3
     assert inserts.at[3, "name"] == "c3"
@@ -269,7 +269,7 @@ def test_update_customer_only(base_dimension_record_45):
     customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
     customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
 
-    customer_dim = c.build_update_dimension(base_dimension_record_45, customer, customer_address)
+    customer_dim = c._build_update_dimension(base_dimension_record_45, customer, customer_address)
 
     assert customer_dim.shape[0] == 1
     assert customer_dim.loc[45, "credit_card_number"] == "12345678"
@@ -303,7 +303,7 @@ def test_update_customer_address_only(base_dimension_record_45):
     customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
     customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
 
-    customer_dim = c.build_update_dimension(
+    customer_dim = c._build_update_dimension(
         base_dimension_record_45, customer, customer_address
     )
     assert customer_dim.shape[0] == 1
@@ -337,7 +337,7 @@ def test_deactivate(base_dimension_record_45):
     customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
     customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
 
-    customer_dim = c.build_update_dimension(
+    customer_dim = c._build_update_dimension(
         base_dimension_record_45, customer, customer_address
     )
 
@@ -375,7 +375,7 @@ def test_activate(base_dimension_record_45):
     customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
     customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
 
-    customer_dim = c.build_update_dimension(
+    customer_dim = c._build_update_dimension(
         old_dim, customer, customer_address
     )
 
@@ -424,7 +424,7 @@ def test_update_all(base_dimension_records_all):
     customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
     customer_address_stage_df = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
 
-    customer_dim = c.build_update_dimension(
+    customer_dim = c._build_update_dimension(
         base_dimension_records_all, customer, customer_address_stage_df
     )
 
@@ -472,7 +472,7 @@ def test_update_all_2(base_dimension_records_all):
     customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
     customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
 
-    customer_dim = c.build_update_dimension(
+    customer_dim = c._build_update_dimension(
         base_dimension_records_all, customer, customer_address
     )
 

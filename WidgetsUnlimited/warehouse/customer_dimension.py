@@ -74,7 +74,7 @@ class CustomerDimension:
         :return:
         """
         customer, customer_address = self._load_incremental(batch_id)
-        incremental_keys = customer.index.intersection(customer_address.index)
+        incremental_keys = customer.index.union(customer_address.index).unique()
         if incremental_keys.size == 0:
             return
 
@@ -82,8 +82,8 @@ class CustomerDimension:
         update_keys = prior_customer_dim.index
         new_keys = incremental_keys.difference(update_keys)
 
-        inserts = self.build_new_dimension(new_keys, customer, customer_address)
-        updates = self.build_update_dimension(prior_customer_dim, customer, customer_address)
+        inserts = self._build_new_dimension(new_keys, customer, customer_address)
+        updates = self._build_update_dimension(update_keys, prior_customer_dim, customer, customer_address)
 
         self._persist_dimension(inserts, "INSERT")
         self._next_surrogate_key += inserts.shape[0]
@@ -119,6 +119,7 @@ class CustomerDimension:
         keys_list = ",".join([str(k) for k in customer_keys])
         ready_query = f"select * from customer_dim where customer_key in ({keys_list});"
         customer_dim = pd.read_sql_query(ready_query, self._connection)
+        customer_dim = customer_dim.set_index("customer_key", drop=False)
         return customer_dim
 
     def _persist_dimension(self, customer_dim: pd.DataFrame, operation: str) -> None:
@@ -244,22 +245,13 @@ class CustomerDimension:
         return customer_dim
 
     # new customer_dim entry for an unseen natural key
-    def build_new_dimension(self, new_keys, customer, customer_address):
+    def _build_new_dimension(self, new_keys, customer, customer_address):
 
         if len(new_keys) == 0:
             return pd.DataFrame([])
 
-        # new_customers = customer["customer_id"].isin(new_keys.values)
-        # new_customer_addresses = customer_address["customer_id"].isin(new_keys.values)
-        #
-        # customer = customer[new_customers]
-        # customer_address = customer_address[new_customer_addresses]
-
         customer = customer.loc[new_keys]
         customer_address = customer_address.loc[new_keys]
-
-        # customer = customer.set_index("customer_id", drop=False)
-        # customer_address = customer_address.set_index("customer_id", drop=False)
 
         customer_dim = CustomerDimension.customer_transform(customer, customer_address)
 
@@ -289,20 +281,13 @@ class CustomerDimension:
 
         return customer_dim
 
-    def build_update_dimension(self,  prior_customer_dim, customer, customer_address):
+    def _build_update_dimension(self, update_keys, prior_customer_dim, customer, customer_address):
 
         if prior_customer_dim.shape[0] == 0:
             return pd.DataFrame([])
 
-        prior_customer_dim = prior_customer_dim.set_index("customer_key", drop=False)
-        update_keys = prior_customer_dim.index
-
-        customer = customer[customer["customer_id"].isin(update_keys.values)]
-        # customer = customer.set_index("customer_id", drop=False)
-        customer_address = customer_address[
-            customer_address["customer_id"].isin(update_keys.values)
-        ]
-        # customer_address = customer_address.set_index("customer_id", drop=False)
+        customer = customer.loc[update_keys.intersection(customer.index)]
+        customer_address = customer_address.loc[update_keys.intersection(customer_address.index)]
 
         customer_dim = CustomerDimension.customer_transform(customer, customer_address)
 
