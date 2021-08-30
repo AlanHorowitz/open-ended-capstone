@@ -20,7 +20,7 @@ class DataWarehouse:
             charset="utf8",
         )
 
-        self.customer_dimesion = CustomerDimension(self.ms_connection)
+        self.customer_dimension = CustomerDimension(self.ms_connection)
 
     def direct_extract(self, connection, batch_id):
         self.write_parquet_warehouse_tables(
@@ -28,10 +28,11 @@ class DataWarehouse:
         )
 
     def transform_load(self, batch_id):
-        self.customer_dimesion.process_update(batch_id=batch_id)
+        self.customer_dimension.process_update(batch_id=batch_id)
 
+    @staticmethod
     def write_parquet_warehouse_tables(
-        self, connection, batch_id: int, tables: List[Table]
+            connection, batch_id: int, tables: List[Table]
     ):
 
         pd_types = {
