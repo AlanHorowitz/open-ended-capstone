@@ -1,12 +1,3 @@
-# read incremental customer and customer addresses
-# get unique customer keys
-# pull dim for existing customers
-# compute new_customers, allocate new surrogate keys, build new dim record
-# update existing record (type 2 SCD comes later)
-# May be called in a series of updates.
-# Take ingested input from source systems and construct updated customer dimension table in data
-# warehouse.
-
 from typing import Tuple, Dict
 import pandas as pd
 from datetime import date
@@ -52,19 +43,31 @@ shipping_to_customer_dim_mapping = {
 
 class CustomerDimensionProcessor:
     """
-    Provide methods of transforming source to dimension
+    Transform the customer_dimension table in the mySQL star schema.
 
-    customer
-    customer_address
-    customer_dim
+    The process_update method is called when a batch of incremental updates of source data is
+    available in data warehouse staging area.
 
-    incremental_keys
-    undate_keys
-    new_keys
+    The following naming conventions are used in the class:
 
+    pandas DataFrames
+
+    customer - staged customer data
+    customer_address - staged customer address data
+    customer_dim - mySQL star schema customer_dimension data
+
+    pandas Indexes
+
+    incremental_keys - All customer ids (natural key) present in batch
+    update_keys - Customer ids already in the star schema
+    new_keys - Customer ids not yet in the star schema
     """
 
     def __init__(self, connection=None):
+        """
+        Initialize CustomerDimensionProcessor
+        :param connection: mySQL connection created by the warehouse.  None is used for test.
+        """
 
         self._connection = connection
         self._dimension_table = CustomerDimTable()
@@ -77,13 +80,12 @@ class CustomerDimensionProcessor:
         Perform the following steps to update the customer_dimension table for an ETL batch
 
         1) Read customer and customer_address files from stage area into dataframes
-        2) Compute batch keys
-        3) Load customer_dim from database to dataframe for batch keys
-        4) Compute keys for insert and update records
+        2) Compute incremental_keys
+        3) Load customer_dim from mySQL to dataframe for incremental_keys
+        4) Compute input_keys and update_keys
         5) Compute input and update customer_dim records using transformations taking customer, customer_address
         and customer_dim as inputs
-        6) Write inputs and updates to customer_dimension table in data warehouse
-
+        6) Write inputs and updates to customer_dimension table in mySQL
         :param batch_id: Identifier for ETL process
         :return:None
         """
@@ -109,7 +111,7 @@ class CustomerDimensionProcessor:
         self._write_dimension(updates, "REPLACE")
 
     def _create_dimension(self):
-        """ Create an empty customer_dimension table as part of initialization."""
+        """ Create an empty customer_dimension on warehouse initialization."""
 
         cur = self._connection.cursor()
         cur.execute(f"DROP TABLE IF EXISTS {self._dimension_table.get_name()};")
@@ -134,10 +136,10 @@ class CustomerDimensionProcessor:
 
     def _write_dimension(self, customer_dim: pd.DataFrame, operation: str) -> None:
         """
-        Write a dataframe containing inserts or updates to the customer_dimension table.  Convert the dataframe to
-        a python list an use mysql-connector-python for bulk execution call.
+        Write a dataframe containing inserts or updates to the mySQL customer_dimension table.
+        Convert the dataframe to a python list and use mysql-connector-python for bulk execution call.
 
-        :param customer_dim: DataFrame conforming to customer_dim schema
+        :param customer_dim: dataframe conforming to customer_dim schema
         :param operation: INSERT/REPLACE -- mirror mySQL verbs for insert/upsert
         :return: None
         """
@@ -176,7 +178,7 @@ class CustomerDimensionProcessor:
 
     @staticmethod
     def decode_referral_type(s):
-
+        """Translate referral_type code to text"""
         referrals = {
             "OA": "Online Advertising",
             "AM": "Affiliate Marketing",
@@ -187,10 +189,9 @@ class CustomerDimensionProcessor:
     @staticmethod
     def parse_address(s: str) -> pd.Series:
         """
-        Parse the address column and return a series of correctly labeled component fields.
+        Parse the customer_address column and return a series of correctly labeled component fields.
         The address is a string with the expected format: name\nstreet_address\ncity, state zip
         """
-
         name, street_number, rest = s.split("\n")
         city, rest = rest.split(",")
         state, zip_code = rest.strip().split()
@@ -210,33 +211,32 @@ class CustomerDimensionProcessor:
         customer: DataFrame, customer_address: DataFrame
     ) -> DataFrame:
         """
-
-        :param customer:
-        :param customer_address:
-        :return:
-        """
-        """
-        
         Common transformations from ingest formats to customer_dim schema.
         Logic specific to inputs (new key) and updates (recurring keys) occur outside.  Presents dim table ready for
         further processing.
         Customer and customer address are already reduced to new or update keys.
         Name mappings and special treatments.
+
+        :param customer:
+        :param customer_address:
+        :return: a customer_dim dataframe with incremental changes. Missing values are null
+
         """
         union_index = customer.index.union(customer_address.index).unique()
         customer_dim = pd.DataFrame(
             [], columns=CustomerDimTable().get_column_names(), index=union_index
         )
 
+        # work area to compute latest of three possibly existing dates
         update_dates = pd.DataFrame(
             [], columns=["billing", "shipping", "customer"], index=union_index
         )
 
+        # simple copies from customer to customer_dim
         for k, v in customer_dim_to_customer_mapping.items():
             if v in customer:
                 customer_dim[k] = customer[v]
 
-        # todo check column exists with empty referral
         if "customer_referral_type" in customer.columns:
             customer_dim.referral_type = customer["customer_referral_type"].map(
                 CustomerDimensionProcessor.decode_referral_type
