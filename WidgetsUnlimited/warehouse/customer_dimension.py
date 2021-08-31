@@ -4,7 +4,7 @@
 # compute new_customers, allocate new surrogate keys, build new dim record
 # update existing record (type 2 SCD comes later)
 # May be called in a series of updates.
-# Take ingested input from source systems and construct updated customer dimension table in data 
+# Take ingested input from source systems and construct updated customer dimension table in data
 # warehouse.
 
 from typing import Tuple, Dict
@@ -17,11 +17,6 @@ from tables.customer_dim import CustomerDimTable
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
 
-customer_stage_columns = []
-customer_stage_types = CustomerTable().get_column_pandas_types()
-
-customer_address_stage_columns = []
-customer_address_stage_types = CustomerAddressTable().get_column_pandas_types()
 
 customer_dim_to_customer_mappings = {
     "customer_key": "customer_id",
@@ -57,8 +52,8 @@ shipping_to_customer_dim_mappings = {
 
 class CustomerDimension:
     """Provide methods of transforming source to dimension
-    
-    customer 
+
+    customer
     customer_address
     customer_dim
 
@@ -91,39 +86,62 @@ class CustomerDimension:
         :return:
         """
 
-        customer, customer_address = read_stage(batch_id, [CustomerTable(), CustomerAddressTable()])
+        customer, customer_address = read_stage(
+            batch_id, [CustomerTable(), CustomerAddressTable()]
+        )
         incremental_keys = customer.index.union(customer_address.index).unique()
         if incremental_keys.size == 0:
             return
 
-        prior_customer_dim = self._read_dimension(incremental_keys)
+        prior_customer_dim = self._read_dimension('customer_key', incremental_keys)
         update_keys = prior_customer_dim.index
         new_keys = incremental_keys.difference(update_keys)
 
         inserts = self._build_new_dimension(new_keys, customer, customer_address)
-        updates = self._build_update_dimension(update_keys, prior_customer_dim, customer, customer_address)
+        updates = self._build_update_dimension(
+            update_keys, prior_customer_dim, customer, customer_address
+        )
 
         self._write_dimension(inserts, "INSERT")
         self._next_surrogate_key += inserts.shape[0]
         self._write_dimension(updates, "REPLACE")
 
     def _create_dimension(self):
+        """ Create an empty customer_dimension table as part of initialization."""
         cur = self._connection.cursor()
         cur.execute(f"DROP TABLE IF EXISTS {self._dimension_table.get_name()};")
         cur.execute(self._dimension_table.get_create_sql_mysql())
 
-    def _read_dimension(self, customer_keys):
-        keys_list = ",".join([str(k) for k in customer_keys])
-        ready_query = f"select * from customer_dim where customer_key in ({keys_list});"
-        customer_dim = pd.read_sql_query(ready_query, self._connection)
-        customer_dim = customer_dim.set_index("customer_key", drop=False)
-        return customer_dim
+    def _read_dimension(self, key_name: str, key_values: Index) -> DataFrame:
+        """
+        Read rows from the customer_dimension table using a key filter
+
+        :param key_name: Name of the filter key
+        :param key_values: Filter values
+        :return: A dataframe of the result set, indexed by the key column
+        """
+
+        table_name = self._dimension_table.get_name()
+        key_values_list = ",".join([str(k) for k in key_values])
+        query = f"SELECT * FROM {table_name} WHERE {key_name} IN ({key_values_list});"
+        dimension_df = pd.read_sql_query(query, self._connection)
+        dimension_df = dimension_df.set_index(key_name, drop=False)
+
+        return dimension_df
 
     def _write_dimension(self, customer_dim: pd.DataFrame, operation: str) -> None:
+        """
+        Write a dataframe containing inserts or updates to the customer_dimension table.  Convert the dataframe to
+        a python list an use mysql-connector-python for bulk execution call.
+
+        :param customer_dim: DataFrame conforming to customer_dim schema
+        :param operation: INSERT/REPLACE -- mirror mySQL verbs for insert/upsert
+        :return: None
+        """
         if customer_dim.shape[0] > 0:
             table = self._dimension_table
             table_name = table.get_name()
-            column_names = ",".join(table.get_column_names())  # for SELECT statements
+            column_names = ",".join(table.get_column_names())
             values_substitutions = ",".join(["%s"] * len(table.get_column_names()))
             cur = self._connection.cursor()
             rows = customer_dim.to_numpy().tolist()
@@ -184,7 +202,7 @@ class CustomerDimension:
 
     @staticmethod
     def customer_transform(
-            customer: DataFrame, customer_address: DataFrame
+        customer: DataFrame, customer_address: DataFrame
     ) -> DataFrame:
         """Common transformations from ingest formats to customer_dim schema.
         Logic specific to inputs and updates occur outside.  Presents dim table ready for
@@ -278,13 +296,17 @@ class CustomerDimension:
 
         return customer_dim
 
-    def _build_update_dimension(self, update_keys: Index, prior_customer_dim, customer, customer_address):
+    def _build_update_dimension(
+        self, update_keys: Index, prior_customer_dim, customer, customer_address
+    ):
 
         if prior_customer_dim.shape[0] == 0:
             return pd.DataFrame([])
 
         customer = customer.loc[update_keys.intersection(customer.index)]
-        customer_address = customer_address.loc[update_keys.intersection(customer_address.index)]
+        customer_address = customer_address.loc[
+            update_keys.intersection(customer_address.index)
+        ]
 
         customer_dim = CustomerDimension.customer_transform(customer, customer_address)
 
@@ -292,10 +314,10 @@ class CustomerDimension:
 
         if "customer_is_active" in customer.columns:
             was_activated = (customer["customer_is_active"] == True) & (
-                    prior_customer_dim["is_active"] == False
+                prior_customer_dim["is_active"] == False
             )
             was_deactivated = (customer["customer_is_active"] == False) & (
-                    prior_customer_dim["is_active"] == True
+                prior_customer_dim["is_active"] == True
             )
 
             prior_customer_dim.loc[was_activated, "activation_date"] = customer[
