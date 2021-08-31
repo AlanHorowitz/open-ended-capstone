@@ -17,8 +17,8 @@ from tables.customer_dim import CustomerDimTable
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
 
-
-customer_dim_to_customer_mappings = {
+# transformation mappings
+customer_dim_to_customer_mapping = {
     "customer_key": "customer_id",
     "name": "customer_name",
     "user_id": "customer_user_id",
@@ -33,7 +33,7 @@ customer_dim_to_customer_mappings = {
     "is_active": "customer_is_active",
 }
 
-billing_to_customer_dim_mappings = {
+billing_to_customer_dim_mapping = {
     "billing_name": "name",
     "billing_street_number": "street_number",
     "billing_city": "city",
@@ -41,7 +41,7 @@ billing_to_customer_dim_mappings = {
     "billing_zip": "zip",
 }
 
-shipping_to_customer_dim_mappings = {
+shipping_to_customer_dim_mapping = {
     "shipping_name": "name",
     "shipping_street_number": "street_number",
     "shipping_city": "city",
@@ -50,8 +50,9 @@ shipping_to_customer_dim_mappings = {
 }
 
 
-class CustomerDimension:
-    """Provide methods of transforming source to dimension
+class CustomerDimensionProcessor:
+    """
+    Provide methods of transforming source to dimension
 
     customer
     customer_address
@@ -73,17 +74,18 @@ class CustomerDimension:
 
     def process_update(self, batch_id: int) -> None:
         """
-        Process all the steps to change the customer_dimension table.
+        Perform the following steps to update the customer_dimension table for an ETL batch
 
-        1) Load customer and customer_address from stage area to dataframes
+        1) Read customer and customer_address files from stage area into dataframes
         2) Compute batch keys
         3) Load customer_dim from database to dataframe for batch keys
         4) Compute keys for insert and update records
-        5) Compute input and update customer_dim records from customer, customer_address and customer_dim
-        6) Persist inputs and updates to customer_dim data warehouse
+        5) Compute input and update customer_dim records using transformations taking customer, customer_address
+        and customer_dim as inputs
+        6) Write inputs and updates to customer_dimension table in data warehouse
 
-        :param batch_id:
-        :return:
+        :param batch_id: Identifier for ETL process
+        :return:None
         """
 
         customer, customer_address = read_stage(
@@ -108,6 +110,7 @@ class CustomerDimension:
 
     def _create_dimension(self):
         """ Create an empty customer_dimension table as part of initialization."""
+
         cur = self._connection.cursor()
         cur.execute(f"DROP TABLE IF EXISTS {self._dimension_table.get_name()};")
         cur.execute(self._dimension_table.get_create_sql_mysql())
@@ -154,6 +157,7 @@ class CustomerDimension:
 
     @staticmethod
     def get_address_defaults() -> Dict[str, str]:
+        """Build a dictionary used to set missing address items to N/A """
         return {
             col: "N/A"
             for col in [
@@ -171,7 +175,7 @@ class CustomerDimension:
         }
 
     @staticmethod
-    def decode_referral(s):
+    def decode_referral_type(s):
 
         referrals = {
             "OA": "Online Advertising",
@@ -182,13 +186,14 @@ class CustomerDimension:
 
     @staticmethod
     def parse_address(s: str) -> pd.Series:
-        """Parse the address and return a series correctly labeled.
-        For our purposes the address is a string with the format
-        name\nstreet_address\ncity, state zip
         """
+        Parse the address column and return a series of correctly labeled component fields.
+        The address is a string with the expected format: name\nstreet_address\ncity, state zip
+        """
+
         name, street_number, rest = s.split("\n")
         city, rest = rest.split(",")
-        state, zip = rest.strip().split()
+        state, zip_code = rest.strip().split()
 
         return pd.Series(
             {
@@ -196,7 +201,7 @@ class CustomerDimension:
                 "street_number": street_number,
                 "city": city,
                 "state": state,
-                "zip": zip,
+                "zip": zip_code,
             }
         )
 
@@ -204,8 +209,16 @@ class CustomerDimension:
     def customer_transform(
         customer: DataFrame, customer_address: DataFrame
     ) -> DataFrame:
-        """Common transformations from ingest formats to customer_dim schema.
-        Logic specific to inputs and updates occur outside.  Presents dim table ready for
+        """
+
+        :param customer:
+        :param customer_address:
+        :return:
+        """
+        """
+        
+        Common transformations from ingest formats to customer_dim schema.
+        Logic specific to inputs (new key) and updates (recurring keys) occur outside.  Presents dim table ready for
         further processing.
         Customer and customer address are already reduced to new or update keys.
         Name mappings and special treatments.
@@ -219,39 +232,39 @@ class CustomerDimension:
             [], columns=["billing", "shipping", "customer"], index=union_index
         )
 
-        for k, v in customer_dim_to_customer_mappings.items():
+        for k, v in customer_dim_to_customer_mapping.items():
             if v in customer:
                 customer_dim[k] = customer[v]
 
         # todo check column exists with empty referral
         if "customer_referral_type" in customer.columns:
             customer_dim.referral_type = customer["customer_referral_type"].map(
-                CustomerDimension.decode_referral
+                CustomerDimensionProcessor.decode_referral_type
             )
 
         is_billing = customer_address["customer_address_type"] == "B"
         is_shipping = customer_address["customer_address_type"] == "S"
 
         billing = customer_address[is_billing]["customer_address"].apply(
-            CustomerDimension.parse_address
+            CustomerDimensionProcessor.parse_address
         )
 
         if billing.size != 0:
             update_dates["billing"] = customer_address.loc[
                 is_billing, "customer_address_updated_at"
             ]
-            for k, v in billing_to_customer_dim_mappings.items():
+            for k, v in billing_to_customer_dim_mapping.items():
                 customer_dim[k] = billing[v]
 
         shipping = customer_address[is_shipping]["customer_address"].apply(
-            CustomerDimension.parse_address
+            CustomerDimensionProcessor.parse_address
         )
 
         if shipping.size != 0:
             update_dates["shipping"] = customer_address.loc[
                 is_shipping, "customer_address_updated_at"
             ]
-            for k, v in shipping_to_customer_dim_mappings.items():
+            for k, v in shipping_to_customer_dim_mapping.items():
                 customer_dim[k] = shipping[v]
 
         update_dates["customer"] = customer["customer_updated_at"]  # required column
@@ -268,7 +281,7 @@ class CustomerDimension:
         customer = customer.loc[new_keys]
         customer_address = customer_address.loc[new_keys]
 
-        customer_dim = CustomerDimension.customer_transform(customer, customer_address)
+        customer_dim = CustomerDimensionProcessor.customer_transform(customer, customer_address)
 
         customer_dim["age_cohort"] = "N/A"  # TODO derived column
 
@@ -292,7 +305,7 @@ class CustomerDimension:
         customer_dim = customer_dim.astype(
             self._dimension_table.get_column_pandas_types()
         )
-        customer_dim = customer_dim.fillna(CustomerDimension.get_address_defaults())
+        customer_dim = customer_dim.fillna(CustomerDimensionProcessor.get_address_defaults())
 
         return customer_dim
 
@@ -308,7 +321,7 @@ class CustomerDimension:
             update_keys.intersection(customer_address.index)
         ]
 
-        customer_dim = CustomerDimension.customer_transform(customer, customer_address)
+        customer_dim = CustomerDimensionProcessor.customer_transform(customer, customer_address)
 
         customer = customer.reindex(update_keys)
 

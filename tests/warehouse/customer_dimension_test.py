@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from WidgetsUnlimited.warehouse.util import get_new_keys
-from .context import CustomerDimension, CustomerTable
+from .context import CustomerDimensionProcessor, CustomerTable
 
 # subset of customer_dim columns for testing
 customer_dim_cols = [
@@ -93,7 +93,7 @@ def base_dimension_records_all():
 
 def test_get_new_keys():
 
-    c = CustomerDimension()
+    c = CustomerDimensionProcessor()
 
     customer_dim_data = [
         [1, "cust_key_1", "name_1", "cust_addr_key_1", "address_1"],
@@ -130,7 +130,7 @@ def test_get_new_keys():
 
 def test_parse_address():
 
-    c = CustomerDimension(None)
+    c = CustomerDimensionProcessor(None)
     address = c.parse_address(TEST_BILLING_ADDRESS)
     assert address["name"] == "First Middle Last"
     assert address["street_number"] == "123 Snickersnack Lane"
@@ -143,7 +143,7 @@ def test_parse_address():
 # Customers 3 & 5 have billing and shipping; customer 4, billing only,
 def test_build_new_dimension():
 
-    c = CustomerDimension(None)
+    c = CustomerDimensionProcessor(None)
 
     _day = date(2020, 10, 10)
     _date = datetime.now()
@@ -234,7 +234,7 @@ def test_transform_referral_type():
     customer_address = pd.DataFrame(customer_address_data)
     customer_address = customer_address.set_index("customer_id", drop=False)
 
-    customer_dim = CustomerDimension.customer_transform(customer, customer_address)
+    customer_dim = CustomerDimensionProcessor.customer_transform(customer, customer_address)
 
     assert customer_dim.shape[0] == 4
     assert customer_dim.at[1, "referral_type"] == "Unknown"
@@ -245,7 +245,7 @@ def test_transform_referral_type():
 
 def test_update_customer_only(base_dimension_record_45):
 
-    c = CustomerDimension(None)
+    c = CustomerDimensionProcessor(None)
     test_time = datetime.now()
 
     customer_data = {
@@ -269,7 +269,8 @@ def test_update_customer_only(base_dimension_record_45):
     customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
     customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
 
-    customer_dim = c._build_update_dimension(base_dimension_record_45, customer, customer_address)
+    customer_dim = c._build_update_dimension(base_dimension_record_45.index, base_dimension_record_45,
+                                             customer, customer_address)
 
     assert customer_dim.shape[0] == 1
     assert customer_dim.loc[45, "credit_card_number"] == "12345678"
@@ -278,7 +279,7 @@ def test_update_customer_only(base_dimension_record_45):
 
 
 def test_update_customer_address_only(base_dimension_record_45):
-    c = CustomerDimension(None)
+    c = CustomerDimensionProcessor(None)
     test_time = datetime.now()
 
     customer_data = {
@@ -304,7 +305,7 @@ def test_update_customer_address_only(base_dimension_record_45):
     customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
 
     customer_dim = c._build_update_dimension(
-        base_dimension_record_45, customer, customer_address
+        base_dimension_record_45.index, base_dimension_record_45, customer, customer_address
     )
     assert customer_dim.shape[0] == 1
     assert customer_dim.loc[45, "shipping_zip"] == "54322"
@@ -314,7 +315,7 @@ def test_update_customer_address_only(base_dimension_record_45):
 
 def test_deactivate(base_dimension_record_45):
 
-    c = CustomerDimension(None)
+    c = CustomerDimensionProcessor(None)
     test_time = datetime.now()
 
     customer_data = {
@@ -338,7 +339,7 @@ def test_deactivate(base_dimension_record_45):
     customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
 
     customer_dim = c._build_update_dimension(
-        base_dimension_record_45, customer, customer_address
+        base_dimension_record_45.index, base_dimension_record_45, customer, customer_address
     )
 
     assert customer_dim.shape[0] == 1
@@ -352,7 +353,7 @@ def test_activate(base_dimension_record_45):
     old_dim["is_active"] = False
     old_dim["deactivation_date"] = date(2020, 10, 15)
 
-    c = CustomerDimension(None)
+    c = CustomerDimensionProcessor(None)
     test_time = datetime.now()
 
     customer_data = {
@@ -376,7 +377,7 @@ def test_activate(base_dimension_record_45):
     customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
 
     customer_dim = c._build_update_dimension(
-        old_dim, customer, customer_address
+        old_dim.index, old_dim, customer, customer_address
     )
 
     assert customer_dim.shape[0] == 1
@@ -396,7 +397,7 @@ def test_latest_update():
 # mix behaviors across two records
 def test_update_all(base_dimension_records_all):
 
-    c = CustomerDimension(None)
+    c = CustomerDimensionProcessor(None)
     test_time = datetime.now()
 
     customer_data = {
@@ -425,7 +426,7 @@ def test_update_all(base_dimension_records_all):
     customer_address_stage_df = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
 
     customer_dim = c._build_update_dimension(
-        base_dimension_records_all, customer, customer_address_stage_df
+        base_dimension_records_all.index, base_dimension_records_all, customer, customer_address_stage_df
     )
 
     assert customer_dim.shape[0] == 2
@@ -444,7 +445,7 @@ def test_update_all(base_dimension_records_all):
 # change only address on record 45
 def test_update_all_2(base_dimension_records_all):
 
-    c = CustomerDimension(None)
+    c = CustomerDimensionProcessor(None)
     test_time = datetime.now()
 
     customer_data = {
@@ -473,7 +474,7 @@ def test_update_all_2(base_dimension_records_all):
     customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
 
     customer_dim = c._build_update_dimension(
-        base_dimension_records_all, customer, customer_address
+        base_dimension_records_all.index, base_dimension_records_all, customer, customer_address
     )
 
     assert customer_dim.shape[0] == 2

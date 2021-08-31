@@ -3,7 +3,7 @@ from typing import List
 from util.sqltypes import Column, Table
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
-from .customer_dimension import CustomerDimension
+from .customer_dimension import CustomerDimensionProcessor
 import os
 import pandas as pd
 from mysql.connector import connect
@@ -20,7 +20,7 @@ class DataWarehouse:
             charset="utf8",
         )
 
-        self.customer_dimension = CustomerDimension(self.ms_connection)
+        self.customer_dimension = CustomerDimensionProcessor(self.ms_connection)
 
     def direct_extract(self, connection, batch_id):
         self.write_parquet_warehouse_tables(
