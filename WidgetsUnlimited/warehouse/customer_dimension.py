@@ -2,7 +2,7 @@ from typing import Tuple, Dict
 import pandas as pd
 from datetime import date
 
-from pandas.core.frame import DataFrame, Index
+from pandas.core.frame import DataFrame, Series, Index
 from .util import get_stage_dir, get_new_keys, read_stage
 from tables.customer_dim import CustomerDimTable
 from tables.customer import CustomerTable
@@ -97,7 +97,7 @@ class CustomerDimensionProcessor:
         if incremental_keys.size == 0:
             return
 
-        prior_customer_dim = self._read_dimension('customer_key', incremental_keys)
+        prior_customer_dim = self._read_dimension("customer_key", incremental_keys)
         update_keys = prior_customer_dim.index
         new_keys = incremental_keys.difference(update_keys)
 
@@ -111,7 +111,7 @@ class CustomerDimensionProcessor:
         self._write_dimension(updates, "REPLACE")
 
     def _create_dimension(self):
-        """ Create an empty customer_dimension on warehouse initialization."""
+        """Create an empty customer_dimension on warehouse initialization."""
 
         cur = self._connection.cursor()
         cur.execute(f"DROP TABLE IF EXISTS {self._dimension_table.get_name()};")
@@ -134,7 +134,7 @@ class CustomerDimensionProcessor:
 
         return dimension_df
 
-    def _write_dimension(self, customer_dim: pd.DataFrame, operation: str) -> None:
+    def _write_dimension(self, customer_dim: DataFrame, operation: str) -> None:
         """
         Write a dataframe containing inserts or updates to the mySQL customer_dimension table.
         Convert the dataframe to a python list and use mysql-connector-python for bulk execution call.
@@ -159,7 +159,7 @@ class CustomerDimensionProcessor:
 
     @staticmethod
     def get_address_defaults() -> Dict[str, str]:
-        """Build a dictionary used to set missing address items to N/A """
+        """Build a dictionary used to set missing address items to N/A"""
         return {
             col: "N/A"
             for col in [
@@ -177,7 +177,7 @@ class CustomerDimensionProcessor:
         }
 
     @staticmethod
-    def decode_referral_type(s):
+    def decode_referral_type(s) -> str:
         """Translate referral_type code to text"""
         referrals = {
             "OA": "Online Advertising",
@@ -187,7 +187,7 @@ class CustomerDimensionProcessor:
         return referrals.get(s.strip().upper(), "Unknown")
 
     @staticmethod
-    def parse_address(s: str) -> pd.Series:
+    def parse_address(s: str) -> Series:
         """
         Parse the customer_address column and return a series of correctly labeled component fields.
         The address is a string with the expected format: name\nstreet_address\ncity, state zip
@@ -211,17 +211,21 @@ class CustomerDimensionProcessor:
         customer: DataFrame, customer_address: DataFrame
     ) -> DataFrame:
         """
-        Common transformations from ingest formats to customer_dim schema.
-        Logic specific to inputs (new key) and updates (recurring keys) occur outside.  Presents dim table ready for
-        further processing.
-        Customer and customer address are already reduced to new or update keys.
-        Name mappings and special treatments.
+        Common transformations that apply to both inserts and updates.
 
-        :param customer:
-        :param customer_address:
-        :return: a customer_dim dataframe with incremental changes. Missing values are null
+        - simple column to column mapping
+        - decoding of customer_referral_type
+        - parsing of billing and customer addresses
+        - resolution of last_update_date column
+
+        :param customer: customer stage data, indexed with new_keys or update_keys
+        :param customer_address: customer address stage data, indexed with new_keys or update_keys
+        :return: a customer_dim dataframe with incremental changes. Values not included in the stage data
+        are returned as null.
 
         """
+
+        # make empty customer_dim dataframe indexed by target keys
         union_index = customer.index.union(customer_address.index).unique()
         customer_dim = pd.DataFrame(
             [], columns=CustomerDimTable().get_column_names(), index=union_index
@@ -242,6 +246,7 @@ class CustomerDimensionProcessor:
                 CustomerDimensionProcessor.decode_referral_type
             )
 
+        # Collect billing and shipping information where available
         is_billing = customer_address["customer_address_type"] == "B"
         is_shipping = customer_address["customer_address_type"] == "S"
 
@@ -267,64 +272,97 @@ class CustomerDimensionProcessor:
             for k, v in shipping_to_customer_dim_mapping.items():
                 customer_dim[k] = shipping[v]
 
+        # set last_update_date to latest of three dates
         update_dates["customer"] = customer["customer_updated_at"]  # required column
         customer_dim["last_update_date"] = update_dates.T.max()
 
         return customer_dim
 
-    # new customer_dim entry for an unseen natural key
-    def _build_new_dimension(self, new_keys, customer, customer_address):
+    def _build_new_dimension(
+        self, new_keys: Index, customer: DataFrame, customer_address: DataFrame
+    ) -> DataFrame:
+        """
+        Create and initialize new records for customer_dimension table in star schema
+
+        :param new_keys: keys for records in batch not yet in star schema
+        :param customer: staged customer data
+        :param customer_address: staged customer address data
+        :return: a customer_dim dataframe ready to be written to mySQL
+        """
 
         if len(new_keys) == 0:
             return pd.DataFrame([])
 
+        # restrict stage date to new_keys
         customer = customer.loc[new_keys]
         customer_address = customer_address.loc[new_keys]
 
-        customer_dim = CustomerDimensionProcessor.customer_transform(customer, customer_address)
+        # apply common transformation
+        customer_dim = CustomerDimensionProcessor.customer_transform(
+            customer, customer_address
+        )
 
-        customer_dim["age_cohort"] = "N/A"  # TODO derived column
-
-        customer_dim["activation_date"] = customer["customer_inserted_at"]
-        customer_dim["deactivation_date"] = date(2099, 12, 31)
-        customer_dim["start_date"] = customer["customer_inserted_at"]
-
+        # assign surrogate keys
         next_surrogate_key = self._next_surrogate_key
         num_inserts = customer_dim.shape[0]
-
         customer_dim["surrogate_key"] = range(
             next_surrogate_key, next_surrogate_key + num_inserts
         )
+
+        # initialize values for new records
+        customer_dim["age_cohort"] = "N/A"
+        customer_dim["activation_date"] = customer["customer_inserted_at"]
+        customer_dim["deactivation_date"] = date(2099, 12, 31)
+        customer_dim["start_date"] = customer["customer_inserted_at"]
         customer_dim["effective_date"] = date(2020, 10, 10)
         customer_dim["expiration_date"] = date(2099, 12, 31)
         customer_dim["is_current_row"] = "Y"
 
-        customer_dim = pd.DataFrame(
-            customer_dim, columns=self._dimension_table.get_column_names()
-        )
+        # conform output types
         customer_dim = customer_dim.astype(
             self._dimension_table.get_column_pandas_types()
         )
-        customer_dim = customer_dim.fillna(CustomerDimensionProcessor.get_address_defaults())
+
+        # apply default values
+        customer_dim = customer_dim.fillna(
+            CustomerDimensionProcessor.get_address_defaults()
+        )
 
         return customer_dim
 
     def _build_update_dimension(
-        self, update_keys: Index, prior_customer_dim, customer, customer_address
-    ):
+        self,
+        update_keys: Index,
+        prior_customer_dim: DataFrame,
+        customer: DataFrame,
+        customer_address: DataFrame,
+    ) -> DataFrame:
+        """
+        Update existing records in customer_dimension table star schema
+
+        :param update_keys: keys for records in batch already in star schema
+        :param prior_customer_dim:
+        :param customer: staged customer data
+        :param customer_address: staged customer address data
+        :return: a customer_dim dataframe ready to be written to mySQL
+        """
 
         if prior_customer_dim.shape[0] == 0:
             return pd.DataFrame([])
 
+        # restrict stage date to update_keys
         customer = customer.loc[update_keys.intersection(customer.index)]
         customer_address = customer_address.loc[
             update_keys.intersection(customer_address.index)
         ]
 
-        customer_dim = CustomerDimensionProcessor.customer_transform(customer, customer_address)
+        # apply common transformation
+        customer_dim = CustomerDimensionProcessor.customer_transform(
+            customer, customer_address
+        )
 
+        # reset activation status and dates when change detected
         customer = customer.reindex(update_keys)
-
         if "customer_is_active" in customer.columns:
             was_activated = (customer["customer_is_active"] == True) & (
                 prior_customer_dim["is_active"] == False
@@ -343,16 +381,18 @@ class CustomerDimensionProcessor:
                 "customer_updated_at"
             ]
 
+        # copy all non-null values from customer_dim over prior_customer_dim (old values not
+        # appearing in the incremental batch are preserved)
         mask = customer_dim.notnull()
         for col in customer_dim.columns:
             prior_customer_dim.loc[mask[col], col] = customer_dim[col]
 
-        customer_dim = pd.DataFrame(
+        # make copy of result
+        update_dim = pd.DataFrame(
             prior_customer_dim, columns=self._dimension_table.get_column_names()
         )
 
-        customer_dim = customer_dim.astype(
-            self._dimension_table.get_column_pandas_types()
-        )
+        # conform output types
+        update_dim = update_dim.astype(self._dimension_table.get_column_pandas_types())
 
-        return customer_dim
+        return update_dim

@@ -91,6 +91,7 @@ def base_dimension_records_all():
 #     assert sorted(incremental_keys.tolist()) == [1, 2, 3, 4, 6]
 #
 
+
 def test_get_new_keys():
 
     c = CustomerDimensionProcessor()
@@ -108,7 +109,7 @@ def test_get_new_keys():
         ["cust_key_1", "cust_key_2", "cust_key_3"], name="customer_key"
     )
 
-    new_keys = get_new_keys(incremental_keys, customer_dim, 'customer_key')
+    new_keys = get_new_keys(incremental_keys, customer_dim, "customer_key")
     assert len(new_keys) == 0
 
     # new only
@@ -116,7 +117,7 @@ def test_get_new_keys():
         ["cust_key_4", "cust_key_5", "cust_key_6"], name="customer_key"
     )
 
-    new_keys = get_new_keys(incremental_keys, customer_dim, 'customer_key')
+    new_keys = get_new_keys(incremental_keys, customer_dim, "customer_key")
     assert sorted(new_keys.to_list()) == ["cust_key_4", "cust_key_5", "cust_key_6"]
 
     # mix of updates and new
@@ -124,7 +125,7 @@ def test_get_new_keys():
         ["cust_key_2", "cust_key_3", "cust_key_4"], name="customer_key"
     )
 
-    new_keys = get_new_keys(incremental_keys, customer_dim, 'customer_key')
+    new_keys = get_new_keys(incremental_keys, customer_dim, "customer_key")
     assert sorted(new_keys.to_list()) == ["cust_key_4"]
 
 
@@ -185,8 +186,10 @@ def test_build_new_dimension():
 
     new_keys = pd.Index([3, 4, 5])
 
-    customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
-    customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
+    customer = pd.DataFrame(customer_data).set_index("customer_id", drop=False)
+    customer_address = pd.DataFrame(customer_address_data).set_index(
+        "customer_id", drop=False
+    )
 
     inserts = c._build_new_dimension(new_keys, customer, customer_address)
 
@@ -234,7 +237,9 @@ def test_transform_referral_type():
     customer_address = pd.DataFrame(customer_address_data)
     customer_address = customer_address.set_index("customer_id", drop=False)
 
-    customer_dim = CustomerDimensionProcessor.customer_transform(customer, customer_address)
+    customer_dim = CustomerDimensionProcessor.customer_transform(
+        customer, customer_address
+    )
 
     assert customer_dim.shape[0] == 4
     assert customer_dim.at[1, "referral_type"] == "Unknown"
@@ -266,11 +271,17 @@ def test_update_customer_only(base_dimension_record_45):
         "batch_id": [],
     }
 
-    customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
-    customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
+    customer = pd.DataFrame(customer_data).set_index("customer_id", drop=False)
+    customer_address = pd.DataFrame(customer_address_data).set_index(
+        "customer_id", drop=False
+    )
 
-    customer_dim = c._build_update_dimension(base_dimension_record_45.index, base_dimension_record_45,
-                                             customer, customer_address)
+    customer_dim = c._build_update_dimension(
+        base_dimension_record_45.index,
+        base_dimension_record_45,
+        customer,
+        customer_address,
+    )
 
     assert customer_dim.shape[0] == 1
     assert customer_dim.loc[45, "credit_card_number"] == "12345678"
@@ -301,11 +312,16 @@ def test_update_customer_address_only(base_dimension_record_45):
         "batch_id": [1],
     }
 
-    customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
-    customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
+    customer = pd.DataFrame(customer_data).set_index("customer_id", drop=False)
+    customer_address = pd.DataFrame(customer_address_data).set_index(
+        "customer_id", drop=False
+    )
 
     customer_dim = c._build_update_dimension(
-        base_dimension_record_45.index, base_dimension_record_45, customer, customer_address
+        base_dimension_record_45.index,
+        base_dimension_record_45,
+        customer,
+        customer_address,
     )
     assert customer_dim.shape[0] == 1
     assert customer_dim.loc[45, "shipping_zip"] == "54322"
@@ -335,11 +351,16 @@ def test_deactivate(base_dimension_record_45):
         "batch_id": [],
     }
 
-    customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
-    customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
+    customer = pd.DataFrame(customer_data).set_index("customer_id", drop=False)
+    customer_address = pd.DataFrame(customer_address_data).set_index(
+        "customer_id", drop=False
+    )
 
     customer_dim = c._build_update_dimension(
-        base_dimension_record_45.index, base_dimension_record_45, customer, customer_address
+        base_dimension_record_45.index,
+        base_dimension_record_45,
+        customer,
+        customer_address,
     )
 
     assert customer_dim.shape[0] == 1
@@ -373,8 +394,10 @@ def test_activate(base_dimension_record_45):
         "batch_id": [],
     }
 
-    customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
-    customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
+    customer = pd.DataFrame(customer_data).set_index("customer_id", drop=False)
+    customer_address = pd.DataFrame(customer_address_data).set_index(
+        "customer_id", drop=False
+    )
 
     customer_dim = c._build_update_dimension(
         old_dim.index, old_dim, customer, customer_address
@@ -422,11 +445,16 @@ def test_update_all(base_dimension_records_all):
         "batch_id": [1, 1, 1],
     }
 
-    customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
-    customer_address_stage_df = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
+    customer = pd.DataFrame(customer_data).set_index("customer_id", drop=False)
+    customer_address_stage_df = pd.DataFrame(customer_address_data).set_index(
+        "customer_id", drop=False
+    )
 
     customer_dim = c._build_update_dimension(
-        base_dimension_records_all.index, base_dimension_records_all, customer, customer_address_stage_df
+        base_dimension_records_all.index,
+        base_dimension_records_all,
+        customer,
+        customer_address_stage_df,
     )
 
     assert customer_dim.shape[0] == 2
@@ -470,11 +498,16 @@ def test_update_all_2(base_dimension_records_all):
         "batch_id": [1, 1, 1],
     }
 
-    customer = pd.DataFrame(customer_data).set_index('customer_id', drop=False)
-    customer_address = pd.DataFrame(customer_address_data).set_index('customer_id', drop=False)
+    customer = pd.DataFrame(customer_data).set_index("customer_id", drop=False)
+    customer_address = pd.DataFrame(customer_address_data).set_index(
+        "customer_id", drop=False
+    )
 
     customer_dim = c._build_update_dimension(
-        base_dimension_records_all.index, base_dimension_records_all, customer, customer_address
+        base_dimension_records_all.index,
+        base_dimension_records_all,
+        customer,
+        customer_address,
     )
 
     assert customer_dim.shape[0] == 2
@@ -486,4 +519,3 @@ def test_update_all_2(base_dimension_records_all):
     assert customer_dim.loc[46, "billing_street_number"] == "44 Pine Street"
     assert customer_dim.loc[46, "email"] == "henry@hotmail.com"
     assert customer_dim.loc[46, "credit_card_number"] == "88888888"
-
