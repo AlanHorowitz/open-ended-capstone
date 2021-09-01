@@ -19,12 +19,12 @@ def get_stage_dir(batch_id):
     return STAGE_DIRECTORY_PREFIX + str(batch_id)
 
 
-def get_new_keys(incremental_keys: pd.Series, dimension: pd.DataFrame, key=None) -> pd.Index:
-
-    merged = pd.merge(incremental_keys, dimension, on=key, how="left")
-    new_mask = merged["surrogate_key"].isna()
-    new_keys = pd.Index(merged[new_mask][key])
-    return new_keys
+# def get_new_keys(incremental_keys: pd.Series, dimension: pd.DataFrame, key=None) -> pd.Index:
+#
+#     merged = pd.merge(incremental_keys, dimension, on=key, how="left")
+#     new_mask = merged["surrogate_key"].isna()
+#     new_keys = pd.Index(merged[new_mask][key])
+#     return new_keys
 
 
 def read_stage(batch_id: int, tables):

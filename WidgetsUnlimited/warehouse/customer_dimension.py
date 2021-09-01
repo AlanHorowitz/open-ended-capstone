@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import date
 
 from pandas.core.frame import DataFrame, Series, Index
-from .util import get_stage_dir, get_new_keys, read_stage
+from .util import read_stage
 from tables.customer_dim import CustomerDimTable
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
