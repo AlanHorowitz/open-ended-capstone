@@ -2,7 +2,7 @@ from datetime import date, datetime
 import pandas as pd
 import pytest
 
-from WidgetsUnlimited.warehouse.util import get_new_keys
+from WidgetsUnlimited.warehouse.warehouse_util import get_new_keys
 from .context import CustomerDimensionProcessor, CustomerTable
 
 # subset of customer_dim columns for testing

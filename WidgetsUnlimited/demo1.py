@@ -97,12 +97,22 @@ daily_operations = [
             order_line_item_table, n_inserts=3, n_updates=0, link_parent=True
         ),
     ],
+    [
+        # day 4
+        TableTransaction(customer_table, n_inserts=25, n_updates=7),
+        TableTransaction(
+            customer_address_table, n_inserts=1, n_updates=0, link_parent=True
+        ),
+    ],
 ]
 
 # Each day, synchronously process transactions and extract to
 # warehouse.
 for day, transactions in enumerate(daily_operations, start=1):
 
+    print("-"*60)
+    print(f"Batch {day} starting")
+    print("-"*60)
     source_system_controller.process(transactions=transactions, batch_id=day)
     warehouse.direct_extract(data_generator.get_connection(), batch_id=day)
     warehouse.transform_load(batch_id=day)

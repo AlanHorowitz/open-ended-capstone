@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import date
 
 from pandas.core.frame import DataFrame, Series, Index
-from .util import read_stage
+from .warehouse_util import read_stage
 from tables.customer_dim import CustomerDimTable
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
@@ -94,13 +94,20 @@ class CustomerDimensionProcessor:
             batch_id, [CustomerTable(), CustomerAddressTable()]
         )
         incremental_keys = customer.index.union(customer_address.index).unique()
+        print("Read from stage")
+        print(f"{len(customer.index)} customer records found")
+        print(f"{len(customer_address.index)} customer address records found")
+        print('-'*60)
+        print(f"{len(incremental_keys)} unique customer ids found", end=' ')
         if incremental_keys.size == 0:
             return
 
         prior_customer_dim = self._read_dimension("customer_key", incremental_keys)
         update_keys = prior_customer_dim.index
         new_keys = incremental_keys.difference(update_keys)
-
+        print(f"New: {len(new_keys)}", end=' ')
+        print(f"Updates: {len(update_keys)}")
+        print('-'*60)
         inserts = self._build_new_dimension(new_keys, customer, customer_address)
         updates = self._build_update_dimension(
             update_keys, prior_customer_dim, customer, customer_address
@@ -155,6 +162,7 @@ class CustomerDimensionProcessor:
                 f"{operation} INTO {table_name} ({column_names}) values ({values_substitutions})",
                 rows,
             )
+            print(f"row count of {operation} for {table_name} was {cur.rowcount} ,inputs was {len(rows)}")
             self._connection.commit()
 
     @staticmethod

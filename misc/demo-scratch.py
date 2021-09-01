@@ -46,9 +46,6 @@ customer_address_table = CustomerAddressTable()
 order_table = OrderTable()
 order_line_item_table = OrderLineItemTable()
 
-# creates sample records for a table
-data_generator = DataGenerator()
-
 # source systems
 e_commerce_system = eCommerceSystem(data_generator)
 inventory_system = InventorySystem(data_generator)
@@ -60,10 +57,8 @@ e_commerce_system.add_tables(
 inventory_system.add_tables([product_table])
 
 # processor of source system inputs
-operational_simulator = OperationalSimulator()
+operation_simulator = OperationSimulator(DataGenerator(), [eCommerceSystem(), InventorySystem()])
 operational_simulator.set_systems([eCommerceSystem, InventorySystem])
-operational_simulator.set_generator()
-operational_simulator.associate_data(system, [tables])
 operational_simulator.set_simulation(build one)
 
 # consumes and transforms source system incremental output
@@ -111,8 +106,8 @@ operational_simulator.run(daily_operations, start=1)
 # warehouse.
 for day, transactions in enumerate(daily_operations, start=1):
 
-    operational_simulator.process(transactions=transactions, batch_id=day)
-    data_warehouse.direct_extract(data_generator.get_connection(), batch_id=day)
+    operation_simulator.process(transactions=transactions, batch_id=day)
+    direct_extract(data_generator.get_connection(), batch_id=day)
     data_warehouse.transform_load(batch_id=day)
 
 print("Phase 1 demo completed successfully.")
