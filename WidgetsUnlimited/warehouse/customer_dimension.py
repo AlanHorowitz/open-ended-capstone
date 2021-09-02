@@ -116,6 +116,7 @@ class CustomerDimensionProcessor:
         self._write_dimension(inserts, "INSERT")
         self._next_surrogate_key += inserts.shape[0]
         self._write_dimension(updates, "REPLACE")
+        print(f"{self._count_dimension()} total rows in dimension")
 
     def _create_dimension(self):
         """Create an empty customer_dimension on warehouse initialization."""
@@ -164,6 +165,13 @@ class CustomerDimensionProcessor:
             )
             print(f"row count of {operation} for {table_name} was {cur.rowcount} ,inputs was {len(rows)}")
             self._connection.commit()
+
+    def _count_dimension(self) -> int:
+        """ Return number of rows in dimension table"""
+        table_name = self._dimension_table.get_name()
+        cur = self._connection.cursor()
+        cur.execute(f"SELECT COUNT(*) FROM {table_name};")
+        return cur.fetchone()[0]
 
     @staticmethod
     def get_address_defaults() -> Dict[str, str]:
@@ -302,8 +310,8 @@ class CustomerDimensionProcessor:
             return pd.DataFrame([])
 
         # restrict stage date to new_keys
-        customer = customer.loc[new_keys]
-        customer_address = customer_address.loc[new_keys]
+        customer = customer.loc[new_keys.intersection(customer.index)]
+        customer_address = customer_address.loc[new_keys.intersection(customer_address.index)]
 
         # apply common transformation
         customer_dim = CustomerDimensionProcessor.customer_transform(

@@ -5,9 +5,11 @@ from datetime import datetime
 
 from mysql.connector import connect
 
-from context import CustomerDimension
+from context import CustomerDimensionProcessor
 
 from context import DataGenerator, TableUpdate
+from context import extract_write_stage
+
 
 from context import ProductTable
 from context import StoreTable
@@ -22,7 +24,7 @@ from context import CustomerAddressTable
 from warehouse2 import create_and_copy_warehouse_tables, write_parquet_warehouse_tables
 
 # test docker image
- # os.environ['DATA_GENERATOR_DB'] = 'postgres'
+# os.environ['DATA_GENERATOR_DB'] = 'postgres'
 # os.environ['DATA_GENERATOR_DB'] = 'retaildw'
 # # os.environ['DATA_GENERATOR_HOST'] = '172.17.0.2'
 # os.environ['DATA_GENERATOR_HOST'] = '172.18.0.1'
@@ -64,7 +66,7 @@ order_line_item_table = OrderLineItemTable()
 customer_table = CustomerTable()
 customer_address_table = CustomerAddressTable()
 
-customer_dimesion = CustomerDimension(ms_connection)
+customer_dimesion = CustomerDimensionProcessor(ms_connection)
 
 data_generator.add_tables([product_table, store_table, store_sales_table,
 store_sales_table, store_location_table, order_table, order_line_item_table,
@@ -99,7 +101,7 @@ create_and_copy_warehouse_tables(data_generator.connection, [product_table, stor
 store_sales_table, store_location_table, order_table, order_line_item_table,
 customer_table, customer_address_table])
 
-write_parquet_warehouse_tables(1, [product_table, store_table, store_sales_table,
+extract_write_stage(1, [product_table, store_table, store_sales_table,
 store_sales_table, store_location_table, order_table, order_line_item_table,
 customer_table, customer_address_table])
 
@@ -109,7 +111,7 @@ customer_dimesion.process_update(1)
 data_generator.generate(
     TableUpdate(customer_table, n_inserts=0, n_updates=2), batch_id=2)
 
-write_parquet_warehouse_tables(2, [customer_table, customer_address_table])
+extract_write_stage(2, [customer_table, customer_address_table])
 
 customer_dimesion.process_update(2)
 

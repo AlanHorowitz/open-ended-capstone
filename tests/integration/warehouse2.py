@@ -1,7 +1,7 @@
 from pandas.io.sql import table_exists
 from sourcesystems.table_update import TableUpdate
 from util.sqltypes import Table
-from warehouse.util import clean_stage_dir, get_stage_dir
+from warehouse.warehouse_util import clean_stage_dir, get_stage_dir
 from typing import List
 import os 
 
