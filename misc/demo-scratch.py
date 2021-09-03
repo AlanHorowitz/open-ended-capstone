@@ -58,8 +58,8 @@ inventory_system.add_tables([product_table])
 
 # processor of source system inputs
 operation_simulator = OperationSimulator(DataGenerator(), [eCommerceSystem(), InventorySystem()])
-operational_simulator.set_systems([eCommerceSystem, InventorySystem])
-operational_simulator.set_simulation(build one)
+operation_simulator.add_tables(e_commerce_system,[])
+
 
 # consumes and transforms source system incremental output
 data_warehouse = DataWarehouse()

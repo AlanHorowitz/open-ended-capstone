@@ -10,10 +10,9 @@ from .generator import DataGenerator
 from .base import BaseSystem
 
 
-class eCommerceSystem(BaseSystem):
-    def __init__(self, dataGenerator: DataGenerator) -> None:
+class eCommerceSystem():
+    def __init__(self) -> None:
         # open connection to postgres
-        super().__init__(dataGenerator)
         self.connection: connection = psycopg2.connect(
             dbname=os.environ["E_COMMERCE_DB"],
             host=os.environ["E_COMMERCE_HOST"],
@@ -30,7 +29,6 @@ class eCommerceSystem(BaseSystem):
         self.connection.commit()
 
     def add_tables(self, tables: List[Table]) -> None:
-        super().add_tables(tables)
         for table in tables:
             self.cur.execute(f"DROP TABLE IF EXISTS {table.get_name()};")
             self.cur.execute(table.get_create_sql_postgres())

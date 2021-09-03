@@ -2,17 +2,14 @@ from typing import List
 from datetime import datetime
 
 from util.sqltypes import Table
-from .generator import DataGenerator
 
 
 class BaseSystem:
-    def __init__(self, dataGenerator: DataGenerator) -> None:
-        self._data_generator = dataGenerator
+    def __init__(self) -> None:
+        pass
 
     def add_tables(self, tables: List[Table]) -> None:
-        self._data_generator.add_tables(tables)
-        for table in tables:
-            table.setOperationalSystem(self)
+        pass
 
     def open(table: Table) -> None:
         pass
@@ -26,5 +23,3 @@ class BaseSystem:
     def update(self, table, records):
         pass
 
-    def getDataGenerator(self) -> DataGenerator:
-        return self._data_generator

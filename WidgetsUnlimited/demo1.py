@@ -36,26 +36,24 @@ CUSTOMER_ADDRESS = CustomerAddressTable()
 ORDER = OrderTable()
 ORDER_LINE_ITEM = OrderLineItemTable()
 
-# creates sample records for a table
+# create data generator
 data_generator = DataGenerator()
 
-# source systems
-e_commerce_system = eCommerceSystem(data_generator)
-inventory_system = InventorySystem(data_generator)
+# create source systems
+e_commerce_system = eCommerceSystem()
+inventory_system = InventorySystem()
 
-# allocate tables to source systems
-e_commerce_system.add_tables(
+# Initialize simulator with data generator and source systems.  Allocate tables to source systems
+operations_simulator = OperationsSimulator(data_generator, [e_commerce_system, inventory_system])
+operations_simulator.add_tables(e_commerce_system,
     [CUSTOMER, CUSTOMER_ADDRESS, ORDER, ORDER_LINE_ITEM]
 )
-inventory_system.add_tables([PRODUCT])
+operations_simulator.add_tables(inventory_system, [PRODUCT])
 
-# processor of source system inputs
-operations_simulator = OperationsSimulator()
-
-# consumes and transforms source system incremental output
+# create data warehouse
 warehouse = DataWarehouse()
 
-# three days sample of input
+# four days of operations input
 daily_operations = [
     [
         # day 1
@@ -96,12 +94,13 @@ daily_operations = [
     ],
 ]
 
-# Each day, synchronously process transactions and extract to the warehouse.
+# Synchronously process transactions and extract and load in warehouse.
 for day, transactions in enumerate(daily_operations, start=1):
 
     print("-"*60)
     print(f"Batch {day} starting")
     print("-"*60)
+
     operations_simulator.process(transactions=transactions, batch_id=day)
     warehouse.direct_extract(data_generator.get_connection(), batch_id=day)
     warehouse.transform_load(batch_id=day)
