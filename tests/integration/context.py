@@ -8,6 +8,7 @@ sys.path.insert(
 
 from warehouse.customer_dimension import CustomerDimensionProcessor
 from warehouse.warehouse_util import extract_write_stage
+from warehouse.data_warehouse import DataWarehouse
 
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
