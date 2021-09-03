@@ -27,7 +27,7 @@ from sourcesystems.inventory import InventorySystem
 from sourcesystems.generator import DataGenerator
 
 from sourcesystems.table_transaction import TableTransaction
-from sourcesystems.controller import OperationsSimulator
+from sourcesystems.simulator import OperationsSimulator
 from warehouse.data_warehouse import DataWarehouse
 
 # table metadata

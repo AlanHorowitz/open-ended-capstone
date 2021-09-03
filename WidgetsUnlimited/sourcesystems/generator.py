@@ -1,7 +1,7 @@
 from typing import List
 from util.sqltypes import Table
 from datetime import datetime
-from .table_update import TableUpdate
+from .table_transaction import TableTransaction
 import random
 import os
 
@@ -11,7 +11,6 @@ from psycopg2.extensions import connection, cursor
 
 
 class DataGenerator:
-    # "dbname=retaildw host=172.17.0.1 user=user1 password=user1"
     def __init__(self) -> None:
         self.connection: connection = psycopg2.connect(
             dbname=os.environ["DATA_GENERATOR_DB"],
@@ -38,7 +37,7 @@ class DataGenerator:
             self.cur.execute(table.get_create_sql_postgres())
             self.connection.commit()
 
-    def generate(self, table_update: TableUpdate, batch_id: int = 0) -> List[DictRow]:
+    def generate(self, table_transaction: TableTransaction, batch_id: int = 0) -> List[DictRow]:
         """
         Insert and update the given numbers of sythesized records to a table.
 
@@ -62,10 +61,10 @@ class DataGenerator:
 
         conn = self.connection
         cur: cursor = conn.cursor(cursor_factory=DictCursor)
-        table = table_update.table
-        n_inserts = table_update.n_inserts
-        n_updates = table_update.n_updates
-        link_parent = table_update.link_parent
+        table = table_transaction.table
+        n_inserts = table_transaction.n_inserts
+        n_updates = table_transaction.n_updates
+        link_parent = table_transaction.link_parent
         timestamp = datetime.now()
 
         if link_parent and not table.has_parent():
