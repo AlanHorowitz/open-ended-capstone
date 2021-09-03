@@ -2,10 +2,11 @@ from util.sqltypes import Table
 from .generator import DataGenerator
 from .base import BaseSystem
 from .table_transaction import TableTransaction
+from typing import List
 
 
-class SourceSystemController:
-    def process(self, batch_id: int, transactions: TableTransaction) -> None:
+class OperationsSimulator:
+    def process(self, batch_id: int, transactions: List[TableTransaction]) -> None:
 
         for transaction in transactions:
 

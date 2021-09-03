@@ -34,7 +34,7 @@ from sourcesystems.inventory import InventorySystem
 from sourcesystems.generator import DataGenerator
 
 from sourcesystems.table_transaction import TableTransaction
-from sourcesystems.controller import SourceSystemController
+from sourcesystems.controller import OperationsSimulator
 
 from warehouse.data_warehouse import DataWarehouse
 
@@ -60,7 +60,7 @@ e_commerce_system.add_tables(
 inventory_system.add_tables([product_table])
 
 # processor of source system inputs
-source_system_controller = SourceSystemController()
+source_system_controller = OperationsSimulator()
 
 # consumes and transforms source system incremental output
 warehouse = DataWarehouse()

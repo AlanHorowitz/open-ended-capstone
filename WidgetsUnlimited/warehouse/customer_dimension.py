@@ -161,14 +161,15 @@ class CustomerDimensionProcessor:
                 f"{operation} INTO {table_name} ({column_names}) values ({values_substitutions})",
                 rows,
             )
+
             if operation == 'INSERT':
                 operation_text = "inserts"
                 rows_affected = cur.rowcount
             else:
                 operation_text = "updates"
                 rows_affected = cur.rowcount // 2
-
             print(f"CustomerDimensionProcessor: {rows_affected} {operation_text} written to {table_name} table")
+
             self._connection.commit()
 
     def _count_dimension(self) -> int:
