@@ -23,30 +23,6 @@ from context import CustomerAddressTable
 
 from warehouse2 import create_and_copy_warehouse_tables, write_parquet_warehouse_tables
 
-# test docker image
-# os.environ['DATA_GENERATOR_DB'] = 'postgres'
-# os.environ['DATA_GENERATOR_DB'] = 'retaildw'
-# # os.environ['DATA_GENERATOR_HOST'] = '172.17.0.2'
-# os.environ['DATA_GENERATOR_HOST'] = '172.18.0.1'
-# os.environ['DATA_GENERATOR_PORT'] = '5432'
-# # os.environ['DATA_GENERATOR_USER'] = 'postgres'
-# # os.environ['DATA_GENERATOR_PASSWORD'] = 'postgres'
-# os.environ['DATA_GENERATOR_USER'] = 'user1'
-# os.environ['DATA_GENERATOR_PASSWORD'] = 'user1'
-# os.environ['DATA_GENERATOR_SCHEMA'] = 'test'
-
-# ms_connection = connect(
-#         # host="localhost",
-#         # user="alan",
-#         # password="alan",
-#         # database="edw",
-#         host="172.18.0.1",
-#         user="user1",
-#         password="user1",
-#         database="retaildw",
-#         charset="utf8",
-#     )
-
 ms_connection = connect(
     host=os.getenv('WAREHOUSE_HOST'),
     port=os.getenv('WAREHOUSE_PORT'),
@@ -66,7 +42,7 @@ order_line_item_table = OrderLineItemTable()
 customer_table = CustomerTable()
 customer_address_table = CustomerAddressTable()
 
-customer_dimesion = CustomerDimensionProcessor(ms_connection)
+customer_dimension = CustomerDimensionProcessor(ms_connection)
 
 data_generator.add_tables([product_table, store_table, store_sales_table,
 store_sales_table, store_location_table, order_table, order_line_item_table,
@@ -105,7 +81,7 @@ extract_write_stage(1, [product_table, store_table, store_sales_table,
 store_sales_table, store_location_table, order_table, order_line_item_table,
 customer_table, customer_address_table])
 
-customer_dimesion.process_update(1)
+customer_dimension.process_update(1)
 
 # try modifying two customers
 data_generator.generate(
@@ -113,6 +89,6 @@ data_generator.generate(
 
 extract_write_stage(2, [customer_table, customer_address_table])
 
-customer_dimesion.process_update(2)
+customer_dimension.process_update(2)
 
 

@@ -15,6 +15,7 @@ OperationsSimulator - Process that feeds TableTransactions to the DataGenerator 
 DataWarehouse - Process that extracts incremental data produced by the source systems and transforms it into a
 star schema.
 """
+
 from tables.product import ProductTable
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
@@ -43,7 +44,7 @@ data_generator = DataGenerator()
 e_commerce_system = eCommerceSystem()
 inventory_system = InventorySystem()
 
-# Initialize simulator with data generator and source systems.  Allocate tables to source systems
+# Initialize simulator with data generator and source systems.  Allocate tables to source systems.
 operations_simulator = OperationsSimulator(data_generator, [e_commerce_system, inventory_system])
 operations_simulator.add_tables(e_commerce_system,
     [CUSTOMER, CUSTOMER_ADDRESS, ORDER, ORDER_LINE_ITEM]
@@ -87,6 +88,9 @@ daily_operations = [
     ],
     [
         # day 4
+        TableTransaction(
+            CUSTOMER_ADDRESS, n_inserts=0, n_updates=15, link_parent=False
+        ),
         TableTransaction(CUSTOMER, n_inserts=25, n_updates=7),
         TableTransaction(
             CUSTOMER_ADDRESS, n_inserts=1, n_updates=0, link_parent=True
