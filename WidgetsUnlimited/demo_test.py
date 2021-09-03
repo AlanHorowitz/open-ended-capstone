@@ -66,7 +66,7 @@ source_system_controller = SourceSystemController()
 warehouse = DataWarehouse()
 
 # three days sample of input
-daily_operations = [
+daily_operations = (
     [
         # day 1
         TableTransaction(product_table, n_inserts=500, n_updates=0),
@@ -87,31 +87,24 @@ daily_operations = [
         #     order_line_item_table, n_inserts=5, n_updates=0, link_parent=True
         # ),
     ],
-    # [
-    #     # day 3
-    #     TableTransaction(product_table, n_inserts=50, n_updates=5),
-    #     TableTransaction(customer_table, n_inserts=0, n_updates=5),
-    #     TableTransaction(customer_address_table, n_inserts=0, n_updates=10),
-    #     TableTransaction(order_table, n_inserts=1000, n_updates=0),
-    #     TableTransaction(
-    #         order_line_item_table, n_inserts=3, n_updates=0, link_parent=True
-    #     ),
-    # ],
-    # [
-    #     # day 4
-    #     TableTransaction(customer_table, n_inserts=25, n_updates=7),
-    #     TableTransaction(
-    #         customer_address_table, n_inserts=1, n_updates=0, link_parent=True
-    #     ),
-    # ],
-]
+    [
+        # day 3
+        TableTransaction(product_table, n_inserts=50, n_updates=5),
+        TableTransaction(customer_table, n_inserts=500, n_updates=5),
+        TableTransaction(customer_address_table, n_inserts=1, n_updates=0, link_parent=True),
+    ],
+    [
+        # day 4
+        TableTransaction(customer_address_table, n_inserts=0, n_updates=15, link_parent=False),
+    ],
+)
 
 # Each day, synchronously process transactions and extract to
 # warehouse.
 for day, transactions in enumerate(daily_operations, start=1):
 
     print("-"*60)
-    print(f"Batch {day} starting")
+    print(f"Batch {day} ")
     print("-"*60)
     source_system_controller.process(transactions=transactions, batch_id=day)
     warehouse.direct_extract(data_generator.get_connection(), batch_id=day)

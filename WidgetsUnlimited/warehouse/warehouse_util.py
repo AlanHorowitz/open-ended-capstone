@@ -37,6 +37,7 @@ def read_stage(batch_id: int, tables) -> List[pd.DataFrame]:
         df = pd.read_parquet(get_stage_file(batch_id, table_name))
         df = df.astype(table.get_column_pandas_types())
         df = df.set_index(index_column, drop=False)
+        print(f"CustomerDimensionProcessor: {df.shape[0]} {table_name} records read from stage")
         stages.append(df)
 
     return stages
@@ -77,4 +78,4 @@ def extract_write_stage(connection, batch_id: int, tables: List[Table]) -> None:
         }
         df = df.astype(df_type)
         df.to_parquet(get_stage_file(batch_id, table_name), compression="gzip")
-        print(f"Table {table_name} extracted to stage for batch {str(batch_id)}")
+        print(f"direct-extract: {df.shape[0]} {table_name} records extracted to stage")

@@ -1,8 +1,11 @@
+import os
 from datetime import date, datetime
 import pandas as pd
 import pytest
+from mysql.connector import connect
 
-from WidgetsUnlimited.warehouse.warehouse_util import get_new_keys
+
+# from WidgetsUnlimited.warehouse.warehouse_util import get_new_keys
 from .context import CustomerDimensionProcessor, CustomerTable
 
 # subset of customer_dim columns for testing
@@ -37,12 +40,12 @@ dim_records = {
     "start_date": [date(2020, 10, 10), date(2020, 10, 10)],
     "last_update_date": [date(2020, 10, 10), date(2020, 10, 10)],
     "billing_name": ["Ellen Woods", "Henry Higgins"],
-    "billing_street": ["123 Clarkstown Road", "33 Oak Street"],
+    "billing_street_number": ["123 Clarkstown Road", "33 Oak Street"],
     "billing_city": ["Moorestown", "Kenosha"],
     "billing_state": ["NJ", "WI"],
     "billing_zip": ["12345", "77777"],
     "shipping_name": ["Fred Johnson", None],
-    "shipping_street": ["77 Eagle Avenue", None],
+    "shipping_street_number": ["77 Eagle Avenue", None],
     "shipping_city": ["St. Joseph", None],
     "shipping_state": ["TN", None],
     "shipping_zip": ["54321", None],
@@ -68,65 +71,16 @@ def base_dimension_records_all():
     yield customer_dim
 
 
-# def test_get_incremental_keys():
-#
-#     customer_data = [[1, "cust1"], [2, "cust1"], [3, "cust1"], [4, "cust1"]]
-#
-#     customer_address_data = [
-#         [1, "custaddress1", 2],
-#         [3, "custaddress3", 2],
-#         [5, "custaddress5", 4],
-#         [7, "custaddress7", 4],
-#         [9, "custaddress9", 6],
-#     ]
-#
-#     c = CustomerDimension()
-#
-#     customer = pd.DataFrame(customer_data, columns=["customer_id", "name"])
-#     customer_address = pd.DataFrame(
-#         customer_address_data, columns=["address_id", "name", "customer_id"]
-#     )
-#
-#     incremental_keys = c._get_incremental_keys(customer, customer_address)
-#     assert sorted(incremental_keys.tolist()) == [1, 2, 3, 4, 6]
-#
-
-
-def test_get_new_keys():
-
-    c = CustomerDimensionProcessor()
-
-    customer_dim_data = [
-        [1, "cust_key_1", "name_1", "cust_addr_key_1", "address_1"],
-        [2, "cust_key_2", "name_2", "cust_addr_key_2", "address_2"],
-        [3, "cust_key_3", "name_3", "cust_addr_key_3", "address_3"],
-    ]
-
-    customer_dim = pd.DataFrame(customer_dim_data, columns=customer_dim_cols)
-
-    # updates only
-    incremental_keys = pd.Series(
-        ["cust_key_1", "cust_key_2", "cust_key_3"], name="customer_key"
+@pytest.fixture
+def ms_connection():
+    yield connect(
+        host=os.getenv("WAREHOUSE_HOST"),
+        port=os.getenv("WAREHOUSE_PORT"),
+        user=os.getenv("WAREHOUSE_USER"),
+        password=os.getenv("WAREHOUSE_PASSWORD"),
+        database=os.getenv("WAREHOUSE_DB"),
+        charset="utf8",
     )
-
-    new_keys = get_new_keys(incremental_keys, customer_dim, "customer_key")
-    assert len(new_keys) == 0
-
-    # new only
-    incremental_keys = pd.Series(
-        ["cust_key_4", "cust_key_5", "cust_key_6"], name="customer_key"
-    )
-
-    new_keys = get_new_keys(incremental_keys, customer_dim, "customer_key")
-    assert sorted(new_keys.to_list()) == ["cust_key_4", "cust_key_5", "cust_key_6"]
-
-    # mix of updates and new
-    incremental_keys = pd.Series(
-        ["cust_key_2", "cust_key_3", "cust_key_4"], name="customer_key"
-    )
-
-    new_keys = get_new_keys(incremental_keys, customer_dim, "customer_key")
-    assert sorted(new_keys.to_list()) == ["cust_key_4"]
 
 
 def test_parse_address():
@@ -415,6 +369,57 @@ def test_customer_transform():
 
 def test_latest_update():
     pass
+
+
+def test_write_dimension(ms_connection, base_dimension_records_all):
+
+    c = CustomerDimensionProcessor(ms_connection)
+
+    # insert two rows in empty table
+    c._write_dimension(base_dimension_records_all, 'INSERT')
+
+    table = c._dimension_table
+    table_name = table.get_name()
+    query = f"SELECT * FROM {table_name};"
+    df = pd.read_sql_query(query, ms_connection)
+    df = df.set_index('customer_key', drop=False)
+
+    assert base_dimension_records_all.shape[0] == 2
+    assert df.shape[0] == 2
+    assert sorted(df.columns) == sorted(base_dimension_records_all.columns)
+    assert df.loc[45].eq(base_dimension_records_all.loc[45]).all()
+    assert df.loc[46].eq(base_dimension_records_all.loc[46]).all()
+
+    # two more new dim records
+
+    two_new = base_dimension_records_all.copy()
+    two_new.reset_index(inplace=True, drop=True)
+    two_new.at[0, ['surrogate_key', 'customer_key', 'name']] = [100, 100, 'John Doe']
+    two_new.at[1, ['surrogate_key', 'customer_key', 'name']] = [101, 101, 'Jane Doe']
+    c._write_dimension(two_new, 'INSERT')
+
+    df = pd.read_sql_query(query, ms_connection)
+    df = df.set_index('customer_key', drop=False)
+
+    assert df.shape[0] == 4
+    assert df.loc[100, 'name'] == 'John Doe'
+    assert df.loc[101, 'name'] == 'Jane Doe'
+
+    # modify two dim records
+
+    two_updates = df.copy()
+    two_updates = two_updates.loc[[45,101]]
+
+    two_updates.loc[45, 'billing_state'] = 'NY'
+    two_updates.loc[101, 'shipping_state'] = 'NY'
+    c._write_dimension(two_updates, 'REPLACE')
+
+    df = pd.read_sql_query(query, ms_connection)
+    df = df.set_index('customer_key', drop=False)
+
+    assert df.shape[0] == 4
+    assert df.loc[45].eq(two_updates.loc[45]).all()
+    assert df.loc[101].eq(two_updates.loc[101]).all()
 
 
 # mix behaviors across two records
