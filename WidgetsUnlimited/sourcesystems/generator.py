@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 from util.sqltypes import Table
 from datetime import datetime
 from .table_transaction import TableTransaction
@@ -11,7 +11,20 @@ from psycopg2.extensions import connection, cursor
 
 
 class DataGenerator:
+    """
+    The DataGenerator synthesizes sample data for tables described by Table and Column classes
+    in WidgetsUnlimited.util.sqltypes, and is tightly integrated with these classes' methods.
+    It is invoked via its generate method with a TableTransaction and a batch_id (see below).  The cumulative product
+    of the generation is stored in postgresql.
+
+    The DataGenerator supports tables linked together as a data model via foreign keys.
+    In particular the following behaviors are supported:
+
+        - Generate a table record with a random reference to an existing foreign key
+        - Generate a table reference or references to a specific foreign key (parent/child generation)
+    """
     def __init__(self) -> None:
+        """ Initialize connection to dedicated schema in postgresql """
         self.connection: connection = psycopg2.connect(
             dbname=os.environ["DATA_GENERATOR_DB"],
             host=os.environ["DATA_GENERATOR_HOST"],
@@ -25,21 +38,33 @@ class DataGenerator:
         self.cur.execute(f"SET SEARCH_PATH TO {schema};")
         self.connection.commit()
 
-    def close():
-        pass
-
     def get_connection(self):
         return self.connection
 
     def add_tables(self, tables: List[Table]) -> None:
+        """ Create new postgresql tables """
         for table in tables:
             self.cur.execute(f"DROP TABLE IF EXISTS {table.get_name()};")
             self.cur.execute(table.get_create_sql_postgres())
             self.connection.commit()
 
-    def generate(self, table_transaction: TableTransaction, batch_id: int = 0) -> List[DictRow]:
+    def generate(self, table_transaction: TableTransaction, batch_id: int = 0) -> Tuple[List[DictRow]]:
         """
-        Insert and update the given numbers of sythesized records to a table.
+        Insert and update the given numbers of synthesized records for a table.
+
+        :param table_transaction: class structure for calling options
+        attributes:
+           - table - table object
+           - n_inserts - number of records to insert
+           - n_updates - number of (previously inserted) records to update
+           - link_parent boolean - If true, use n_inserts to describe how many records to insert per parent key inserted
+             in same batch.
+
+        :param batch_id: Identifier used to group together multiple calls to generate, distinguishing current from prior
+        transactions.
+
+        :return: insert_records, update_records - lists of generated input and update rows, respectively.
+        The psycopg2 DictRow class allows columns to be accessed directly by name.
 
         For update, a random sample of n_updates keys is generated and the corresponding records
         read.  A random selection of one the string columns of the table is written back to the table with
@@ -48,15 +73,10 @@ class DataGenerator:
         For insert, n_insert dummy records are written to the table. The primary key is a sequence of
         incrementing integers, starting at the prior maximum value + 1.
 
-        Args:
-            conn: a psycopg2 db connection.
-            table: a RetailDW.sqltypes.Table object to be loaded.
-            n_inserts: quantity to insert.
-            n_updates: quantity to update
+        Foreign key references are resolved by random selection from previously generated keys in the
+        referenced tables, unless link_parent=True, in which case, they are correlated with parent keys
+        that are included in the current batch.
 
-        Returns:
-            A tuple, (n_inserted, n_updated), representing the number of rows inserted and updated.
-            In the future these may differ from the input values.
         """
 
         conn = self.connection
@@ -80,7 +100,7 @@ class DataGenerator:
         cur.execute(f"SELECT COUNT(*), MAX({primary_key_column}) from {table_name};")
         result: DictRow = cur.fetchone()
         row_count = result[0]
-        next_key = 1 if result[1] == None else result[1] + 1
+        next_key = 1 if result[1] is None else result[1] + 1
 
         update_records: List[DictRow] = []
         insert_records: List[DictRow] = []
