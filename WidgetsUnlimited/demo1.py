@@ -45,9 +45,11 @@ e_commerce_system = eCommerceSystem()
 inventory_system = InventorySystem()
 
 # Initialize simulator with data generator and source systems.  Allocate tables to source systems.
-operations_simulator = OperationsSimulator(data_generator, [e_commerce_system, inventory_system])
-operations_simulator.add_tables(e_commerce_system,
-    [CUSTOMER, CUSTOMER_ADDRESS, ORDER, ORDER_LINE_ITEM]
+operations_simulator = OperationsSimulator(
+    data_generator, [e_commerce_system, inventory_system]
+)
+operations_simulator.add_tables(
+    e_commerce_system, [CUSTOMER, CUSTOMER_ADDRESS, ORDER, ORDER_LINE_ITEM]
 )
 operations_simulator.add_tables(inventory_system, [PRODUCT])
 
@@ -60,21 +62,15 @@ daily_operations = [
         # day 1
         TableTransaction(PRODUCT, n_inserts=500, n_updates=0),
         TableTransaction(CUSTOMER, n_inserts=200, n_updates=0),
-        TableTransaction(
-            CUSTOMER_ADDRESS, n_inserts=1, n_updates=0, link_parent=True
-        ),
+        TableTransaction(CUSTOMER_ADDRESS, n_inserts=1, n_updates=0, link_parent=True),
     ],
     [
         # day 2
         TableTransaction(PRODUCT, n_inserts=50, n_updates=0),
         TableTransaction(CUSTOMER, n_inserts=40, n_updates=0),
-        TableTransaction(
-            CUSTOMER_ADDRESS, n_inserts=1, n_updates=0, link_parent=True
-        ),
+        TableTransaction(CUSTOMER_ADDRESS, n_inserts=1, n_updates=0, link_parent=True),
         TableTransaction(ORDER, n_inserts=1000, n_updates=0),
-        TableTransaction(
-            ORDER_LINE_ITEM, n_inserts=5, n_updates=0, link_parent=True
-        ),
+        TableTransaction(ORDER_LINE_ITEM, n_inserts=5, n_updates=0, link_parent=True),
     ],
     [
         # day 3
@@ -82,28 +78,21 @@ daily_operations = [
         TableTransaction(CUSTOMER, n_inserts=0, n_updates=5),
         TableTransaction(CUSTOMER_ADDRESS, n_inserts=0, n_updates=10),
         TableTransaction(ORDER, n_inserts=1000, n_updates=0),
-        TableTransaction(
-            ORDER_LINE_ITEM, n_inserts=3, n_updates=0, link_parent=True
-        ),
+        TableTransaction(ORDER_LINE_ITEM, n_inserts=3, n_updates=0, link_parent=True),
     ],
     [
         # day 4
-        TableTransaction(
-            CUSTOMER_ADDRESS, n_inserts=0, n_updates=15, link_parent=False
-        ),
-        TableTransaction(CUSTOMER, n_inserts=25, n_updates=7),
-        TableTransaction(
-            CUSTOMER_ADDRESS, n_inserts=1, n_updates=0, link_parent=True
-        ),
+        TableTransaction(CUSTOMER, n_inserts=25, n_updates=61),
+        TableTransaction(CUSTOMER_ADDRESS, n_inserts=1, n_updates=0, link_parent=True),
     ],
 ]
 
 # Synchronously process transactions and extract and load in warehouse.
 for day, transactions in enumerate(daily_operations, start=1):
 
-    print("-"*60)
+    print("-" * 60)
     print(f"Batch {day} starting")
-    print("-"*60)
+    print("-" * 60)
 
     operations_simulator.process(transactions=transactions, batch_id=day)
     warehouse.direct_extract(data_generator.get_connection(), batch_id=day)

@@ -22,4 +22,3 @@ from tables.store_location import StoreLocationTable
 from tables.store_sales import StoreSalesTable
 from tables.order import OrderTable
 from tables.order_line_item import OrderLineItemTable
-

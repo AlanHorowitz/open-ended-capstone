@@ -3,6 +3,7 @@ from typing import List
 
 import pandas as pd
 from util.sqltypes import Column, Table
+
 STAGE_DIRECTORY_PREFIX = "/tmp/warehouse/stage/batch"
 
 
@@ -17,7 +18,7 @@ def clean_stage_dir(batch_id):
 
 
 def get_stage_file(batch_id, table_name) -> str:
-    """ Return the full path name of stage file for a batch and table name """
+    """Return the full path name of stage file for a batch and table name"""
     return os.path.join(STAGE_DIRECTORY_PREFIX + str(batch_id), f"{table_name}.parquet")
 
 
@@ -37,7 +38,9 @@ def read_stage(batch_id: int, tables) -> List[pd.DataFrame]:
         df = pd.read_parquet(get_stage_file(batch_id, table_name))
         df = df.astype(table.get_column_pandas_types())
         df = df.set_index(index_column, drop=False)
-        print(f"CustomerDimensionProcessor: {df.shape[0]} {table_name} records read from stage")
+        print(
+            f"CustomerDimensionProcessor: {df.shape[0]} {table_name} records read from stage"
+        )
         stages.append(df)
 
     return stages

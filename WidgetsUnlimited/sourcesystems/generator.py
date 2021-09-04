@@ -23,9 +23,10 @@ class DataGenerator:
         - Generate a table record with a random reference to an existing foreign key
         - Generate a table reference or references to a specific foreign key (parent/child generation)
     """
+
     def __init__(self) -> None:
-        """ Initialize connection to dedicated schema in postgresql """
-        self.connection: connection = psycopg2.connect(
+        """Initialize connection to dedicated schema in postgresql"""
+        self._connection: connection = psycopg2.connect(
             dbname=os.environ["DATA_GENERATOR_DB"],
             host=os.environ["DATA_GENERATOR_HOST"],
             port=os.environ["DATA_GENERATOR_PORT"],
@@ -33,22 +34,24 @@ class DataGenerator:
             password=os.environ["DATA_GENERATOR_PASSWORD"],
         )
         schema = os.environ["DATA_GENERATOR_SCHEMA"]
-        self.cur: cursor = self.connection.cursor(cursor_factory=DictCursor)
+        self.cur: cursor = self._connection.cursor(cursor_factory=DictCursor)
         self.cur.execute(f"CREATE SCHEMA IF NOT EXISTS {schema};")
         self.cur.execute(f"SET SEARCH_PATH TO {schema};")
-        self.connection.commit()
+        self._connection.commit()
 
     def get_connection(self):
-        return self.connection
+        return self._connection
 
     def add_tables(self, tables: List[Table]) -> None:
-        """ Create new postgresql tables """
+        """Create new postgresql tables"""
         for table in tables:
             self.cur.execute(f"DROP TABLE IF EXISTS {table.get_name()};")
             self.cur.execute(table.get_create_sql_postgres())
-            self.connection.commit()
+            self._connection.commit()
 
-    def generate(self, table_transaction: TableTransaction, batch_id: int = 0) -> Tuple[List[DictRow]]:
+    def generate(
+        self, table_transaction: TableTransaction, batch_id: int = 0
+    ) -> Tuple[List[DictRow], List[DictRow]]:
         """
         Insert and update the given numbers of synthesized records for a table.
 
@@ -67,8 +70,8 @@ class DataGenerator:
         The psycopg2 DictRow class allows columns to be accessed directly by name.
 
         For update, a random sample of n_updates keys is generated and the corresponding records
-        read.  A random selection of one the string columns of the table is written back to the table with
-        '_UPD' appended.
+        read.  A random selection of one the updatable string columns (as indicated in the metadata)
+        is written back to the table with '_UPD' appended.
 
         For insert, n_insert dummy records are written to the table. The primary key is a sequence of
         incrementing integers, starting at the prior maximum value + 1.
@@ -76,10 +79,9 @@ class DataGenerator:
         Foreign key references are resolved by random selection from previously generated keys in the
         referenced tables, unless link_parent=True, in which case, they are correlated with parent keys
         that are included in the current batch.
-
         """
 
-        conn = self.connection
+        conn = self._connection
         cur: cursor = conn.cursor(cursor_factory=DictCursor)
         table = table_transaction.table
         n_inserts = table_transaction.n_inserts
@@ -90,17 +92,18 @@ class DataGenerator:
         if link_parent and not table.has_parent():
             raise Exception(f"Invalid Request. No parent for table {table.get_name()}")
 
+        # load references to foreign keys
         table.preload(cur)
 
         table_name = table.get_name()
         primary_key_column = table.get_primary_key()
         updated_at_column = table.get_updated_at()
-        column_names = ",".join(table.get_column_names())  # for SELECT statements
+        column_names = ",".join(table.get_column_names())
 
         cur.execute(f"SELECT COUNT(*), MAX({primary_key_column}) from {table_name};")
         result: DictRow = cur.fetchone()
         row_count = result[0]
-        next_key = 1 if result[1] is None else result[1] + 1
+        next_primary_key = 1 if result[1] is None else result[1] + 1
 
         update_records: List[DictRow] = []
         insert_records: List[DictRow] = []
@@ -109,7 +112,7 @@ class DataGenerator:
 
             n_updates = min(n_updates, row_count)
             update_keys = ",".join(
-                [str(i) for i in random.sample(range(1, next_key), n_updates)]
+                [str(i) for i in random.sample(range(1, next_primary_key), n_updates)]
             )
             cur.execute(
                 f"SELECT {column_names} from {table_name}"
@@ -119,7 +122,6 @@ class DataGenerator:
             update_records = cur.fetchall()
 
             for r in update_records:
-                key_value = r[primary_key_column]
                 update_column = table.get_update_column().get_name()
                 r[update_column] = r[update_column] + "_UPD"
                 cur.execute(
@@ -134,14 +136,10 @@ class DataGenerator:
             conn.commit()
 
         if n_inserts > 0:
-            # if there is a parent_link, read the keys from the parent table
-            # modified already in the current batch. Insert n_insert records per parent key,
-            # using parent_key attribute of column (foreign key v. parent key)
 
-            # Generate n_inserts inserts
             if not link_parent:
 
-                for pk in range(next_key, next_key + n_inserts):
+                for pk in range(next_primary_key, next_primary_key + n_inserts):
                     insert_records.append(
                         table.getNewRow(
                             primary_key=pk,
@@ -160,7 +158,8 @@ class DataGenerator:
                     insert_records,
                 )
 
-            # Generate n_inserts per parent record in batch
+            # if there is a parent_link, read the keys from the parent table that were inserted in
+            # the current batch. Insert n_insert records per parent key in one operation.
             else:
                 if table.has_parent():
                     cur.execute(
@@ -180,13 +179,13 @@ class DataGenerator:
                     for _ in range(n_inserts):
                         insert_records.append(
                             table.getNewRow(
-                                primary_key=next_key,
+                                primary_key=next_primary_key,
                                 parent_key=row[0],
                                 batch_id=batch_id,
                                 timestamp=timestamp,
                             )
                         )
-                        next_key += 1
+                        next_primary_key += 1
 
                 values_substitutions = ",".join(
                     ["%s"] * (n_inserts * len(linked_rs))
@@ -198,7 +197,7 @@ class DataGenerator:
                 )
             conn.commit()
 
+        # clear foreign key references
         table.postload()
 
-        # TODO clean batch_id, not for downstream use.
         return insert_records, update_records

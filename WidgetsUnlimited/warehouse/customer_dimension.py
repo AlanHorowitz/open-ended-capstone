@@ -94,7 +94,10 @@ class CustomerDimensionProcessor:
             batch_id, [CustomerTable(), CustomerAddressTable()]
         )
         incremental_keys = customer.index.union(customer_address.index).unique()
-        print(f"CustomerDimensionProcessor: {len(incremental_keys)} unique customer ids detected", end=" ")
+        print(
+            f"CustomerDimensionProcessor: {len(incremental_keys)} unique customer ids detected",
+            end=" ",
+        )
         if incremental_keys.size == 0:
             print()  # Add newline to 0 keys message
             return
@@ -102,7 +105,7 @@ class CustomerDimensionProcessor:
         prior_customer_dim = self._read_dimension("customer_key", incremental_keys)
         update_keys = prior_customer_dim.index
         new_keys = incremental_keys.difference(update_keys)
-        print(f"(New: {len(new_keys)})", end=' ')
+        print(f"(New: {len(new_keys)})", end=" ")
         print(f"(Updated: {len(update_keys)})")
 
         inserts = self._build_new_dimension(new_keys, customer, customer_address)
@@ -114,7 +117,9 @@ class CustomerDimensionProcessor:
         self._next_surrogate_key += inserts.shape[0]
         self._write_dimension(updates, "REPLACE")
 
-        print(f"CustomerDimensionProcessor: {self._count_dimension()} total rows in customer_dim table")
+        print(
+            f"CustomerDimensionProcessor: {self._count_dimension()} total rows in customer_dim table"
+        )
 
     def _create_dimension(self):
         """Create an empty customer_dimension on warehouse initialization."""
@@ -162,18 +167,20 @@ class CustomerDimensionProcessor:
                 rows,
             )
 
-            if operation == 'INSERT':
+            if operation == "INSERT":
                 operation_text = "inserts"
                 rows_affected = cur.rowcount
             else:
                 operation_text = "updates"
                 rows_affected = cur.rowcount // 2
-            print(f"CustomerDimensionProcessor: {rows_affected} {operation_text} written to {table_name} table")
+            print(
+                f"CustomerDimensionProcessor: {rows_affected} {operation_text} written to {table_name} table"
+            )
 
             self._connection.commit()
 
     def _count_dimension(self) -> int:
-        """ Return number of rows in dimension table"""
+        """Return number of rows in dimension table"""
         table_name = self._dimension_table.get_name()
         cur = self._connection.cursor()
         cur.execute(f"SELECT COUNT(*) FROM {table_name};")
@@ -317,7 +324,9 @@ class CustomerDimensionProcessor:
 
         # restrict stage date to new_keys
         customer = customer.loc[new_keys.intersection(customer.index)]
-        customer_address = customer_address.loc[new_keys.intersection(customer_address.index)]
+        customer_address = customer_address.loc[
+            new_keys.intersection(customer_address.index)
+        ]
 
         # apply common transformation
         customer_dim = CustomerDimensionProcessor.customer_transform(

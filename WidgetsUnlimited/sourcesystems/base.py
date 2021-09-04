@@ -22,4 +22,3 @@ class BaseSystem:
 
     def update(self, table, records):
         pass
-

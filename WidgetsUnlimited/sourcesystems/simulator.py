@@ -6,7 +6,6 @@ from typing import List
 
 
 class OperationsSimulator:
-
     def __init__(self, data_generator, source_systems):
         self._data_generator = data_generator
         self._source_systems = set(source_systems)

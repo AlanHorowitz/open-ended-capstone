@@ -3,4 +3,3 @@
 The data from 3 different source systems representing e-commerce, in-store sales,
 and inventory will be consolidated into a data warehouse.  
 """
-

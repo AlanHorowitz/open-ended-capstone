@@ -10,7 +10,7 @@ from .generator import DataGenerator
 from .base import BaseSystem
 
 
-class eCommerceSystem():
+class eCommerceSystem:
     def __init__(self) -> None:
         # open connection to postgres
         self.connection: connection = psycopg2.connect(
