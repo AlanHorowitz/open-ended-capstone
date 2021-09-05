@@ -21,11 +21,11 @@ class Column:
         column_name: str,               # column name
         column_type: str,               # (INTEGER, VARCHAR, FLOAT, DATE, BOOLEAN, TIMESTAMP)
         column_type_length=None,        # optional column length (e.g. 200 for VARCHAR(200)
-        primary_key: bool = False,     # column is primary key
-        isInsertedAt: bool = False,     # column is the inserted_at column
-        isUpdatedAt: bool = False,      # column is the updated_at column
-        isBatchId: bool = False,        # column is batch_id column
-        canUpdate: bool = False,        # column is eligible for update by generator
+        primary_key: bool = False,      # column is primary key
+        inserted_at: bool = False,      # column is the inserted_at column
+        updated_at: bool = False,       # column is the updated_at column
+        batch_id: bool = False,        # column is batch_id column
+        update: bool = False,        # column is eligible for update by generator
         xref_table: str = "",           # name of foreign reference table
         xref_column: str = "",          # column in reference table to use for foreign key
         parent_table: str = "",         # parent table with one to many relationship with child table
@@ -37,10 +37,10 @@ class Column:
         self._type = column_type
         self._type_length = column_type_length
         self._isPrimaryKey = primary_key
-        self._isInsertedAt = isInsertedAt
-        self._isUpdatedAt = isUpdatedAt
-        self._isBatchId = isBatchId
-        self._canUpdate = canUpdate
+        self._isInsertedAt = inserted_at
+        self._isUpdatedAt = updated_at
+        self._isBatchId = batch_id
+        self._canUpdate = update
         self._xref_table = xref_table
         self._xref_column = xref_column
         self._parent_table = parent_table
@@ -119,21 +119,21 @@ class Table:
     """Database Table metadata used for DDL and data generation"""
 # Note: Source system tables in RetailDW must have a single column integer primary key
 # and at least one VARCHAR column.
-    def __init__(self, name: str, *columns: Column, generation=True, batchId=True):
+    def __init__(self, name: str, *columns: Column, generation=True, batch_id=True):
         """
 
         :param name:
         :param columns:
         :param generation:
-        :param batchId:
+        :param batch_id:
         """
 
         self._name = name
         self._generation = generation
-        self._batchId = batchId
+        self._batchId = batch_id
         self._columns = [col for col in columns]
         if self._batchId:
-            self._columns.append(Column("batch_id", "INTEGER", isBatchId=True))
+            self._columns.append(Column("batch_id", "INTEGER", batch_id=True))
         primary_keys = [col.get_name() for col in columns if col.isPrimaryKey()]
         inserted_ats = [col.get_name() for col in columns if col.isInsertedAt()]
         updated_ats = [col.get_name() for col in columns if col.isUpdatedAt()]

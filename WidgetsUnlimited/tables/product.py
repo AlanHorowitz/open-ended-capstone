@@ -11,7 +11,7 @@ class ProductTable(Table):
             Column("product_id", "INTEGER", primary_key=True),
             Column("product_name", "VARCHAR"),
             Column("product_description", "VARCHAR"),
-            Column("product_category", "VARCHAR", canUpdate=True),
+            Column("product_category", "VARCHAR", update=True),
             Column("product_brand", "VARCHAR"),
             Column("product_preferred_supplier_id", "INTEGER"),
             Column("product_unit_cost", "FLOAT"),
@@ -21,6 +21,6 @@ class ProductTable(Table):
             Column("product_introduced_date", "DATE"),
             Column("product_discontinued", "BOOLEAN"),
             Column("product_no_longer_offered", "BOOLEAN"),
-            Column("product_inserted_at", "TIMESTAMP", isInsertedAt=True),
-            Column("product_updated_at", "TIMESTAMP", isUpdatedAt=True),
+            Column("product_inserted_at", "TIMESTAMP", inserted_at=True),
+            Column("product_updated_at", "TIMESTAMP", updated_at=True),
         )

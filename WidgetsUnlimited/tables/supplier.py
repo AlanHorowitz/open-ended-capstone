@@ -11,7 +11,7 @@ class SupplierTable(Table):
             Column("supplier_id", "INTEGER", primary_key=True),
             Column("supplier_name", "VARCHAR"),
             Column("supplier_address", "VARCHAR"),
-            Column("supplier_primary_contact_name", "VARCHAR", canUpdate=True),
+            Column("supplier_primary_contact_name", "VARCHAR", update=True),
             Column("supplier_primary_contact_phone", "VARCHAR"),
             Column("supplier_secondary_contact_name", "VARCHAR"),
             Column("supplier_secondary_contact_phone", "VARCHAR"),
@@ -19,6 +19,6 @@ class SupplierTable(Table):
             Column("supplier_introduction_date", "DATE"),
             Column("supplier_is_preferred", "BOOLEAN"),
             Column("supplier_is_active", "BOOLEAN"),
-            Column("supplier_inserted_at", "TIMESTAMP", isInsertedAt=True),
-            Column("supplier_updated_at", "TIMESTAMP", isUpdatedAt=True),
+            Column("supplier_inserted_at", "TIMESTAMP", inserted_at=True),
+            Column("supplier_updated_at", "TIMESTAMP", updated_at=True),
         )

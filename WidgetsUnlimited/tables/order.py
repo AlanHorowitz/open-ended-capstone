@@ -27,12 +27,12 @@ class OrderTable(Table):
             Column(
                 "order_special_instructions",
                 "VARCHAR",
-                canUpdate=True,
+                update=True,
                 column_type_length=200,
             ),
             Column("order_shipping_cost", "FLOAT"),
             Column("order_execution_time", "TIMESTAMP"),
             Column("order_cancelled", "BOOLEAN"),
-            Column("order_line_item_inserted_at", "TIMESTAMP", isInsertedAt=True),
-            Column("order_line_item_updated_at", "TIMESTAMP", isUpdatedAt=True),
+            Column("order_line_item_inserted_at", "TIMESTAMP", inserted_at=True),
+            Column("order_line_item_updated_at", "TIMESTAMP", updated_at=True),
         )

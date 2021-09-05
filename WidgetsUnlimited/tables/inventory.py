@@ -16,6 +16,6 @@ class InventoryTable(Table):
             Column("inventory_quantity", "INTEGER"),
             Column("inventory_ship_address", "VARCHAR"),
             Column("inventory_ship_customer_id", "INTEGER"),
-            Column("inventory_inserted_at", "TIMESTAMP", isInsertedAt=True),
-            Column("inventory_updated_at", "TIMESTAMP", isUpdatedAt=True),
+            Column("inventory_inserted_at", "TIMESTAMP", inserted_at=True),
+            Column("inventory_updated_at", "TIMESTAMP", updated_at=True),
         )

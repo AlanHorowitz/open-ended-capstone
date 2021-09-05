@@ -34,8 +34,8 @@ class StoreSalesTable(Table):
             Column("store_sales_total_price", "FLOAT"),
             Column("store_sales_transaction_type", "VARCHAR"),
             Column("store_sales_transaction_date", "DATE"),
-            Column("store_sales_cc_number", "VARCHAR", canUpdate=True),
+            Column("store_sales_cc_number", "VARCHAR", update=True),
             Column("store_sales_loyalty_number", "INTEGER"),
-            Column("store_sales_inserted_at", "TIMESTAMP", isInsertedAt=True),
-            Column("store_sales_updated_at", "TIMESTAMP", isUpdatedAt=True),
+            Column("store_sales_inserted_at", "TIMESTAMP", inserted_at=True),
+            Column("store_sales_updated_at", "TIMESTAMP", updated_at=True),
         )
