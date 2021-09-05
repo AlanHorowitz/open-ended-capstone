@@ -25,7 +25,7 @@ class Column:
         isInsertedAt: bool = False,     # column is the inserted_at column
         isUpdatedAt: bool = False,      # column is the updated_at column
         isBatchId: bool = False,        # column is batch_id column
-        canUpdate: bool = False,        # column eligible for update by generator
+        canUpdate: bool = False,        # column is eligible for update by generator
         xref_table: str = "",           # name of foreign reference table
         xref_column: str = "",          # column in reference table to use for foreign key
         parent_table: str = "",         # parent table with one to many relationship with child table
@@ -47,43 +47,24 @@ class Column:
         self._parent_key = parent_key
         self._default = default
 
-    @staticmethod
-    def make_type(type, type_len, type_dict) -> str:
+    def get_column_definition(self, definition_dict) -> str:
+        """
 
-        suffix = ""
-        type_trans = type_dict[type][0]
-        type_len_default = type_dict[type][1]
+        :param definition_dict: Mappings from Column.column_type to native SQL name plus optional column length
+        :return: Native DDL text (postgres or mysql) for column definition, with length appended if specified of
+        default is indicated for the type
+        """
 
-        if type_len or type_len_default:
-            suffix = "(" + (str(type_len) if type_len else type_len_default) + ")"
+        length_suffix = ""
+        type_length = self.get_type_length()
+        type_keyword = definition_dict[self.get_type()][0]
+        type_length_default = definition_dict[self.get_type()][1]
 
-        return type_trans + suffix
+        # when explicit or default length found, append within parentheses
+        if type_length or type_length_default:
+            length_suffix = "(" + (str(type_length) if type_length else type_length_default) + ")"
 
-    def get_column_def_mysql(self) -> str:
-
-        mysql_dict = {
-            "INTEGER": ("INT", None),
-            "VARCHAR": ("VARCHAR", "80"),
-            "FLOAT": ("DOUBLE", None),
-            "DATE": ("DATE", None),
-            "BOOLEAN": ("TINYINT", "1"),
-            "TIMESTAMP": ("TIMESTAMP", "6"),
-        }
-
-        return Column.make_type(self.get_type(), self.get_type_length(), mysql_dict)
-
-    def get_column_def_postgres(self) -> str:
-
-        postgres_dict = {
-            "INTEGER": ("INTEGER", None),
-            "VARCHAR": ("VARCHAR", "80"),
-            "FLOAT": ("FLOAT", "11"),
-            "DATE": ("DATE", None),
-            "BOOLEAN": ("BOOLEAN", None),
-            "TIMESTAMP": ("TIMESTAMP", None),
-        }
-
-        return Column.make_type(self.get_type(), self.get_type_length(), postgres_dict)
+        return type_keyword + length_suffix
 
     def get_name(self) -> str:
 
@@ -319,27 +300,49 @@ class Table:
 
     def get_create_sql_mysql(self) -> str:
         """ Returns SQL to create table for this class in postgresql """
-        create_table = "CREATE TABLE IF NOT EXISTS {} ( \n".format(self.get_name())
-        columns = "\n".join(
-            [
-                "{} {},".format(col.get_name(), col.get_column_def_mysql())
-                for col in self.get_columns()
-            ]
-        )
-        primary_key = "\nPRIMARY KEY ({}));".format(self.get_primary_key())
-        return create_table + columns + primary_key
+
+        mysql_dict = {
+            "INTEGER": ("INT", None),
+            "VARCHAR": ("VARCHAR", "80"),
+            "FLOAT": ("DOUBLE", None),
+            "DATE": ("DATE", None),
+            "BOOLEAN": ("TINYINT", "1"),
+            "TIMESTAMP": ("TIMESTAMP", "6"),
+        }
+
+        return self.get_create_sql(mysql_dict)
 
     def get_create_sql_postgres(self) -> str:
         """ Returns SQL to create table for this class in postgresql """
 
-        create_table = "CREATE TABLE IF NOT EXISTS {} ( \n".format(self.get_name())
+        postgres_dict = {
+            "INTEGER": ("INTEGER", None),
+            "VARCHAR": ("VARCHAR", "80"),
+            "FLOAT": ("FLOAT", "11"),
+            "DATE": ("DATE", None),
+            "BOOLEAN": ("BOOLEAN", None),
+            "TIMESTAMP": ("TIMESTAMP", None),
+        }
+
+        return self.get_create_sql(postgres_dict)
+
+    def get_create_sql(self, definition_dict):
+        """
+        Compose the text for CREATE TABLE to be executed on postgresql or mysql
+
+        :param definition_dict: Mappings from Column.column_type to native SQL name plus optional column length
+        :return CREATE TABLE statement in print friendly format.
+        """
+
+        create_table = f"CREATE TABLE IF NOT EXISTS {self.get_name()} ( \n"
         columns = "\n".join(
             [
-                "{} {},".format(col.get_name(), col.get_column_def_postgres())
+                f"{col.get_name()} {col.get_column_definition(definition_dict)},"
                 for col in self.get_columns()
             ]
         )
-        primary_key = "\nPRIMARY KEY ({}));".format(self.get_primary_key())
+        primary_key = f"\nPRIMARY KEY ({self.get_primary_key()}));"
+
         return create_table + columns + primary_key
 
     def get_column_names(self) -> List[str]:
