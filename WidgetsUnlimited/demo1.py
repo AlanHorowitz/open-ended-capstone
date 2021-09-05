@@ -1,7 +1,7 @@
 """ 
 Widgets Unlimited - A data warehousing simulation.
 
-demo1.py - Execute Widgets Unlimited's operations over a period of 4 days. Data generation is restricted to tables
+demo1.py - Execute Widgets Unlimited's operations over a period of 4 days. Data create_only is restricted to tables
 involving products, customers and orders.  Customer data are transformed to the format of a customer dimension in a
 star schema.
 

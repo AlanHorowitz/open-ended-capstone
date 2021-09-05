@@ -1,4 +1,4 @@
-# Integration test -- test data generation and warehouse
+# Integration test -- test data create_only and warehouse
 import os
 
 from mysql.connector import connect
@@ -11,22 +11,22 @@ from .context import ProductTable
 from .context import CustomerTable
 from .context import CustomerAddressTable
 
-ms_connection = connect(
-    host=os.getenv("WAREHOUSE_HOST"),
-    port=os.getenv("WAREHOUSE_PORT"),
-    user=os.getenv("WAREHOUSE_USER"),
-    password=os.getenv("WAREHOUSE_PASSWORD"),
-    database=os.getenv("WAREHOUSE_DB"),
-    charset="utf8",
-)
-data_generator = DataGenerator()
-product_table = ProductTable()
-customer_table = CustomerTable()
-customer_address_table = CustomerAddressTable()
-customer_dimension = CustomerDimensionProcessor(ms_connection)
-
 
 def test_generator_and_transform():
+
+    ms_connection = connect(
+        host=os.getenv("WAREHOUSE_HOST"),
+        port=os.getenv("WAREHOUSE_PORT"),
+        user=os.getenv("WAREHOUSE_USER"),
+        password=os.getenv("WAREHOUSE_PASSWORD"),
+        database=os.getenv("WAREHOUSE_DB"),
+        charset="utf8",
+    )
+    data_generator = DataGenerator()
+    product_table = ProductTable()
+    customer_table = CustomerTable()
+    customer_address_table = CustomerAddressTable()
+    customer_dimension = CustomerDimensionProcessor(ms_connection)
 
     data_generator.add_tables([product_table, customer_table, customer_address_table])
 

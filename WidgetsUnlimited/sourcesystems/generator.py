@@ -15,13 +15,13 @@ class DataGenerator:
     The DataGenerator synthesizes sample data for tables described by Table and Column classes
     in WidgetsUnlimited.util.sqltypes, and is tightly integrated with these classes' methods.
     It is invoked via its generate method with a TableTransaction and a batch_id (see below).  The cumulative product
-    of the generation is stored in postgresql.
+    of the create_only is stored in postgresql.
 
     The DataGenerator supports tables linked together as a data model via foreign keys.
     In particular the following behaviors are supported:
 
         - Generate a table record with a random reference to an existing foreign key
-        - Generate a table reference or references to a specific foreign key (parent/child generation)
+        - Generate a table reference or references to a specific foreign key (parent/child create_only)
     """
 
     def __init__(self) -> None:
@@ -93,7 +93,7 @@ class DataGenerator:
             raise Exception(f"Invalid Request. No parent for table {table.get_name()}")
 
         # load references to foreign keys
-        table.preload(cur)
+        table.pre_load(cur)
 
         table_name = table.get_name()
         primary_key_column = table.get_primary_key()
@@ -141,7 +141,7 @@ class DataGenerator:
 
                 for pk in range(next_primary_key, next_primary_key + n_inserts):
                     insert_records.append(
-                        table.getNewRow(
+                        table.get_new_row(
                             primary_key=pk,
                             parent_key=None,
                             batch_id=batch_id,
@@ -178,7 +178,7 @@ class DataGenerator:
                 for row in linked_rs:
                     for _ in range(n_inserts):
                         insert_records.append(
-                            table.getNewRow(
+                            table.get_new_row(
                                 primary_key=next_primary_key,
                                 parent_key=row[0],
                                 batch_id=batch_id,
@@ -198,6 +198,6 @@ class DataGenerator:
             conn.commit()
 
         # clear foreign key references
-        table.postload()
+        table.post_load()
 
         return insert_records, update_records

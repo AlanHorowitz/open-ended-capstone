@@ -15,7 +15,7 @@ DEFAULT_INSERT_VALUES: Dict[str, object] = {
 
 
 class Column:
-    """Database Column metadata used for DDL and data generation"""
+    """Database Column metadata used for DDL and data create_only"""
     def __init__(
         self,
         column_name: str,               # column name
@@ -116,20 +116,25 @@ class Column:
 
 
 class Table:
-    """Database Table metadata used for DDL and data generation"""
+    """Database Table metadata used for DDL and data create_only"""
 # Note: Source system tables in RetailDW must have a single column integer primary key
 # and at least one VARCHAR column.
-    def __init__(self, name: str, *columns: Column, generation=True, batch_id=True):
+    def __init__(self, name: str, *columns: Column, create_only=False, batch_id=True):
         """
+        Initialize a Table object:
+            - Prepare the class for use by the DataGenerator
+            - Enforce constraints on Column attributes
 
-        :param name:
-        :param columns:
-        :param generation:
-        :param batch_id:
+
+
+        :param name: Table name
+        :param columns: Column objects comprising Table
+        :param create_only: Use Table only for create table and metadata, not data generation
+        :param batch_id: Include a batch_id column with table
         """
 
         self._name = name
-        self._generation = generation
+        self._create_only = create_only
         self._batchId = batch_id
         self._columns = [col for col in columns]
         if self._batchId:
@@ -143,7 +148,7 @@ class Table:
             raise Exception("Generator requires exactly one primary key.")
         self._primary_key = primary_keys[0]
 
-        if self._generation:
+        if not self._create_only:
             if (len(inserted_ats), len(updated_ats)) != (1, 1):
                 raise Exception(
                     "Generator requires exactly one inserted_at and updated_at column"
@@ -222,7 +227,7 @@ class Table:
     #
     # Generation lifecycle class methods
     #
-    def preload(self, cur: cursor) -> None:
+    def pre_load(self, cur: cursor) -> None:
         """Load foreign key tables for valid references when generating records.  Assume
         these tables fit in memory for now.  Update the xrefDict with result set and count.
         """
@@ -232,14 +237,14 @@ class Table:
             table_data._result_set = cur.fetchall()
             table_data._num_rows = len(table_data._result_set)
 
-    def postload(self) -> None:
+    def post_load(self) -> None:
         """Clear references to xref result set"""
         for table_data in self._xrefDict.values():
             table_data._result_set = []
             table_data._num_rows = 0
             table_data._next_random_row = 0
 
-    def getNewRow(
+    def get_new_row(
         self,
         primary_key: int,
         parent_key: int = None,
@@ -281,6 +286,7 @@ class Table:
 
     @staticmethod
     def _init_xref_dict(columns: List[Column]) -> Dict[str, XrefTableData]:
+        """ Create a dictionary mapping xref table names to helper object used to manage cross table lookups """
 
         xref_dict: Dict[str, Table.XrefTableData] = {}
         for col in columns:

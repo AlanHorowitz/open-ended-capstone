@@ -48,6 +48,6 @@ class CustomerDimTable(Table):
             Column("shipping_zip", "VARCHAR"),
             # Column("shipping_last_update", "TIMESTAMP"),
             # Column("shipping_number_of_updates", "INTEGER"),
-            generation=False,
+            create_only=True,
             batch_id=False,
         )
