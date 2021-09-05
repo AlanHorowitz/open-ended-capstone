@@ -177,7 +177,7 @@ class Table:
             )
 
     #
-    #  Database table creation class methods
+    #  Database table creation methods
     #
     def get_create_sql_mysql(self) -> str:
         """ Returns SQL to create table for this class in postgresql """
@@ -225,7 +225,7 @@ class Table:
         return create_table + columns + primary_key
 
     #
-    # Generation lifecycle class methods
+    # Generation lifecycle  methods
     #
     def pre_load(self, cur: cursor) -> None:
         """Load foreign key tables for valid references when generating records.  Assume
