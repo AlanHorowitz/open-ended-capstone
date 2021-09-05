@@ -59,7 +59,7 @@ def make_rows(
         for col in table.get_columns():
             if col.is_primary_key():
                 d.append(key)
-            elif col.isBatchId():
+            elif col.is_batch_id():
                 d.append(batch_id)
             else:
                 d.append(DEFAULT_INSERT_VALUES[col.get_type()])

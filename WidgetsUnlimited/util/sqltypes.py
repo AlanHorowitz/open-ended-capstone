@@ -81,10 +81,10 @@ class Column:
     def is_inserted_at(self) -> bool:
         return self._inserted_at
 
-    def isUpdatedAt(self) -> bool:
+    def is_updated_at(self) -> bool:
         return self._updated_at
 
-    def isBatchId(self) -> bool:
+    def is_batch_id(self) -> bool:
         return self._batch_id
 
     def get_xref_table(self) -> str:
@@ -93,7 +93,7 @@ class Column:
     def get_xref_column(self) -> str:
         return self._xref_column
 
-    def isXref(self) -> bool:
+    def is_xref(self) -> bool:
         return self._xref_table != "" and self._xref_column != ""
 
     def get_parent_table(self) -> str:
@@ -102,16 +102,16 @@ class Column:
     def get_parent_key(self) -> str:
         return self._parent_key
 
-    def isParentKey(self) -> bool:
+    def is_parent_key(self) -> bool:
         return self._parent_table != "" and self._parent_key != ""
 
     def get_default(self) -> Any:
         return self._default
 
-    def hasDefault(self) -> bool:
-        return self._default != None
+    def has_default(self) -> bool:
+        return self._default is not None
 
-    def canUpdate(self) -> bool:
+    def can_update(self) -> bool:
         return self._update
 
 
@@ -136,8 +136,8 @@ class Table:
             self._columns.append(Column("batch_id", "INTEGER", batch_id=True))
         primary_keys = [col.get_name() for col in columns if col.is_primary_key()]
         inserted_ats = [col.get_name() for col in columns if col.is_inserted_at()]
-        updated_ats = [col.get_name() for col in columns if col.isUpdatedAt()]
-        parent_keys = [col for col in columns if col.isParentKey()]
+        updated_ats = [col.get_name() for col in columns if col.is_updated_at()]
+        parent_keys = [col for col in columns if col.is_parent_key()]
 
         if len(primary_keys) != 1:
             raise Exception("Generator requires exactly one primary key.")
@@ -162,7 +162,7 @@ class Table:
                 self._parent_table = ""
 
             self._update_columns = [
-                col for col in columns if col.canUpdate()
+                col for col in columns if col.can_update()
             ]  # restrict to VARCHAR update
             if len(self._update_columns) == 0:
                 raise Exception("Need at least one VARCHAR for update")
@@ -251,17 +251,17 @@ class Table:
         self._setXrefTableRows()
 
         for col in self.get_columns():
-            if col.hasDefault():
+            if col.has_default():
                 d.append(col.get_default())
             elif col.is_primary_key():
                 d.append(primary_key)
-            elif col.isBatchId():
+            elif col.is_batch_id():
                 d.append(batch_id)
-            elif col.is_inserted_at() or col.isUpdatedAt():
+            elif col.is_inserted_at() or col.is_updated_at():
                 d.append(timestamp)
-            elif col.isXref():
+            elif col.is_xref():
                 d.append(self._getXrefValue(col))
-            elif col.isParentKey() and parent_key is not None:
+            elif col.is_parent_key() and parent_key is not None:
                 d.append(parent_key)
             else:
                 d.append(DEFAULT_INSERT_VALUES[col.get_type()])
@@ -284,7 +284,7 @@ class Table:
 
         xref_dict: Dict[str, Table.XrefTableData] = {}
         for col in columns:
-            if col.isXref():
+            if col.is_xref():
                 xref_table, xref_column = col.get_xref_table(), col.get_xref_column()
                 if xref_table in xref_dict:
                     xref_dict[xref_table]._column_list.append(xref_column)
@@ -308,14 +308,22 @@ class Table:
 
         return value
 
-
+    #
+    # Aggregate column methods
+    #
+    def get_columns(self) -> List[Column]:
+        return self._columns
 
     def get_column_names(self) -> List[str]:
-        """Return a complete list of Column names for the table."""
         return [col.get_name() for col in self._columns]
 
+    def get_update_column(self) -> Column:
+        """Return a random eligible update column."""
+        i = random.randint(0, len(self._update_columns) - 1)
+        return self._update_columns[i]
+
     def get_column_pandas_types(self) -> Dict[str, str]:
-        """Return a complete list of Column names for the table."""
+        """ Return a dictionary of column names and associated panda type for Dataframe.astype()"""
 
         pd_types = {
             "INTEGER": "int64",
@@ -325,41 +333,27 @@ class Table:
             "BOOLEAN": "bool",
             "TIMESTAMP": "datetime64[ns]",
         }
-
         return {col.get_name(): pd_types[col.get_type()] for col in self._columns}
 
-    def get_update_column(self) -> Column:
-        """Return a random eligible update column."""
-        i = random.randint(0, len(self._update_columns) - 1)
-        return self._update_columns[i]
-
+#
+# Other getters
+#
     def get_name(self) -> str:
-
         return self._name
 
-    def get_columns(self) -> List[Column]:
-        """Return a complete list of Column objects for the table."""
-
-        return self._columns
-
     def get_primary_key(self) -> str:
-
         return self._primary_key
 
     def get_updated_at(self) -> str:
-
         return self._updated_at
 
     def get_parent_key(self) -> str:
-
         return self._parent_key
 
     def get_parent_table(self) -> str:
-
         return self._parent_table
 
     def has_parent(self) -> bool:
-
         return self._parent_key != "" and self._parent_table != ""
 
 
