@@ -57,7 +57,7 @@ def make_rows(
     for _ in range(n_rows):
         d = []
         for col in table.get_columns():
-            if col.isPrimaryKey():
+            if col.is_primary_key():
                 d.append(key)
             elif col.isBatchId():
                 d.append(batch_id)

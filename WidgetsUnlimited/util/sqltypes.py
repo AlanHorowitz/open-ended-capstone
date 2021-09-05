@@ -24,8 +24,8 @@ class Column:
         primary_key: bool = False,      # column is primary key
         inserted_at: bool = False,      # column is the inserted_at column
         updated_at: bool = False,       # column is the updated_at column
-        batch_id: bool = False,        # column is batch_id column
-        update: bool = False,        # column is eligible for update by generator
+        batch_id: bool = False,         # column is batch_id column
+        update: bool = False,           # column is eligible for update by generator
         xref_table: str = "",           # name of foreign reference table
         xref_column: str = "",          # column in reference table to use for foreign key
         parent_table: str = "",         # parent table with one to many relationship with child table
@@ -36,11 +36,11 @@ class Column:
         self._name = column_name
         self._type = column_type
         self._type_length = column_type_length
-        self._isPrimaryKey = primary_key
-        self._isInsertedAt = inserted_at
-        self._isUpdatedAt = updated_at
-        self._isBatchId = batch_id
-        self._canUpdate = update
+        self._primary_key = primary_key
+        self._inserted_at = inserted_at
+        self._updated_at = updated_at
+        self._batch_id = batch_id
+        self._update = update
         self._xref_table = xref_table
         self._xref_column = xref_column
         self._parent_table = parent_table
@@ -75,17 +75,17 @@ class Column:
     def get_type_length(self) -> str:
         return self._type_length
 
-    def isPrimaryKey(self) -> bool:
-        return self._isPrimaryKey
+    def is_primary_key(self) -> bool:
+        return self._primary_key
 
-    def isInsertedAt(self) -> bool:
-        return self._isInsertedAt
+    def is_inserted_at(self) -> bool:
+        return self._inserted_at
 
     def isUpdatedAt(self) -> bool:
-        return self._isUpdatedAt
+        return self._updated_at
 
     def isBatchId(self) -> bool:
-        return self._isBatchId
+        return self._batch_id
 
     def get_xref_table(self) -> str:
         return self._xref_table
@@ -112,7 +112,7 @@ class Column:
         return self._default != None
 
     def canUpdate(self) -> bool:
-        return self._canUpdate
+        return self._update
 
 
 class Table:
@@ -134,8 +134,8 @@ class Table:
         self._columns = [col for col in columns]
         if self._batchId:
             self._columns.append(Column("batch_id", "INTEGER", batch_id=True))
-        primary_keys = [col.get_name() for col in columns if col.isPrimaryKey()]
-        inserted_ats = [col.get_name() for col in columns if col.isInsertedAt()]
+        primary_keys = [col.get_name() for col in columns if col.is_primary_key()]
+        inserted_ats = [col.get_name() for col in columns if col.is_inserted_at()]
         updated_ats = [col.get_name() for col in columns if col.isUpdatedAt()]
         parent_keys = [col for col in columns if col.isParentKey()]
 
@@ -253,11 +253,11 @@ class Table:
         for col in self.get_columns():
             if col.hasDefault():
                 d.append(col.get_default())
-            elif col.isPrimaryKey():
+            elif col.is_primary_key():
                 d.append(primary_key)
             elif col.isBatchId():
                 d.append(batch_id)
-            elif col.isInsertedAt() or col.isUpdatedAt():
+            elif col.is_inserted_at() or col.isUpdatedAt():
                 d.append(timestamp)
             elif col.isXref():
                 d.append(self._getXrefValue(col))
