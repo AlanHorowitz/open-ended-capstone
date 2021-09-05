@@ -11,7 +11,7 @@ class ProductTable(Table):
             Column("product_id", "INTEGER", isPrimaryKey=True),
             Column("product_name", "VARCHAR"),
             Column("product_description", "VARCHAR"),
-            Column("product_category", "VARCHAR", isUpdateable=True),
+            Column("product_category", "VARCHAR", canUpdate=True),
             Column("product_brand", "VARCHAR"),
             Column("product_preferred_supplier_id", "INTEGER"),
             Column("product_unit_cost", "FLOAT"),

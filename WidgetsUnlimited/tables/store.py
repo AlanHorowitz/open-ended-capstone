@@ -10,7 +10,7 @@ class StoreTable(Table):
             StoreTable.NAME,
             Column("store_id", "INTEGER", isPrimaryKey=True),
             Column("store_name", "VARCHAR"),
-            Column("store_manager_name", "VARCHAR", isUpdateable=True),
+            Column("store_manager_name", "VARCHAR", canUpdate=True),
             Column("store_number_of_employees", "INTEGER"),
             Column("store_opened_date", "DATE"),
             Column("store_closed_date", "DATE"),

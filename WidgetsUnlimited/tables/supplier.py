@@ -11,7 +11,7 @@ class SupplierTable(Table):
             Column("supplier_id", "INTEGER", isPrimaryKey=True),
             Column("supplier_name", "VARCHAR"),
             Column("supplier_address", "VARCHAR"),
-            Column("supplier_primary_contact_name", "VARCHAR", isUpdateable=True),
+            Column("supplier_primary_contact_name", "VARCHAR", canUpdate=True),
             Column("supplier_primary_contact_phone", "VARCHAR"),
             Column("supplier_secondary_contact_name", "VARCHAR"),
             Column("supplier_secondary_contact_phone", "VARCHAR"),

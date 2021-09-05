@@ -27,7 +27,7 @@ class OrderTable(Table):
             Column(
                 "order_special_instructions",
                 "VARCHAR",
-                isUpdateable=True,
+                canUpdate=True,
                 column_type_length=200,
             ),
             Column("order_shipping_cost", "FLOAT"),

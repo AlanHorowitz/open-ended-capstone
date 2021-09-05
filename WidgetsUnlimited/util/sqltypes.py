@@ -3,15 +3,12 @@ from typing import List, Tuple, Dict, Optional, Any
 from psycopg2.extensions import cursor
 
 from datetime import datetime
-from collections import namedtuple
 
 DEFAULT_INSERT_VALUES: Dict[str, object] = {
     "INTEGER": 98,
     "VARCHAR": "AAA",
     "FLOAT": 5.0,
-    "REAL": 5.0,
     "DATE": "2021-02-11 12:52:47",
-    "TINYINT": 0,
     "BOOLEAN": True,
     "TIMESTAMP": datetime(2020, 11, 11),
 }
@@ -19,22 +16,21 @@ DEFAULT_INSERT_VALUES: Dict[str, object] = {
 
 class Column:
     """Database Column metadata"""
-
     def __init__(
         self,
-        column_name: str,
-        column_type: str,
-        column_type_length=None,
-        isPrimaryKey: bool = False,
-        isInsertedAt: bool = False,
-        isUpdatedAt: bool = False,
-        isBatchId: bool = False,
-        isUpdateable: bool = False,
-        xref_table: str = "",
-        xref_column: str = "",
-        parent_table: str = "",
-        parent_key: str = "",
-        default: Any = None,
+        column_name: str,               # column name
+        column_type: str,               # (INTEGER, VARCHAR, FLOAT, DATE, BOOLEAN, TIMESTAMP)
+        column_type_length=None,        # optional column length (e.g. 200 for VARCHAR(200)
+        isPrimaryKey: bool = False,     # column is primary key
+        isInsertedAt: bool = False,     # column is the inserted_at column
+        isUpdatedAt: bool = False,      # column is the updated_at column
+        isBatchId: bool = False,        # column is batch_id column
+        canUpdate: bool = False,        # column eligible for update by generator
+        xref_table: str = "",           # name of foreign reference table
+        xref_column: str = "",          # column in reference table to use for foreign key
+        parent_table: str = "",         # parent table with one to many relationship with child table
+        parent_key: str = "",           # primary key in parent table
+        default: Any = None,            # default value for column
     ):
 
         self._name = column_name
@@ -44,7 +40,7 @@ class Column:
         self._isInsertedAt = isInsertedAt
         self._isUpdatedAt = isUpdatedAt
         self._isBatchId = isBatchId
-        self._isUpdateable = isUpdateable
+        self._canUpdate = canUpdate
         self._xref_table = xref_table
         self._xref_column = xref_column
         self._parent_table = parent_table
@@ -149,9 +145,9 @@ class Column:
 
         return self._default != None
 
-    def isUpdateable(self) -> bool:
+    def canUpdate(self) -> bool:
 
-        return self._isUpdateable
+        return self._canUpdate
 
 
 class Table:
@@ -224,7 +220,7 @@ class Table:
                 self._parent_table = ""
 
             self._update_columns = [
-                col for col in columns if col.isUpdateable()
+                col for col in columns if col.canUpdate()
             ]  # restrict to VARCHAR update
             if len(self._update_columns) == 0:
                 raise Exception("Need at least one VARCHAR for update")
@@ -324,7 +320,7 @@ class Table:
         return self._parent_key != "" and self._parent_table != ""
 
     def get_create_sql_mysql(self) -> str:
-
+        """ Returns SQL to create table for this class in postgresql """
         create_table = "CREATE TABLE IF NOT EXISTS {} ( \n".format(self.get_name())
         columns = "\n".join(
             [
@@ -336,6 +332,7 @@ class Table:
         return create_table + columns + primary_key
 
     def get_create_sql_postgres(self) -> str:
+        """ Returns SQL to create table for this class in postgresql """
 
         create_table = "CREATE TABLE IF NOT EXISTS {} ( \n".format(self.get_name())
         columns = "\n".join(
@@ -370,10 +367,4 @@ class Table:
         i = random.randint(0, len(self._update_columns) - 1)
         return self._update_columns[i]
 
-    def setOperationalSystem(self, op: object) -> None:
-        """Associate table with host operational system."""
-        self.operationalSystem = op
 
-    def getOperationalSystem(self) -> object:
-        """Return operational system hosting table."""
-        return self.operationalSystem

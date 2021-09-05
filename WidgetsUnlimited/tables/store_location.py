@@ -16,7 +16,7 @@ class StoreLocationTable(Table):
                 parent_table=StoreTable.NAME,
                 parent_key="store_id",
             ),
-            Column("store_location_street_address", "VARCHAR", isUpdateable=True),
+            Column("store_location_street_address", "VARCHAR", canUpdate=True),
             Column("store_location_city", "VARCHAR"),
             Column("store_location_state", "VARCHAR"),
             Column("store_location_zip_code", "VARCHAR"),
