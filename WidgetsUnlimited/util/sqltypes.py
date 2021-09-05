@@ -201,7 +201,7 @@ class Table:
             raise Exception("Generator requires exactly one primary key.")
         self._primary_key = primary_keys[0]
 
-        if self._generation == True:
+        if self._generation:
             if (len(inserted_ats), len(updated_ats)) != (1, 1):
                 raise Exception(
                     "Generator requires exactly one inserted_at and updated_at column"
@@ -228,8 +228,6 @@ class Table:
             self._xrefDict: Dict[str, Table.XrefTableData] = Table._initXrefDict(
                 self._columns
             )
-
-        self.operationalSystem = None
 
     def preload(self, cur: cursor) -> None:
         """Load foreign key tables for valid references when generating records.  Assume
