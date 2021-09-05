@@ -16,7 +16,7 @@ class CustomerAddressTable(Table):
                 parent_table=CustomerTable.NAME,
                 parent_key="customer_id",
             ),
-            Column("customer_address_id", "INTEGER", isPrimaryKey=True),
+            Column("customer_address_id", "INTEGER", primary_key=True),
             Column(
                 "customer_address",
                 "VARCHAR",

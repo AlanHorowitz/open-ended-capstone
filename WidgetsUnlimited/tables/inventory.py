@@ -8,7 +8,7 @@ class InventoryTable(Table):
     def __init__(self):
         super().__init__(
             InventoryTable.NAME,
-            Column("inventory_event_id", "INTEGER", isPrimaryKey=True),
+            Column("inventory_event_id", "INTEGER", primary_key=True),
             Column("inventory_event_type", "VARCHAR"),  # shipment, supply, return
             Column("inventory_product_id", "INTEGER"),
             Column("inventory_supplier_id", "INTEGER"),

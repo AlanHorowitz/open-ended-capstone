@@ -9,7 +9,7 @@ class CustomerDimTable(Table):
         super().__init__(
             CustomerDimTable.NAME,
             # dimension control
-            Column("surrogate_key", "INTEGER", isPrimaryKey=True),  # surrogate key
+            Column("surrogate_key", "INTEGER", primary_key=True),  # surrogate key
             Column("effective_date", "DATE"),
             Column("expiration_date", "DATE"),
             Column("is_current_row", "BOOLEAN"),  # type 2 scd

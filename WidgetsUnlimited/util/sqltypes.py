@@ -15,13 +15,13 @@ DEFAULT_INSERT_VALUES: Dict[str, object] = {
 
 
 class Column:
-    """Database Column metadata"""
+    """Database Column metadata used for DDL and data generation"""
     def __init__(
         self,
         column_name: str,               # column name
         column_type: str,               # (INTEGER, VARCHAR, FLOAT, DATE, BOOLEAN, TIMESTAMP)
         column_type_length=None,        # optional column length (e.g. 200 for VARCHAR(200)
-        isPrimaryKey: bool = False,     # column is primary key
+        primary_key: bool = False,     # column is primary key
         isInsertedAt: bool = False,     # column is the inserted_at column
         isUpdatedAt: bool = False,      # column is the updated_at column
         isBatchId: bool = False,        # column is batch_id column
@@ -36,7 +36,7 @@ class Column:
         self._name = column_name
         self._type = column_type
         self._type_length = column_type_length
-        self._isPrimaryKey = isPrimaryKey
+        self._isPrimaryKey = primary_key
         self._isInsertedAt = isInsertedAt
         self._isUpdatedAt = isUpdatedAt
         self._isBatchId = isBatchId
@@ -49,12 +49,12 @@ class Column:
 
     def get_column_definition(self, definition_dict) -> str:
         """
+        Get database specific DDL text for column, optionally including a length
 
         :param definition_dict: Mappings from Column.column_type to native SQL name plus optional column length
-        :return: Native DDL text (postgres or mysql) for column definition, with length appended if specified of
-        default is indicated for the type
+        :return: Native DDL text (postgres or mysql) for column definition, with length appended if specified or
+        if default is indicated for the type
         """
-
         length_suffix = ""
         type_length = self.get_type_length()
         type_keyword = definition_dict[self.get_type()][0]
@@ -67,104 +67,65 @@ class Column:
         return type_keyword + length_suffix
 
     def get_name(self) -> str:
-
         return self._name
 
     def get_type(self) -> str:
-
         return self._type
 
     def get_type_length(self) -> str:
-
         return self._type_length
 
     def isPrimaryKey(self) -> bool:
-
         return self._isPrimaryKey
 
     def isInsertedAt(self) -> bool:
-
         return self._isInsertedAt
 
     def isUpdatedAt(self) -> bool:
-
         return self._isUpdatedAt
 
     def isBatchId(self) -> bool:
-
         return self._isBatchId
 
     def get_xref_table(self) -> str:
-
         return self._xref_table
 
     def get_xref_column(self) -> str:
-
         return self._xref_column
 
     def isXref(self) -> bool:
-
         return self._xref_table != "" and self._xref_column != ""
 
     def get_parent_table(self) -> str:
-
         return self._parent_table
 
     def get_parent_key(self) -> str:
-
         return self._parent_key
 
     def isParentKey(self) -> bool:
-
         return self._parent_table != "" and self._parent_key != ""
 
     def get_default(self) -> Any:
-
         return self._default
 
     def hasDefault(self) -> bool:
-
         return self._default != None
 
     def canUpdate(self) -> bool:
-
         return self._canUpdate
 
 
 class Table:
-    """Database Table metadata"""
-
-    class XrefTableData:
-        """helper object for xref data"""
-
-        def __init__(
-            self, column_list=[], result_set=[], next_random_row=0, num_rows=0
-        ):
-            self._column_list = column_list
-            self._result_set = result_set
-            self._next_random_row = next_random_row
-            self._num_rows = num_rows
-
-    @staticmethod
-    def _initXrefDict(columns: List[Column]) -> Dict[str, XrefTableData]:
-
-        xref_dict: Dict[str, Table.XrefTableData] = {}
-        for col in columns:
-            if col.isXref():
-                xref_table, xref_column = col.get_xref_table(), col.get_xref_column()
-                if xref_table in xref_dict:
-                    xref_dict[xref_table]._column_list.append(xref_column)
-                else:
-                    xref_dict[xref_table] = Table.XrefTableData(
-                        column_list=[xref_column]
-                    )
-        return xref_dict
-
+    """Database Table metadata used for DDL and data generation"""
+# Note: Source system tables in RetailDW must have a single column integer primary key
+# and at least one VARCHAR column.
     def __init__(self, name: str, *columns: Column, generation=True, batchId=True):
-        """Instantiate a table metadata object.
+        """
 
-        Note: Source system tables in RetailDW must have a single column integer primary key
-        and at least one VARCHAR column.
+        :param name:
+        :param columns:
+        :param generation:
+        :param batchId:
         """
 
         self._name = name
@@ -206,10 +167,61 @@ class Table:
             if len(self._update_columns) == 0:
                 raise Exception("Need at least one VARCHAR for update")
 
-            self._xrefDict: Dict[str, Table.XrefTableData] = Table._initXrefDict(
+            self._xrefDict: Dict[str, Table.XrefTableData] = Table._init_xref_dict(
                 self._columns
             )
 
+    #
+    #  Database table creation class methods
+    #
+    def get_create_sql_mysql(self) -> str:
+        """ Returns SQL to create table for this class in postgresql """
+
+        mysql_dict = {
+            "INTEGER": ("INT", None),
+            "VARCHAR": ("VARCHAR", "80"),
+            "FLOAT": ("DOUBLE", None),
+            "DATE": ("DATE", None),
+            "BOOLEAN": ("TINYINT", "1"),
+            "TIMESTAMP": ("TIMESTAMP", "6"),
+        }
+        return self.get_create_sql(mysql_dict)
+
+    def get_create_sql_postgres(self) -> str:
+        """ Returns SQL to create table for this class in postgresql """
+
+        postgres_dict = {
+            "INTEGER": ("INTEGER", None),
+            "VARCHAR": ("VARCHAR", "80"),
+            "FLOAT": ("FLOAT", "11"),
+            "DATE": ("DATE", None),
+            "BOOLEAN": ("BOOLEAN", None),
+            "TIMESTAMP": ("TIMESTAMP", None),
+        }
+        return self.get_create_sql(postgres_dict)
+
+    def get_create_sql(self, definition_dict):
+        """
+        Compose the text for CREATE TABLE to be executed on postgresql or mysql
+
+        :param definition_dict: Mappings from Column.column_type to native SQL name plus optional column length
+        :return CREATE TABLE statement in print friendly format.
+        """
+
+        create_table = f"CREATE TABLE IF NOT EXISTS {self.get_name()} ( \n"
+        columns = "\n".join(
+            [
+                f"{col.get_name()} {col.get_column_definition(definition_dict)},"
+                for col in self.get_columns()
+            ]
+        )
+        primary_key = f"\nPRIMARY KEY ({self.get_primary_key()}));"
+
+        return create_table + columns + primary_key
+
+    #
+    # Generation lifecycle class methods
+    #
     def preload(self, cur: cursor) -> None:
         """Load foreign key tables for valid references when generating records.  Assume
         these tables fit in memory for now.  Update the xrefDict with result set and count.
@@ -256,6 +268,33 @@ class Table:
 
         return tuple(d)
 
+    class XrefTableData:
+        """helper object for xref data"""
+
+        def __init__(
+                self, column_list=[], result_set=[], next_random_row=0, num_rows=0
+        ):
+            self._column_list = column_list
+            self._result_set = result_set
+            self._next_random_row = next_random_row
+            self._num_rows = num_rows
+
+    @staticmethod
+    def _init_xref_dict(columns: List[Column]) -> Dict[str, XrefTableData]:
+
+        xref_dict: Dict[str, Table.XrefTableData] = {}
+        for col in columns:
+            if col.isXref():
+                xref_table, xref_column = col.get_xref_table(), col.get_xref_column()
+                if xref_table in xref_dict:
+                    xref_dict[xref_table]._column_list.append(xref_column)
+                else:
+                    xref_dict[xref_table] = Table.XrefTableData(
+                        column_list=[xref_column]
+                    )
+        return xref_dict
+
+
     def _setXrefTableRows(self):
         """Update the Xref dictionary with the current random rows for each table."""
         for table_data in self._xrefDict.values():
@@ -268,6 +307,31 @@ class Table:
         value = self._xrefDict[col._xref_table]._result_set[row][col._xref_column]
 
         return value
+
+
+
+    def get_column_names(self) -> List[str]:
+        """Return a complete list of Column names for the table."""
+        return [col.get_name() for col in self._columns]
+
+    def get_column_pandas_types(self) -> Dict[str, str]:
+        """Return a complete list of Column names for the table."""
+
+        pd_types = {
+            "INTEGER": "int64",
+            "VARCHAR": "string",
+            "FLOAT": "float64",
+            "DATE": "datetime64[ns]",
+            "BOOLEAN": "bool",
+            "TIMESTAMP": "datetime64[ns]",
+        }
+
+        return {col.get_name(): pd_types[col.get_type()] for col in self._columns}
+
+    def get_update_column(self) -> Column:
+        """Return a random eligible update column."""
+        i = random.randint(0, len(self._update_columns) - 1)
+        return self._update_columns[i]
 
     def get_name(self) -> str:
 
@@ -297,75 +361,5 @@ class Table:
     def has_parent(self) -> bool:
 
         return self._parent_key != "" and self._parent_table != ""
-
-    def get_create_sql_mysql(self) -> str:
-        """ Returns SQL to create table for this class in postgresql """
-
-        mysql_dict = {
-            "INTEGER": ("INT", None),
-            "VARCHAR": ("VARCHAR", "80"),
-            "FLOAT": ("DOUBLE", None),
-            "DATE": ("DATE", None),
-            "BOOLEAN": ("TINYINT", "1"),
-            "TIMESTAMP": ("TIMESTAMP", "6"),
-        }
-
-        return self.get_create_sql(mysql_dict)
-
-    def get_create_sql_postgres(self) -> str:
-        """ Returns SQL to create table for this class in postgresql """
-
-        postgres_dict = {
-            "INTEGER": ("INTEGER", None),
-            "VARCHAR": ("VARCHAR", "80"),
-            "FLOAT": ("FLOAT", "11"),
-            "DATE": ("DATE", None),
-            "BOOLEAN": ("BOOLEAN", None),
-            "TIMESTAMP": ("TIMESTAMP", None),
-        }
-
-        return self.get_create_sql(postgres_dict)
-
-    def get_create_sql(self, definition_dict):
-        """
-        Compose the text for CREATE TABLE to be executed on postgresql or mysql
-
-        :param definition_dict: Mappings from Column.column_type to native SQL name plus optional column length
-        :return CREATE TABLE statement in print friendly format.
-        """
-
-        create_table = f"CREATE TABLE IF NOT EXISTS {self.get_name()} ( \n"
-        columns = "\n".join(
-            [
-                f"{col.get_name()} {col.get_column_definition(definition_dict)},"
-                for col in self.get_columns()
-            ]
-        )
-        primary_key = f"\nPRIMARY KEY ({self.get_primary_key()}));"
-
-        return create_table + columns + primary_key
-
-    def get_column_names(self) -> List[str]:
-        """Return a complete list of Column names for the table."""
-        return [col.get_name() for col in self._columns]
-
-    def get_column_pandas_types(self) -> Dict[str, str]:
-        """Return a complete list of Column names for the table."""
-
-        pd_types = {
-            "INTEGER": "int64",
-            "VARCHAR": "string",
-            "FLOAT": "float64",
-            "DATE": "datetime64[ns]",
-            "BOOLEAN": "bool",
-            "TIMESTAMP": "datetime64[ns]",
-        }
-
-        return {col.get_name(): pd_types[col.get_type()] for col in self._columns}
-
-    def get_update_column(self) -> Column:
-        """Return a random eligible update column."""
-        i = random.randint(0, len(self._update_columns) - 1)
-        return self._update_columns[i]
 
 

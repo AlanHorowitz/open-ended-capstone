@@ -11,7 +11,7 @@ class StoreSalesTable(Table):
 
         super().__init__(
             StoreSalesTable.NAME,
-            Column("store_sales_id", "INTEGER", isPrimaryKey=True),
+            Column("store_sales_id", "INTEGER", primary_key=True),
             Column(
                 "store_sales_store_id",
                 "INTEGER",

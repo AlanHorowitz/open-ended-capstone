@@ -8,7 +8,7 @@ class CustomerTable(Table):
     def __init__(self):
         super().__init__(
             CustomerTable.NAME,
-            Column("customer_id", "INTEGER", isPrimaryKey=True),
+            Column("customer_id", "INTEGER", primary_key=True),
             Column("customer_name", "VARCHAR"),
             Column("customer_user_id", "VARCHAR"),
             Column("customer_password", "VARCHAR"),

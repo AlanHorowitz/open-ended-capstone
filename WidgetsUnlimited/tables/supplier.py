@@ -8,7 +8,7 @@ class SupplierTable(Table):
     def __init__(self):
         super().__init__(
             SupplierTable.NAME,
-            Column("supplier_id", "INTEGER", isPrimaryKey=True),
+            Column("supplier_id", "INTEGER", primary_key=True),
             Column("supplier_name", "VARCHAR"),
             Column("supplier_address", "VARCHAR"),
             Column("supplier_primary_contact_name", "VARCHAR", canUpdate=True),

@@ -8,7 +8,7 @@ class ProductTable(Table):
     def __init__(self):
         super().__init__(
             ProductTable.NAME,
-            Column("product_id", "INTEGER", isPrimaryKey=True),
+            Column("product_id", "INTEGER", primary_key=True),
             Column("product_name", "VARCHAR"),
             Column("product_description", "VARCHAR"),
             Column("product_category", "VARCHAR", canUpdate=True),

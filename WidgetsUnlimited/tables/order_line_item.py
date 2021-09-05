@@ -11,7 +11,7 @@ class OrderLineItemTable(Table):
 
         super().__init__(
             OrderLineItemTable.NAME,
-            Column("order_line_item_id", "INTEGER", isPrimaryKey=True),
+            Column("order_line_item_id", "INTEGER", primary_key=True),
             Column(
                 "order_id",
                 "INTEGER",

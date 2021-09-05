@@ -9,7 +9,7 @@ class StoreLocationTable(Table):
     def __init__(self):
         super().__init__(
             StoreLocationTable.NAME,
-            Column("store_location_id", "INTEGER", isPrimaryKey=True),
+            Column("store_location_id", "INTEGER", primary_key=True),
             Column(
                 "store_id",
                 "INTEGER",
