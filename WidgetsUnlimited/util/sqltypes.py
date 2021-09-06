@@ -116,7 +116,7 @@ class Column:
 
 
 class Table:
-    """Database Table metadata used for DDL and data create_only"""
+    """Database Table metadata used for DDL and data generation"""
 # Note: Source system tables in RetailDW must have a single column integer primary key
 # and at least one VARCHAR column.
     def __init__(self, name: str, *columns: Column, create_only=False, batch_id=True):
@@ -225,7 +225,7 @@ class Table:
         return create_table + columns + primary_key
 
     #
-    # Generation lifecycle  methods
+    # Generation lifecycle methods
     #
     def pre_load(self, cur: cursor) -> None:
         """Load foreign key tables for valid references when generating records.  Assume
