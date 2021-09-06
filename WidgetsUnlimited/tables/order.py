@@ -28,7 +28,7 @@ class OrderTable(Table):
                 "order_special_instructions",
                 "VARCHAR",
                 update=True,
-                column_type_length=200,
+                column_length=200,
             ),
             Column("order_shipping_cost", "FLOAT"),
             Column("order_execution_time", "TIMESTAMP"),

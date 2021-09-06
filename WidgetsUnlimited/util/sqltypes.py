@@ -1,5 +1,5 @@
 import random
-from typing import List, Tuple, Dict, Optional, Any
+from typing import List, Tuple, Dict, Any
 from psycopg2.extensions import cursor
 
 from datetime import datetime
@@ -15,12 +15,12 @@ DEFAULT_INSERT_VALUES: Dict[str, object] = {
 
 
 class Column:
-    """Database Column metadata used for DDL and data create_only"""
+    """Database column metadata used for DDL and data generation"""
     def __init__(
         self,
         column_name: str,               # column name
         column_type: str,               # (INTEGER, VARCHAR, FLOAT, DATE, BOOLEAN, TIMESTAMP)
-        column_type_length=None,        # optional column length (e.g. 200 for VARCHAR(200)
+        column_length= None,            # optional column length (e.g. 200 for VARCHAR(200))
         primary_key: bool = False,      # column is primary key
         inserted_at: bool = False,      # column is the inserted_at column
         updated_at: bool = False,       # column is the updated_at column
@@ -35,7 +35,7 @@ class Column:
 
         self._name = column_name
         self._type = column_type
-        self._type_length = column_type_length
+        self._length = column_length
         self._primary_key = primary_key
         self._inserted_at = inserted_at
         self._updated_at = updated_at
@@ -47,24 +47,25 @@ class Column:
         self._parent_key = parent_key
         self._default = default
 
-    def get_column_definition(self, definition_dict) -> str:
+    def get_definition_text(self, db_types_dict) -> str:
         """
-        Get database specific DDL text for column, optionally including a length
+        Get database-specific DDL text for the column to be used in CREATE TABLE.  Optionally include a length
+        parameter (e.g. my_column VARCHAR(200) or my_column VARCHAR).
 
-        :param definition_dict: Mappings from Column.column_type to native SQL name plus optional column length
-        :return: Native DDL text (postgres or mysql) for column definition, with length appended if specified or
-        if default is indicated for the type
+        :param db_types_dict: Mapping from Column.column_type to tuple (db-specific SQL type, optional type length)
+        :return: Native DDL text (postgres or mysql) for column.
+
         """
-        length_suffix = ""
-        type_length = self.get_type_length()
-        type_keyword = definition_dict[self.get_type()][0]
-        type_length_default = definition_dict[self.get_type()][1]
+        length_parameter = ""
+        length = self.get_type_length()
+        db_type = db_types_dict[self.get_type()][0]
+        db_default_length = db_types_dict[self.get_type()][1]
 
         # when explicit or default length found, append within parentheses
-        if type_length or type_length_default:
-            length_suffix = "(" + (str(type_length) if type_length else type_length_default) + ")"
+        if length or db_default_length:
+            length_parameter = "(" + (str(length) if length else db_default_length) + ")"
 
-        return type_keyword + length_suffix
+        return self.get_name() + " " + db_type + length_parameter
 
     def get_name(self) -> str:
         return self._name
@@ -73,7 +74,7 @@ class Column:
         return self._type
 
     def get_type_length(self) -> str:
-        return self._type_length
+        return self._length
 
     def is_primary_key(self) -> bool:
         return self._primary_key
@@ -182,7 +183,8 @@ class Table:
     def get_create_sql_mysql(self) -> str:
         """ Returns SQL to create table for this class in postgresql """
 
-        mysql_dict = {
+        # type mappings and default lengths for mysql
+        mysql_types_dict = {
             "INTEGER": ("INT", None),
             "VARCHAR": ("VARCHAR", "80"),
             "FLOAT": ("DOUBLE", None),
@@ -190,12 +192,13 @@ class Table:
             "BOOLEAN": ("TINYINT", "1"),
             "TIMESTAMP": ("TIMESTAMP", "6"),
         }
-        return self.get_create_sql(mysql_dict)
+        return self.get_create_sql(mysql_types_dict)
 
     def get_create_sql_postgres(self) -> str:
         """ Returns SQL to create table for this class in postgresql """
 
-        postgres_dict = {
+        # type mappings and default lengths for postgres
+        postgres_types_dict = {
             "INTEGER": ("INTEGER", None),
             "VARCHAR": ("VARCHAR", "80"),
             "FLOAT": ("FLOAT", "11"),
@@ -203,7 +206,7 @@ class Table:
             "BOOLEAN": ("BOOLEAN", None),
             "TIMESTAMP": ("TIMESTAMP", None),
         }
-        return self.get_create_sql(postgres_dict)
+        return self.get_create_sql(postgres_types_dict)
 
     def get_create_sql(self, definition_dict):
         """
@@ -214,12 +217,7 @@ class Table:
         """
 
         create_table = f"CREATE TABLE IF NOT EXISTS {self.get_name()} ( \n"
-        columns = "\n".join(
-            [
-                f"{col.get_name()} {col.get_column_definition(definition_dict)},"
-                for col in self.get_columns()
-            ]
-        )
+        columns = "\n".join([col.get_definition_text(definition_dict) + "," for col in self.get_columns()])
         primary_key = f"\nPRIMARY KEY ({self.get_primary_key()}));"
 
         return create_table + columns + primary_key
@@ -251,6 +249,16 @@ class Table:
         batch_id: int = None,
         timestamp: datetime = datetime.now(),
     ) -> Tuple:
+        """
+        Make a new row for the generator.  Substitutes cross references and default values from the column metadata.
+        Plan to be extended to use value ranges and pick lists.
+
+        :param primary_key:
+        :param parent_key:
+        :param batch_id:  batch identifier
+        :param timestamp: insert/update time for record
+        :return: a tuple, in column order, suitable for insertion
+        """
 
         d: List[object] = []
         self._setXrefTableRows()
