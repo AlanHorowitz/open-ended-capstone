@@ -17,6 +17,11 @@ services:
       E_COMMERCE_SCHEMA: ecommerce
       E_COMMERCE_USER: user1
       E_COMMERCE_PASSWORD: user1
+      WAREHOUSE_DB : retaildw
+      WAREHOUSE_HOST : 172.18.0.1
+      WAREHOUSE_PORT : 3306
+      WAREHOUSE_USER : user1
+      WAREHOUSE_PASSWORD : user1
           
 networks: 
     default:

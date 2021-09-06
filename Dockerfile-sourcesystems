@@ -3,14 +3,6 @@ FROM python:3.8-slim
 ADD ./requirements-sourcesystems.txt ./
 RUN pip install -r requirements-sourcesystems.txt
 
-COPY WidgetsUnlimited/__init__.py  WidgetsUnlimited/__init__.py
-COPY WidgetsUnlimited/__main__.py  WidgetsUnlimited/__main__.py
-COPY WidgetsUnlimited/sourcesystems.py  WidgetsUnlimited/sourcesystems.py
-COPY WidgetsUnlimited/datacollection.py WidgetsUnlimited/datacollection.py
+COPY WidgetsUnlimited/ WidgetsUnlimited/
 
-
-COPY WidgetsUnlimited/sourcesystems WidgetsUnlimited/sourcesystems 
-COPY WidgetsUnlimited/tables WidgetsUnlimited/tables 
-COPY WidgetsUnlimited/util WidgetsUnlimited/util 
-
-ENTRYPOINT ["python", "WidgetsUnlimited/sourcesystems.py"]
+ENTRYPOINT ["python", "WidgetsUnlimited/demo1.py"]
