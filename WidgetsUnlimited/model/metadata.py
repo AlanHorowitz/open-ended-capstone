@@ -1,16 +1,13 @@
 import random
-from typing import List, Tuple, Dict, Any
-from psycopg2.extensions import cursor
-
-from datetime import datetime
+from typing import List, Dict, Any
 
 
 class Column:
     """Database column metadata used for DDL and data generation"""
     def __init__(
         self,
-        column_name: str,               # column name
-        column_type: str,               # (INTEGER, VARCHAR, FLOAT, DATE, BOOLEAN, TIMESTAMP)
+        column_name: str,               # sql name of the column
+        column_type: str,               # sql type (INTEGER, VARCHAR, FLOAT, DATE, BOOLEAN, TIMESTAMP)
         column_length= None,            # optional column length (e.g. 200 for VARCHAR(200))
         primary_key: bool = False,      # column is primary key
         inserted_at: bool = False,      # column is the inserted_at column
@@ -18,9 +15,9 @@ class Column:
         batch_id: bool = False,         # column is batch_id column
         update: bool = False,           # column is eligible for update by generator
         xref_table: str = "",           # name of foreign reference table
-        xref_column: str = "",          # column in reference table to use for foreign key
-        parent_table: str = "",         # parent table with one to many relationship with child table
-        parent_key: str = "",           # primary key in parent table
+        xref_column: str = "",          # referenced column in referenced table
+        parent_table: str = "",         # parent table from which to populate column
+        parent_key: str = "",           # column within parent table (key) to populate column
         default: Any = None,            # default value for column
     ):
 
@@ -38,9 +35,9 @@ class Column:
         self._parent_key = parent_key
         self._default = default
 
-    def get_definition_text(self, db_types_dict) -> str:
+    def get_create_sql_text(self, db_types_dict) -> str:
         """
-        Get database-specific DDL text for the column to be used in CREATE TABLE.  Optionally include a length
+        Get database-specific DDL text to be used in CREATE TABLE.  Optionally include a length
         parameter (e.g. my_column VARCHAR(200) or my_column VARCHAR).
 
         :param db_types_dict: Mapping from Column.column_type to tuple (db-specific SQL type, optional type length)
@@ -52,7 +49,7 @@ class Column:
         db_type = db_types_dict[self.get_type()][0]
         db_default_length = db_types_dict[self.get_type()][1]
 
-        # when explicit or default length found, append within parentheses
+        # when length attribute or default length found, append within parentheses
         if length or db_default_length:
             length_parameter = "(" + (str(length) if length else db_default_length) + ")"
 
@@ -109,27 +106,25 @@ class Column:
 
 class Table:
     """Database Table metadata used for DDL and data generation"""
-# Note: Source system model.in RetailDW must have a single column integer primary key
-# and at least one VARCHAR column.
+
     def __init__(self, name: str, *columns: Column, create_only=False, batch_id=True):
         """
-        Initialize a Table object:
-            - Prepare the class for use by the DataGenerator
+        Prepare the Table class for use by the DataGenerator
+
             - Enforce constraints on Column attributes
+            - Initial xref dictionary
 
-
-
-        :param name: Table name
-        :param columns: Column objects comprising Table
+        :param name: sql name of the table
+        :param columns: ordered Column objects comprising Table
         :param create_only: Use Table only for create table and metadata, not data generation
-        :param batch_id: Include a batch_id column with table
+        :param batch_id: Append a batch_id column to columns
         """
 
         self._name = name
         self._create_only = create_only
-        self._batchId = batch_id
+        self._batch_id = batch_id
         self._columns = [col for col in columns]
-        if self._batchId:
+        if self._batch_id:
             self._columns.append(Column("batch_id", "INTEGER", batch_id=True))
         primary_keys = [col.get_name() for col in columns if col.is_primary_key()]
         inserted_ats = [col.get_name() for col in columns if col.is_inserted_at()]
@@ -160,9 +155,9 @@ class Table:
 
             self._update_columns = [
                 col for col in columns if col.can_update()
-            ]  # restrict to VARCHAR update
+            ]
             if len(self._update_columns) == 0:
-                raise Exception("Need at least one VARCHAR for update")
+                raise Exception("Table requires at least one update column")
 
             self._init_xref_dict()
 
@@ -206,30 +201,10 @@ class Table:
         """
 
         create_table = f"CREATE TABLE IF NOT EXISTS {self.get_name()} ( \n"
-        columns = "\n".join([col.get_definition_text(definition_dict) + "," for col in self.get_columns()])
+        columns = "\n".join([col.get_create_sql_text(definition_dict) + "," for col in self.get_columns()])
         primary_key = f"\nPRIMARY KEY ({self.get_primary_key()}));"
 
         return create_table + columns + primary_key
-
-    #
-    # Generation lifecycle methods
-    #
-    def pre_load(self, cur: cursor) -> None:
-        """Load foreign key model.for valid references when generating records.  Assume
-        these model.fit in memory for now.  Update the xrefDict with result set and count.
-        """
-        for table_name, table_data in self._xrefDict.items():
-            column_names = ",".join(table_data.column_list)
-            cur.execute(f"SELECT {column_names} from {table_name};")
-            table_data.result_set = cur.fetchall()
-            table_data.num_rows = len(table_data.result_set)
-
-    def post_load(self) -> None:
-        """Clear references to xref result set"""
-        for table_data in self._xrefDict.values():
-            table_data.result_set = []
-            table_data.num_rows = 0
-            table_data.next_random_row = 0
 
     class XrefTableData:
         """helper object for xref data"""
@@ -241,7 +216,7 @@ class Table:
             self.num_rows = 0
 
     def _init_xref_dict(self) -> None:
-        """ Create a dictionary mapping xref table names to helper object used to manage cross table lookups """
+        """ Create a dictionary mapping xref table names to helper objects used to manage cross table lookups """
 
         xref_dict: Dict[str, Table.XrefTableData] = {}
 
@@ -254,21 +229,7 @@ class Table:
                     xref_dict[xref_table] = Table.XrefTableData()
                     xref_dict[xref_table].column_list.append(xref_column)
 
-        self._xrefDict = xref_dict
-
-
-    def _setXrefTableRows(self):
-        """Update the Xref dictionary with the current random rows for each table."""
-        for table_data in self._xrefDict.values():
-            table_data.next_random_row = random.randint(0, table_data.num_rows - 1)
-
-    def _getXrefValue(self, col: Column) -> str:
-        """Return the column's value from the current random DictRow."""
-
-        row = self._xrefDict[col._xref_table].next_random_row
-        value = self._xrefDict[col._xref_table].result_set[row][col._xref_column]
-
-        return value
+        self._xref_dict = xref_dict
 
     #
     # Aggregate column methods
@@ -297,9 +258,6 @@ class Table:
         }
         return {col.get_name(): pd_types[col.get_type()] for col in self._columns}
 
-#
-# Other getters
-#
     def get_name(self) -> str:
         return self._name
 
@@ -319,6 +277,6 @@ class Table:
         return self._parent_key != "" and self._parent_table != ""
 
     def get_xref_dict(self) -> Dict:
-        return self._xrefDict
+        return self._xref_dict
 
 
