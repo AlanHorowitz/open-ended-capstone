@@ -6,7 +6,7 @@ sys.path.insert(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "../../WidgetsUnlimited")),
 )
 
-from util.sqltypes import Table, Column, DEFAULT_INSERT_VALUES
+from tables.sqltypes import Table, Column, DEFAULT_INSERT_VALUES
 
 from tables.order import OrderTable
 from tables.order_line_item import OrderLineItemTable

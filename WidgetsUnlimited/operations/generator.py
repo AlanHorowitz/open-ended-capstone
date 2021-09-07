@@ -5,6 +5,7 @@ from .table_transaction import TableTransaction
 import random
 import os
 
+
 import psycopg2
 from psycopg2.extras import DictCursor, DictRow
 from psycopg2.extensions import connection, cursor

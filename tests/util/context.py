@@ -6,4 +6,4 @@ sys.path.insert(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "../../WidgetsUnlimited")),
 )
 
-from util.sqltypes import Table, Column
+from tables.sqltypes import Table, Column
