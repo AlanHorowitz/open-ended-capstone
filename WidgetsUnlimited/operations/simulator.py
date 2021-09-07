@@ -1,4 +1,4 @@
-from tables.sqltypes import Table
+from model.sqltypes import Table
 from .generator import DataGenerator
 from .base import BaseSystem
 from .table_transaction import TableTransaction

@@ -4,9 +4,9 @@ from datetime import date
 
 from pandas.core.frame import DataFrame, Series, Index
 from .warehouse_util import read_stage
-from tables.customer_dim import CustomerDimTable
-from tables.customer import CustomerTable
-from tables.customer_address import CustomerAddressTable
+from model.customer_dim import CustomerDimTable
+from model.customer import CustomerTable
+from model.customer_address import CustomerAddressTable
 
 # transformation mappings
 customer_dim_to_customer_mapping = {

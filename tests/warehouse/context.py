@@ -8,5 +8,5 @@ sys.path.insert(
 
 from warehouse.customer_dimension import CustomerDimensionProcessor
 
-from tables.customer import CustomerTable
-from tables.customer_address import CustomerAddressTable
+from model.customer import CustomerTable
+from model.customer_address import CustomerAddressTable

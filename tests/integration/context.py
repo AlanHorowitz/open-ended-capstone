@@ -10,15 +10,15 @@ from warehouse.customer_dimension import CustomerDimensionProcessor
 from warehouse.warehouse_util import extract_write_stage
 from warehouse.data_warehouse import DataWarehouse
 
-from tables.customer import CustomerTable
-from tables.customer_address import CustomerAddressTable
+from model.customer import CustomerTable
+from model.customer_address import CustomerAddressTable
 
 from operations.generator import DataGenerator
 from operations.table_transaction import TableTransaction
 
-from tables.product import ProductTable
-from tables.store import StoreTable
-from tables.store_location import StoreLocationTable
-from tables.store_sales import StoreSalesTable
-from tables.order import OrderTable
-from tables.order_line_item import OrderLineItemTable
+from model.product import ProductTable
+from model.store import StoreTable
+from model.store_location import StoreLocationTable
+from model.store_sales import StoreSalesTable
+from model.order import OrderTable
+from model.order_line_item import OrderLineItemTable

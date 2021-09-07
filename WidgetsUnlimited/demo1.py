@@ -16,11 +16,11 @@ DataWarehouse - Process that extracts incremental data produced by the source sy
 star schema.
 """
 
-from tables.product import ProductTable
-from tables.customer import CustomerTable
-from tables.customer_address import CustomerAddressTable
-from tables.order import OrderTable
-from tables.order_line_item import OrderLineItemTable
+from model.product import ProductTable
+from model.customer import CustomerTable
+from model.customer_address import CustomerAddressTable
+from model.order import OrderTable
+from model.order_line_item import OrderLineItemTable
 
 from operations.ecommerce import eCommerceSystem
 from operations.inventory import InventorySystem

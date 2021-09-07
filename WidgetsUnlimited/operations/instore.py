@@ -1,4 +1,4 @@
-from tables.sqltypes import Table, Column
+from model.sqltypes import Table, Column
 from typing import List
 
 

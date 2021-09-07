@@ -1,6 +1,6 @@
 from .warehouse_util import extract_write_stage
-from tables.customer import CustomerTable
-from tables.customer_address import CustomerAddressTable
+from model.customer import CustomerTable
+from model.customer_address import CustomerAddressTable
 from .customer_dimension import CustomerDimensionProcessor
 import os
 import pandas as pd

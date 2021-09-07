@@ -1,6 +1,6 @@
 from .sqltypes import Table, Column
-from tables.customer import CustomerTable
-from tables.customer_address import CustomerAddressTable
+from model.customer import CustomerTable
+from model.customer_address import CustomerAddressTable
 
 
 class OrderTable(Table):
