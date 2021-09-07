@@ -6,13 +6,23 @@ from typing import List
 
 
 class OperationsSimulator:
-    def __init__(self, data_generator, source_systems):
+    def __init__(self, data_generator: DataGenerator, source_systems: List[BaseSystem]):
         self._data_generator = data_generator
         self._source_systems = set(source_systems)
         self._source_system_lookup = {}
 
-    def add_tables(self, source_system, tables):
+    def add_tables(self, source_system: BaseSystem, tables: List[Table]):
+        """
+        Associate a list of Tables to a source system and pass the tables to both source
+        system and data generator for initialization.
 
+        Create a dictionary mapping table names to the source system objects.  A table may onlu
+        be associated with a single source system.
+
+        :param source_system: source system object
+        :param tables: list of Table objects
+        :return:
+        """
         if source_system not in self._source_systems:
             raise Exception("Error. May not add tables to unknown source system")
         for table in tables:
