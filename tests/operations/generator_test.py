@@ -2,7 +2,7 @@ import pytest
 
 from .context import Table, Column, DEFAULT_INSERT_VALUES
 from .context import DataGenerator
-from .context import TableTransaction
+from .context import GeneratorRequest
 from .context import OrderTable
 from .context import ProductTable
 from .context import CustomerTable
@@ -70,7 +70,7 @@ def make_rows(
 def test_generate_insert(data_generator, customer_table):
 
     data_generator.generate(
-        TableTransaction(customer_table, n_inserts=10, n_updates=0), 1
+        GeneratorRequest(customer_table, n_inserts=10, n_updates=0), 1
     )
     cursor = data_generator.cur
     cursor.execute(f"select * from {customer_table.get_name()}")
@@ -82,7 +82,7 @@ def test_generate_update(data_generator, customer_table):
     cursor = data_generator.cur
     make_rows(cursor, customer_table, n_rows=10, start_key=1)
     data_generator.generate(
-        TableTransaction(customer_table, n_inserts=0, n_updates=5), 1
+        GeneratorRequest(customer_table, n_inserts=0, n_updates=5), 1
     )
     cursor.execute(f"select * from {customer_table.get_name()}")
     assert len(cursor.fetchall()) == 10
@@ -98,7 +98,7 @@ def test_generate_insert_and_update(data_generator, customer_table):
     cursor = data_generator.cur
     make_rows(cursor, customer_table, n_rows=10, start_key=1)
     data_generator.generate(
-        TableTransaction(customer_table, n_inserts=15, n_updates=5), 1
+        GeneratorRequest(customer_table, n_inserts=15, n_updates=5), 1
     )
     cursor.execute(f"select * from {customer_table.get_name()}")
     assert len(cursor.fetchall()) == 25
@@ -117,7 +117,7 @@ def test_generate_link_parent(
     make_rows(cursor, product_table, n_rows=5, start_key=1, batch_id=1)
     make_rows(cursor, order_table, n_rows=10, start_key=1, batch_id=1)
     data_generator.generate(
-        TableTransaction(
+        GeneratorRequest(
             order_line_item_table, n_inserts=3, n_updates=0, link_parent=True
         ),
         1,
@@ -134,7 +134,7 @@ def test_generate_link_parent(
     # test with second batch and new values
     make_rows(cursor, order_table, n_rows=20, start_key=40, batch_id=2)
     data_generator.generate(
-        TableTransaction(
+        GeneratorRequest(
             order_line_item_table, n_inserts=5, n_updates=0, link_parent=True
         ),
         2,
@@ -156,7 +156,7 @@ def test_generate_link_parent(
 def test_generate_link_parent_invalid(data_generator, product_table):
     with pytest.raises(Exception):
         data_generator.generate(
-            TableTransaction(product_table, n_inserts=5, n_updates=0, link_parent=True),
+            GeneratorRequest(product_table, n_inserts=5, n_updates=0, link_parent=True),
             1,
         )
     cursor = data_generator.cur
@@ -166,7 +166,7 @@ def test_generate_link_parent_invalid(data_generator, product_table):
 
 def test_set_default(data_generator, customer_table):
     data_generator.generate(
-        TableTransaction(customer_table, n_inserts=1, n_updates=0), 1
+        GeneratorRequest(customer_table, n_inserts=1, n_updates=0), 1
     )
     cursor = data_generator.cur
     cursor.execute(
@@ -186,7 +186,7 @@ def test_generate_multiple_xref(
         f"update {product_table.get_name()} set product_unit_cost = product_id;"
     )
     data_generator.generate(
-        TableTransaction(
+        GeneratorRequest(
             order_line_item_table, n_inserts=3, n_updates=0, link_parent=True
         ),
         1,

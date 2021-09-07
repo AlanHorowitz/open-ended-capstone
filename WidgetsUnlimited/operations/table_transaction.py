@@ -1,7 +1,7 @@
 from model.metadata import Table
 
 
-class TableTransaction:
+class GeneratorRequest:
     def __init__(
         self,
         table: Table,

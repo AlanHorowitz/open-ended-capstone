@@ -4,7 +4,7 @@ import os
 from mysql.connector import connect
 
 from .context import CustomerDimensionProcessor
-from .context import DataGenerator, TableTransaction
+from .context import DataGenerator, GeneratorRequest
 from .context import extract_write_stage
 
 from .context import ProductTable
@@ -30,12 +30,12 @@ def test_generator_and_transform():
 
     data_generator.add_tables([product_table, customer_table, customer_address_table])
 
-    data_generator.generate(TableTransaction(product_table, n_inserts=10))
+    data_generator.generate(GeneratorRequest(product_table, n_inserts=10))
 
     # 20 customers with corresponding address
-    data_generator.generate(TableTransaction(customer_table, n_inserts=20), 1)
+    data_generator.generate(GeneratorRequest(customer_table, n_inserts=20), 1)
     data_generator.generate(
-        TableTransaction(customer_address_table, n_inserts=1, link_parent=True), 1
+        GeneratorRequest(customer_address_table, n_inserts=1, link_parent=True), 1
     )
 
     extract_write_stage(
@@ -52,7 +52,7 @@ def test_generator_and_transform():
 
     # try modifying two customers
     data_generator.generate(
-        TableTransaction(customer_table, n_inserts=0, n_updates=2), batch_id=2
+        GeneratorRequest(customer_table, n_inserts=0, n_updates=2), batch_id=2
     )
 
     extract_write_stage(

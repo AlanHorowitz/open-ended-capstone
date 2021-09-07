@@ -1,7 +1,7 @@
 from typing import List, Tuple, Dict
 from model.metadata import Table, XrefTableData
 from datetime import datetime
-from .table_transaction import TableTransaction
+from .table_transaction import GeneratorRequest
 import random
 import os
 
@@ -23,7 +23,7 @@ class DataGenerator:
     """
     The DataGenerator synthesizes sample data for tables described by Table and Column classes
     in WidgetsUnlimited.tables, and is tightly integrated with these classes' methods.
-    It is invoked via its generate method with a TableTransaction and a batch_id (see below).  The cumulative product
+    It is invoked via its generate method with a GeneratorRequest and a batch_id (see below).  The cumulative product
     of the create_only is stored in postgresql.
 
     The DataGenerator supports tables linked together as a data model via foreign keys.
@@ -59,7 +59,7 @@ class DataGenerator:
             self._connection.commit()
 
     def generate(
-        self, table_transaction: TableTransaction, batch_id: int = 0
+        self, table_transaction: GeneratorRequest, batch_id: int = 0
     ) -> Tuple[List[Tuple], List[DictRow]]:
         """
         Insert and update the given numbers of synthesized records for a table.
