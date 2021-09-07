@@ -13,8 +13,8 @@ from warehouse.data_warehouse import DataWarehouse
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
 
-from sourcesystems.generator import DataGenerator
-from sourcesystems.table_transaction import TableTransaction
+from operations.generator import DataGenerator
+from operations.table_transaction import TableTransaction
 
 from tables.product import ProductTable
 from tables.store import StoreTable

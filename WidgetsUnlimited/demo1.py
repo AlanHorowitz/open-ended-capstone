@@ -22,12 +22,12 @@ from tables.customer_address import CustomerAddressTable
 from tables.order import OrderTable
 from tables.order_line_item import OrderLineItemTable
 
-from sourcesystems.ecommerce import eCommerceSystem
-from sourcesystems.inventory import InventorySystem
-from sourcesystems.generator import DataGenerator
+from operations.ecommerce import eCommerceSystem
+from operations.inventory import InventorySystem
+from operations.generator import DataGenerator
 
-from sourcesystems.table_transaction import TableTransaction
-from sourcesystems.simulator import OperationsSimulator
+from operations.table_transaction import TableTransaction
+from operations.simulator import OperationsSimulator
 from warehouse.data_warehouse import DataWarehouse
 
 # table metadata

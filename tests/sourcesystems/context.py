@@ -12,5 +12,5 @@ from tables.order import OrderTable
 from tables.order_line_item import OrderLineItemTable
 from tables.product import ProductTable
 from tables.customer import CustomerTable
-from sourcesystems.generator import DataGenerator
-from sourcesystems.table_transaction import TableTransaction
+from operations.generator import DataGenerator
+from operations.table_transaction import TableTransaction
