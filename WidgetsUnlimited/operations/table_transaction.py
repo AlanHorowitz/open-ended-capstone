@@ -1,4 +1,4 @@
-from model.sqltypes import Table
+from model.metadata import Table
 
 
 class TableTransaction:

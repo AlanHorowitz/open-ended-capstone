@@ -1,7 +1,7 @@
 from typing import List
 from datetime import datetime
 
-from model.sqltypes import Table
+from model.metadata import Table
 
 
 class BaseSystem:

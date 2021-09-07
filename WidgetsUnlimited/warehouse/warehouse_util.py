@@ -2,7 +2,7 @@ import os
 from typing import List
 
 import pandas as pd
-from model.sqltypes import Column, Table
+from model.metadata import Column, Table
 
 STAGE_DIRECTORY_PREFIX = "/tmp/warehouse/stage/batch"
 

@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from model.sqltypes import Table
+from model.metadata import Table
 from datetime import datetime
 from .table_transaction import TableTransaction
 import random
