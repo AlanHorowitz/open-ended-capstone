@@ -1,4 +1,4 @@
-from util.sqltypes import Table, Column
+from .sqltypes import Table, Column
 from .product import ProductTable
 from .order import OrderTable
 

@@ -1,4 +1,4 @@
-from util.sqltypes import Table
+from tables.sqltypes import Table
 from typing import List
 
 from .generator import DataGenerator

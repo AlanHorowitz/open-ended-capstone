@@ -5,7 +5,7 @@ import psycopg2
 from psycopg2.extras import DictCursor, DictRow
 from psycopg2.extensions import connection, cursor
 
-from util.sqltypes import Table
+from tables.sqltypes import Table
 from .generator import DataGenerator
 from .base import BaseSystem
 

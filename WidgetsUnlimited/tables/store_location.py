@@ -1,4 +1,4 @@
-from util.sqltypes import Column, Table
+from .sqltypes import Column, Table
 from .store import StoreTable
 
 

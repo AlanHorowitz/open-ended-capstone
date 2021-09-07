@@ -1,4 +1,4 @@
-from util.sqltypes import Table
+from tables.sqltypes import Table
 
 
 class TableTransaction:

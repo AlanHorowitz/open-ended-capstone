@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from util.sqltypes import Table
+from tables.sqltypes import Table
 from datetime import datetime
 from .table_transaction import TableTransaction
 import random
@@ -13,7 +13,7 @@ from psycopg2.extensions import connection, cursor
 class DataGenerator:
     """
     The DataGenerator synthesizes sample data for tables described by Table and Column classes
-    in WidgetsUnlimited.util.sqltypes, and is tightly integrated with these classes' methods.
+    in WidgetsUnlimited.tables, and is tightly integrated with these classes' methods.
     It is invoked via its generate method with a TableTransaction and a batch_id (see below).  The cumulative product
     of the create_only is stored in postgresql.
 

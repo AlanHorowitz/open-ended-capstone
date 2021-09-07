@@ -1,4 +1,4 @@
-from util.sqltypes import Table, Column
+from .sqltypes import Table, Column
 
 
 class SupplierTable(Table):

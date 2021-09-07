@@ -1,4 +1,4 @@
-from util.sqltypes import Table, Column
+from .sqltypes import Table, Column
 from tables.customer import CustomerTable
 from tables.customer_address import CustomerAddressTable
 

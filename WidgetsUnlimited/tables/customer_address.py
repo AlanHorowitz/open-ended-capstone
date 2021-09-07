@@ -1,5 +1,5 @@
 from psycopg2.extensions import TRANSACTION_STATUS_IDLE
-from util.sqltypes import Table, Column
+from .sqltypes import Table, Column
 from .customer import CustomerTable
 
 
