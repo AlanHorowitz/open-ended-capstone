@@ -13,4 +13,4 @@ from model.order_line_item import OrderLineItemTable
 from model.product import ProductTable
 from model.customer import CustomerTable
 from operations.generator import DataGenerator, DEFAULT_INSERT_VALUES
-from operations.table_transaction import GeneratorRequest
+from operations.generator import GeneratorRequest

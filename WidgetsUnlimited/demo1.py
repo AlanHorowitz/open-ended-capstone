@@ -26,7 +26,7 @@ from operations.ecommerce import eCommerceSystem
 from operations.inventory import InventorySystem
 from operations.generator import DataGenerator
 
-from operations.table_transaction import GeneratorRequest
+from WidgetsUnlimited.operations.generator import GeneratorRequest
 from operations.simulator import OperationsSimulator
 from warehouse.data_warehouse import DataWarehouse
 

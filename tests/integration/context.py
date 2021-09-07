@@ -14,7 +14,7 @@ from model.customer import CustomerTable
 from model.customer_address import CustomerAddressTable
 
 from operations.generator import DataGenerator
-from operations.table_transaction import GeneratorRequest
+from operations.generator import GeneratorRequest
 
 from model.product import ProductTable
 from model.store import StoreTable

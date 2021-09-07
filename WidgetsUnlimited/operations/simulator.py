@@ -1,7 +1,6 @@
 from model.metadata import Table
-from .generator import DataGenerator
+from .generator import DataGenerator, GeneratorRequest
 from .base import BaseSystem
-from .table_transaction import GeneratorRequest
 from typing import List
 
 

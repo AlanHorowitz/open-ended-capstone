@@ -1,7 +1,6 @@
 from typing import List, Tuple, Dict
 from model.metadata import Table, XrefTableData
 from datetime import datetime
-from .table_transaction import GeneratorRequest
 import random
 import os
 
@@ -17,6 +16,20 @@ DEFAULT_INSERT_VALUES: Dict[str, object] = {
     "BOOLEAN": True,
     "TIMESTAMP": datetime(2020, 11, 11),
 }
+
+
+class GeneratorRequest:
+    def __init__(
+            self,
+            table: Table,
+            n_inserts: int = 0,
+            n_updates: int = 0,
+            link_parent: bool = False,
+    ) -> None:
+        self.table = table
+        self.n_inserts = n_inserts
+        self.n_updates = n_updates
+        self.link_parent = link_parent
 
 
 class DataGenerator:
@@ -59,7 +72,7 @@ class DataGenerator:
             self._connection.commit()
 
     def generate(
-        self, table_transaction: GeneratorRequest, batch_id: int = 0
+            self, table_transaction: GeneratorRequest, batch_id: int = 0
     ) -> Tuple[List[Tuple], List[DictRow]]:
         """
         Insert and update the given numbers of synthesized records for a table.
@@ -194,7 +207,7 @@ class DataGenerator:
                 for row in linked_rs:
                     for _ in range(n_inserts):
                         insert_records.append(
-                           _get_new_row(
+                            _get_new_row(
                                 table=table,
                                 primary_key=next_primary_key,
                                 parent_key=row[0],
@@ -268,5 +281,6 @@ def _get_new_row(
             d.append(DEFAULT_INSERT_VALUES[col.get_type()])
 
     return tuple(d)
+
 
 
