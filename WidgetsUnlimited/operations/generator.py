@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from model.metadata import Table
 from datetime import datetime
 from .table_transaction import TableTransaction
@@ -9,6 +9,15 @@ import os
 import psycopg2
 from psycopg2.extras import DictCursor, DictRow
 from psycopg2.extensions import connection, cursor
+
+DEFAULT_INSERT_VALUES: Dict[str, object] = {
+    "INTEGER": 98,
+    "VARCHAR": "AAA",
+    "FLOAT": 5.0,
+    "DATE": "2021-02-11 12:52:47",
+    "BOOLEAN": True,
+    "TIMESTAMP": datetime(2020, 11, 11),
+}
 
 
 class DataGenerator:
@@ -94,7 +103,7 @@ class DataGenerator:
             raise Exception(f"Invalid Request. No parent for table {table.get_name()}")
 
         # load references to foreign keys
-        table.pre_load(cur)
+        # table.pre_load(cur)
 
         table_name = table.get_name()
         primary_key_column = table.get_primary_key()
@@ -107,7 +116,7 @@ class DataGenerator:
         next_primary_key = 1 if result[1] is None else result[1] + 1
 
         update_records: List[DictRow] = []
-        insert_records: List[DictRow] = []
+        insert_records: List[Tuple] = []
 
         if n_updates > 0:
 
@@ -138,11 +147,20 @@ class DataGenerator:
 
         if n_inserts > 0:
 
+            # for each cross referenced table, prefetch the needed columns
+            xref_dict = table.get_xref_dict()
+            for xref_table_name, xref_data in xref_dict.items():
+                xref_column_names = ",".join(xref_data.column_list)
+                cur.execute(f"SELECT {xref_column_names} from {xref_table_name};")
+                xref_data.result_set = cur.fetchall()
+                xref_data.num_rows = len(xref_data.result_set)
+
             if not link_parent:
 
                 for pk in range(next_primary_key, next_primary_key + n_inserts):
                     insert_records.append(
-                        table.get_new_row(
+                        _get_new_row(
+                            table=table,
                             primary_key=pk,
                             parent_key=None,
                             batch_id=batch_id,
@@ -179,7 +197,8 @@ class DataGenerator:
                 for row in linked_rs:
                     for _ in range(n_inserts):
                         insert_records.append(
-                            table.get_new_row(
+                           _get_new_row(
+                                table=table,
                                 primary_key=next_primary_key,
                                 parent_key=row[0],
                                 batch_id=batch_id,
@@ -196,9 +215,61 @@ class DataGenerator:
                     f"INSERT INTO {table_name} ({column_names}) values {values_substitutions}",
                     insert_records,
                 )
+
+                """ Clear references to xref result set """
+                for table_data in xref_dict.values():
+                    table_data.result_set = []
+                    table_data.num_rows = 0
+                    table_data.next_random_row = 0
+
             conn.commit()
 
-        # clear foreign key references
-        table.post_load()
-
         return insert_records, update_records
+
+
+def _get_new_row(
+        table: Table,
+        primary_key: int,
+        parent_key: int = None,
+        batch_id: int = None,
+        timestamp: datetime = datetime.now(),
+) -> Tuple:
+    """
+    Make a new row for the generator.  Substitutes cross references and default values from the column metadata.
+    Plan to be extended to use value ranges and pick lists.
+
+    :param primary_key:
+    :param parent_key:
+    :param batch_id:  batch identifier
+    :param timestamp: insert/update time for record
+    :return: a tuple, in column order, suitable for insertion
+    """
+
+    d: List[object] = []
+
+    xref_dict = table.get_xref_dict()
+    for table_data in xref_dict.values():
+        table_data.next_random_row = random.randint(0, table_data.num_rows - 1)
+
+    for col in table.get_columns():
+        if col.has_default():
+            d.append(col.get_default())
+        elif col.is_primary_key():
+            d.append(primary_key)
+        elif col.is_batch_id():
+            d.append(batch_id)
+        elif col.is_inserted_at() or col.is_updated_at():
+            d.append(timestamp)
+        elif col.is_xref():
+            xref_table = col.get_xref_table()
+            row = xref_dict[xref_table].next_random_row
+            value = xref_dict[xref_table].result_set[row][col.get_xref_column()]
+            d.append(value)
+        elif col.is_parent_key() and parent_key is not None:
+            d.append(parent_key)
+        else:
+            d.append(DEFAULT_INSERT_VALUES[col.get_type()])
+
+    return tuple(d)
+
+
