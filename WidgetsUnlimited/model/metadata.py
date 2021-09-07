@@ -161,6 +161,22 @@ class Table:
 
             self._init_xref_dict()
 
+    def _init_xref_dict(self) -> None:
+        """ Create a dictionary mapping xref table names to helper objects used to manage cross table lookups """
+
+        xref_dict: Dict[str, XrefTableData] = {}
+
+        for col in self.get_columns():
+            if col.is_xref():
+                xref_table, xref_column = col.get_xref_table(), col.get_xref_column()
+                if xref_table in xref_dict:
+                    xref_dict[xref_table].column_list.append(xref_column)
+                else:
+                    xref_dict[xref_table] = XrefTableData()
+                    xref_dict[xref_table].column_list.append(xref_column)
+
+        self._xref_dict = xref_dict
+
     #
     #  Database table creation methods
     #
@@ -206,42 +222,19 @@ class Table:
 
         return create_table + columns + primary_key
 
-    class XrefTableData:
-        """helper object for xref data"""
-
-        def __init__(self):
-            self.column_list = []
-            self.result_set = []
-            self.next_random_row = 0
-            self.num_rows = 0
-
-    def _init_xref_dict(self) -> None:
-        """ Create a dictionary mapping xref table names to helper objects used to manage cross table lookups """
-
-        xref_dict: Dict[str, Table.XrefTableData] = {}
-
-        for col in self.get_columns():
-            if col.is_xref():
-                xref_table, xref_column = col.get_xref_table(), col.get_xref_column()
-                if xref_table in xref_dict:
-                    xref_dict[xref_table].column_list.append(xref_column)
-                else:
-                    xref_dict[xref_table] = Table.XrefTableData()
-                    xref_dict[xref_table].column_list.append(xref_column)
-
-        self._xref_dict = xref_dict
-
-    #
-    # Aggregate column methods
-    #
     def get_columns(self) -> List[Column]:
+        """Return column objects"""
+
         return self._columns
 
     def get_column_names(self) -> List[str]:
+        """Return column names"""
+
         return [col.get_name() for col in self._columns]
 
     def get_update_column(self) -> Column:
         """Return a random eligible update column."""
+
         i = random.randint(0, len(self._update_columns) - 1)
         return self._update_columns[i]
 
@@ -280,3 +273,11 @@ class Table:
         return self._xref_dict
 
 
+class XrefTableData:
+    """helper object for xref data"""
+
+    def __init__(self):
+        self.column_list = []
+        self.result_set = []
+        self.next_random_row = 0
+        self.num_rows = 0

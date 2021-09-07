@@ -1,10 +1,9 @@
 from typing import List, Tuple, Dict
-from model.metadata import Table
+from model.metadata import Table, XrefTableData
 from datetime import datetime
 from .table_transaction import TableTransaction
 import random
 import os
-
 
 import psycopg2
 from psycopg2.extras import DictCursor, DictRow
@@ -61,7 +60,7 @@ class DataGenerator:
 
     def generate(
         self, table_transaction: TableTransaction, batch_id: int = 0
-    ) -> Tuple[List[DictRow], List[DictRow]]:
+    ) -> Tuple[List[Tuple], List[DictRow]]:
         """
         Insert and update the given numbers of synthesized records for a table.
 
@@ -101,9 +100,6 @@ class DataGenerator:
 
         if link_parent and not table.has_parent():
             raise Exception(f"Invalid Request. No parent for table {table.get_name()}")
-
-        # load references to foreign keys
-        # table.pre_load(cur)
 
         table_name = table.get_name()
         primary_key_column = table.get_primary_key()
@@ -147,8 +143,9 @@ class DataGenerator:
 
         if n_inserts > 0:
 
-            # for each cross referenced table, prefetch the needed columns
-            xref_dict = table.get_xref_dict()
+            # for each cross referenced table, prefetch the needed columns and store
+            # state data in XrefTableData helper object
+            xref_dict: Dict[str, XrefTableData] = table.get_xref_dict()
             for xref_table_name, xref_data in xref_dict.items():
                 xref_column_names = ",".join(xref_data.column_list)
                 cur.execute(f"SELECT {xref_column_names} from {xref_table_name};")
@@ -216,7 +213,7 @@ class DataGenerator:
                     insert_records,
                 )
 
-                """ Clear references to xref result set """
+                """ Clear references in XrefTableData helper objects """
                 for table_data in xref_dict.values():
                     table_data.result_set = []
                     table_data.num_rows = 0
@@ -247,7 +244,7 @@ def _get_new_row(
 
     d: List[object] = []
 
-    xref_dict = table.get_xref_dict()
+    xref_dict: Dict[str, XrefTableData] = table.get_xref_dict()
     for table_data in xref_dict.values():
         table_data.next_random_row = random.randint(0, table_data.num_rows - 1)
 
