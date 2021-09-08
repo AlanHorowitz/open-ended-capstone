@@ -6,6 +6,9 @@
     - Practice data transforming pipelines for different use cases
     - A convenient testing infratructure where you could plug in different data siyrces and ingestions
 ### Architecture
+
+![overview](./images/overview.png)
+
 ### Project structure
 ### Use Cases
     - Database 
@@ -15,7 +18,8 @@
 ### Phased Rollout
     1. Data Generator and Customer Dimension
     2. Other Dimensions and Facts
-    3. Operation Systems and Ingestions (synchronous)
+    3. Operation Systems and Ingestions (synchronous one container)
+    4. Synchronous separate containers
     4. Cloud Deployment
     5. Asynchronous Orchestration
 
