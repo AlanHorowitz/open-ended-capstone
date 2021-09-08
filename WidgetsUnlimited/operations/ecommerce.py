@@ -36,6 +36,10 @@ class eCommerceSystem(BaseSystem):
             self.connection.commit()
 
     def insert(self, table, records):
+        n = self._insert(table, records)
+        print(f"eCommerceSystem: Processed {n} inserts for {table.get_name()}")
+
+    def _insert(self, table, records) -> int:
 
         n_inserts = len(records)
         table_name = table.get_name()
@@ -51,6 +55,8 @@ class eCommerceSystem(BaseSystem):
             )
 
             self.connection.commit()
+
+        return self.cur.rowcount
 
     def update(self, table, records):
         """Perform updates as delete then insert."""
@@ -68,4 +74,7 @@ class eCommerceSystem(BaseSystem):
 
             self.connection.commit()
             insert_records = [tuple(dr.values()) for dr in records]  # DictRow to tuple
-            self.insert(table, insert_records)
+            n = self._insert(table, insert_records)
+            print(f"eCommerceSystem: Processed {n} updates for {table_name}")
+
+
