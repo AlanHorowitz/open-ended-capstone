@@ -11,12 +11,6 @@ class BaseSystem:
     def add_tables(self, tables: List[Table]) -> None:
         pass
 
-    def open(table: Table) -> None:
-        pass
-
-    def close(table):
-        pass
-
     def insert(self, table, records):
         pass
 

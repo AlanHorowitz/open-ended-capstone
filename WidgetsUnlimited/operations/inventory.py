@@ -5,9 +5,9 @@ from .generator import DataGenerator
 from .base import BaseSystem
 
 
-class InventorySystem:
+class InventorySystem(BaseSystem):
     def __init__(self) -> None:
-        pass
+        super().__init__()
 
     def add_tables(self, tables: List[Table]) -> None:
         # create all the postgres tables

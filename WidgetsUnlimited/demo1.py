@@ -22,12 +22,12 @@ from model.customer_address import CustomerAddressTable
 from model.order import OrderTable
 from model.order_line_item import OrderLineItemTable
 
+from operations.base import BaseSystem
 from operations.ecommerce import eCommerceSystem
 from operations.inventory import InventorySystem
-from operations.generator import DataGenerator
-
-from WidgetsUnlimited.operations.generator import GeneratorRequest
+from operations.generator import DataGenerator, GeneratorRequest
 from operations.simulator import OperationsSimulator
+
 from warehouse.data_warehouse import DataWarehouse
 
 # table metadata
@@ -41,8 +41,8 @@ ORDER_LINE_ITEM = OrderLineItemTable()
 data_generator = DataGenerator()
 
 # create source systems
-e_commerce_system = eCommerceSystem()
-inventory_system = InventorySystem()
+e_commerce_system: BaseSystem = eCommerceSystem()
+inventory_system: BaseSystem = InventorySystem()
 
 # Initialize simulator with data generator and source systems.  Allocate tables to source systems.
 operations_simulator = OperationsSimulator(

@@ -19,12 +19,14 @@ DEFAULT_INSERT_VALUES: Dict[str, object] = {
 
 
 class GeneratorRequest:
+    """ A structure of options passed to DataGenerator.generate """
     def __init__(
             self,
-            table: Table,
-            n_inserts: int = 0,
-            n_updates: int = 0,
-            link_parent: bool = False,
+            table: Table,                   # Table to be generated
+            n_inserts: int = 0,             # number of inserts to generate
+            n_updates: int = 0,             # number of updates to generate
+            link_parent: bool = False,      # If true, use n_inserts to describe how many records to insert
+                                            # per parent key inserted in the same batch.
     ) -> None:
         self.table = table
         self.n_inserts = n_inserts
@@ -72,13 +74,12 @@ class DataGenerator:
             self._connection.commit()
 
     def generate(
-            self, table_transaction: GeneratorRequest, batch_id: int = 0
+            self, generator_request: GeneratorRequest, batch_id: int = 0
     ) -> Tuple[List[Tuple], List[DictRow]]:
         """
         Insert and update the given numbers of synthesized records for a table.
 
-        :param table_transaction: class structure for calling options
-        attributes:
+        :param generator_request: class structure for generation options:
            - table - table object
            - n_inserts - number of records to insert
            - n_updates - number of (previously inserted) records to update
@@ -105,10 +106,10 @@ class DataGenerator:
 
         conn = self._connection
         cur: cursor = conn.cursor(cursor_factory=DictCursor)
-        table = table_transaction.table
-        n_inserts = table_transaction.n_inserts
-        n_updates = table_transaction.n_updates
-        link_parent = table_transaction.link_parent
+        table = generator_request.table
+        n_inserts = generator_request.n_inserts
+        n_updates = generator_request.n_updates
+        link_parent = generator_request.link_parent
         timestamp = datetime.now()
 
         if link_parent and not table.has_parent():

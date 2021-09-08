@@ -7,20 +7,12 @@ class InStoreSystem:
         # open connection to postgres
         pass
 
-    def add_tables(tables: List[Table]) -> None:
+    def add_tables(self, tables: List[Table]) -> None:
         # create all the kafka topics
         pass
 
-    def open(table: Table) -> None:
-        # get kafka producer
+    def insert(self, table, records):
         pass
 
-    def close(table):
-        # flush and close the producer
-        pass
-
-    def insert(table, records):
-        pass
-
-    def update(table, records):
+    def update(self, table, records):
         pass
