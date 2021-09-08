@@ -153,6 +153,7 @@ class DataGenerator:
                     f" WHERE {primary_key_column} = %s",
                     [r[update_column], timestamp, batch_id, r[primary_key_column]],
                 )
+            print(f"DataGenerator: {len(update_records)} records updated for {table_name}")
 
             conn.commit()
 
@@ -234,6 +235,7 @@ class DataGenerator:
                     table_data.num_rows = 0
                     table_data.next_random_row = 0
 
+            print(f"DataGenerator: {cur.rowcount} records inserted for {table_name}")
             conn.commit()
 
         return insert_records, update_records

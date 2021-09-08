@@ -41,7 +41,6 @@ class eCommerceSystem(BaseSystem):
         table_name = table.get_name()
         column_names = ",".join(table.get_column_names())
         if n_inserts > 0:
-
             values_substitutions = ",".join(
                 ["%s"] * n_inserts
             )  # each %s holds one tuple row
@@ -60,7 +59,6 @@ class eCommerceSystem(BaseSystem):
         primary_key_column = table.get_primary_key()
 
         if n_delete_inserts > 0:
-
             keys = tuple([r[primary_key_column] for r in records])
 
             self.cur.execute(

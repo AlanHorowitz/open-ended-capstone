@@ -7,13 +7,13 @@ star schema.
 
 Core classes:
 
-SourceSystem - One of three logical systems that capture the business operations
-Table - Metadata describing a data structures used by a source systems.
-DataGenerator - Synthesizer of sample records for a table.
-GeneratorRequest - An instruction to the data generator
+SourceSystem        - One of three logical systems that capture the business operations
+Table               - Metadata describing a data structures used by a source systems.
+DataGenerator       - Synthesizer of sample records for a table.
+GeneratorRequest    - An instruction to the data generator
 OperationsSimulator - Process that feeds GeneratorRequests to the DataGenerator and appropriate source systems.
-DataWarehouse - Process that extracts incremental data produced by the source systems and transforms it into a
-star schema.
+DataWarehouse       - Process that extracts incremental data produced by the source systems and transforms it into a
+                      star schema.
 """
 
 from model.product import ProductTable
