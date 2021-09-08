@@ -11,7 +11,6 @@ from .base import BaseSystem
 
 
 class eCommerceSystem(BaseSystem):
-
     def __init__(self) -> None:
         # open connection to postgres
         super().__init__()

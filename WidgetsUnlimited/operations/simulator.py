@@ -5,7 +5,6 @@ from typing import List
 
 
 class OperationsSimulator:
-
     def __init__(self, data_generator: DataGenerator, source_systems: List[BaseSystem]):
 
         self._data_generator = data_generator
@@ -34,7 +33,9 @@ class OperationsSimulator:
         source_system.add_tables(tables)
         self._data_generator.add_tables(tables)
 
-    def process(self, batch_id: int, generator_requests: List[GeneratorRequest]) -> None:
+    def process(
+        self, batch_id: int, generator_requests: List[GeneratorRequest]
+    ) -> None:
         """
         Feed a list of generator requests to the DataGenerator, then pass the inputs and updates for each table
         on to the associated source system.

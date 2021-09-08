@@ -4,21 +4,22 @@ from typing import List, Dict, Any
 
 class Column:
     """Database column metadata used for DDL and data generation"""
+
     def __init__(
         self,
-        column_name: str,               # sql name of the column
-        column_type: str,               # sql type (INTEGER, VARCHAR, FLOAT, DATE, BOOLEAN, TIMESTAMP)
-        column_length= None,            # optional column length (e.g. 200 for VARCHAR(200))
-        primary_key: bool = False,      # column is primary key
-        inserted_at: bool = False,      # column is the inserted_at column
-        updated_at: bool = False,       # column is the updated_at column
-        batch_id: bool = False,         # column is batch_id column
-        update: bool = False,           # column is eligible for update by generator
-        xref_table: str = "",           # name of foreign reference table
-        xref_column: str = "",          # referenced column in referenced table
-        parent_table: str = "",         # parent table from which to populate column
-        parent_key: str = "",           # column within parent table (key) to populate column
-        default: Any = None,            # default value for column
+        column_name: str,  # sql name of the column
+        column_type: str,  # sql type (INTEGER, VARCHAR, FLOAT, DATE, BOOLEAN, TIMESTAMP)
+        column_length=None,  # optional column length (e.g. 200 for VARCHAR(200))
+        primary_key: bool = False,  # column is primary key
+        inserted_at: bool = False,  # column is the inserted_at column
+        updated_at: bool = False,  # column is the updated_at column
+        batch_id: bool = False,  # column is batch_id column
+        update: bool = False,  # column is eligible for update by generator
+        xref_table: str = "",  # name of foreign reference table
+        xref_column: str = "",  # referenced column in referenced table
+        parent_table: str = "",  # parent table from which to populate column
+        parent_key: str = "",  # column within parent table (key) to populate column
+        default: Any = None,  # default value for column
     ):
 
         self._name = column_name
@@ -51,7 +52,9 @@ class Column:
 
         # when length attribute or default length found, append within parentheses
         if length or db_default_length:
-            length_parameter = "(" + (str(length) if length else db_default_length) + ")"
+            length_parameter = (
+                "(" + (str(length) if length else db_default_length) + ")"
+            )
 
         return self.get_name() + " " + db_type + length_parameter
 
@@ -153,16 +156,14 @@ class Table:
                 self._parent_key = ""
                 self._parent_table = ""
 
-            self._update_columns = [
-                col for col in columns if col.can_update()
-            ]
+            self._update_columns = [col for col in columns if col.can_update()]
             if len(self._update_columns) == 0:
                 raise Exception("Table requires at least one update column")
 
             self._init_xref_dict()
 
     def _init_xref_dict(self) -> None:
-        """ Create a dictionary mapping xref table names to helper objects used to manage cross table lookups """
+        """Create a dictionary mapping xref table names to helper objects used to manage cross table lookups"""
 
         xref_dict: Dict[str, XrefTableData] = {}
 
@@ -181,7 +182,7 @@ class Table:
     #  Database table creation methods
     #
     def get_create_sql_mysql(self) -> str:
-        """ Returns SQL to create table for this class in postgresql """
+        """Returns SQL to create table for this class in postgresql"""
 
         # type mappings and default lengths for mysql
         mysql_types_dict = {
@@ -195,7 +196,7 @@ class Table:
         return self.get_create_sql(mysql_types_dict)
 
     def get_create_sql_postgres(self) -> str:
-        """ Returns SQL to create table for this class in postgresql """
+        """Returns SQL to create table for this class in postgresql"""
 
         # type mappings and default lengths for postgres
         postgres_types_dict = {
@@ -217,7 +218,12 @@ class Table:
         """
 
         create_table = f"CREATE TABLE IF NOT EXISTS {self.get_name()} ( \n"
-        columns = "\n".join([col.get_create_sql_text(definition_dict) + "," for col in self.get_columns()])
+        columns = "\n".join(
+            [
+                col.get_create_sql_text(definition_dict) + ","
+                for col in self.get_columns()
+            ]
+        )
         primary_key = f"\nPRIMARY KEY ({self.get_primary_key()}));"
 
         return create_table + columns + primary_key
@@ -239,7 +245,7 @@ class Table:
         return self._update_columns[i]
 
     def get_column_pandas_types(self) -> Dict[str, str]:
-        """ Return a dictionary of column names and associated panda type for Dataframe.astype()"""
+        """Return a dictionary of column names and associated panda type for Dataframe.astype()"""
 
         pd_types = {
             "INTEGER": "int64",

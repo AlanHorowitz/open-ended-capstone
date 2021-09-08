@@ -19,14 +19,15 @@ DEFAULT_INSERT_VALUES: Dict[str, object] = {
 
 
 class GeneratorRequest:
-    """ A structure of options passed to DataGenerator.generate """
+    """A structure of options passed to DataGenerator.generate"""
+
     def __init__(
-            self,
-            table: Table,                   # Table to be generated
-            n_inserts: int = 0,             # number of inserts to generate
-            n_updates: int = 0,             # number of updates to generate
-            link_parent: bool = False,      # If true, use n_inserts to describe how many records to insert
-                                            # per parent key inserted in the same batch.
+        self,
+        table: Table,  # Table to be generated
+        n_inserts: int = 0,  # number of inserts to generate
+        n_updates: int = 0,  # number of updates to generate
+        link_parent: bool = False,  # If true, use n_inserts to describe how many records to insert
+        # per parent key inserted in the same batch.
     ) -> None:
         self.table = table
         self.n_inserts = n_inserts
@@ -74,7 +75,7 @@ class DataGenerator:
             self._connection.commit()
 
     def generate(
-            self, generator_request: GeneratorRequest, batch_id: int = 0
+        self, generator_request: GeneratorRequest, batch_id: int = 0
     ) -> Tuple[List[Tuple], List[DictRow]]:
         """
         Insert and update the given numbers of synthesized records for a table.
@@ -239,11 +240,11 @@ class DataGenerator:
 
 
 def _create_new_row(
-        table: Table,
-        primary_key: int,
-        parent_key: int = None,
-        batch_id: int = None,
-        timestamp: datetime = datetime.now(),
+    table: Table,
+    primary_key: int,
+    parent_key: int = None,
+    batch_id: int = None,
+    timestamp: datetime = datetime.now(),
 ) -> Tuple:
     """
     Create a new row for a table.  Substitute cross references and set default values using the column metadata.
@@ -282,6 +283,3 @@ def _create_new_row(
             row.append(DEFAULT_INSERT_VALUES[col.get_type()])
 
     return tuple(row)
-
-
-
