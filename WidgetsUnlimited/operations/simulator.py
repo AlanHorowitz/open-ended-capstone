@@ -5,6 +5,12 @@ from typing import List
 
 
 class OperationsSimulator:
+    """
+    A simulator of activity in Widgets Unlimited's source systems.  A sequence of generation requests are processed and
+    new and updated records are fed to the source systems.  The source systems will expose these changes via
+    different protocols to be ingested by the Data Warehouse.
+    """
+
     def __init__(self, data_generator: DataGenerator, source_systems: List[BaseSystem]):
 
         self._data_generator = data_generator
@@ -40,9 +46,9 @@ class OperationsSimulator:
         Feed a list of generator requests to the DataGenerator, then pass the inputs and updates for each table
         on to the associated source system.
 
-        :param batch_id:
-        :param generator_requests:
-        :return:
+        :param batch_id: identifier used to correlate requests
+        :param generator_requests: list of generator parameter objects
+        :return: None
         """
 
         for request in generator_requests:
