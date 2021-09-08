@@ -1,9 +1,29 @@
 ##  Widgets Unlimited - A data warehousing simulation
 
-###  A simulated data warehouse in the retail domain.  Add records to a product table on a postgres source system and extract them to a MySQL target system.
+### Overview
+    - what is it
+    - what is the motivation
+    - Practice data transforming pipelines for different use cases
+    - A convenient testing infratructure where you could plug in different data siyrces and ingestions
+### Architecture
+### Project structure
+### Use Cases
+    - Database 
+    - CSV
+    - Kafka Stream
+    - Data normalization and deduplication
+### Phased Rollout
+    1. Data Generator and Customer Dimension
+    2. Other Dimensions and Facts
+    3. Operation Systems and Ingestions (synchronous)
+    4. Cloud Deployment
+    5. Asynchronous Orchestration
 
-### Prerequisites: The simulation will run in any environment with docker, docker-compose and python venv.  The development 
-### environment was:
+### Install and run the project
+
+
+
+### Prerequisites: The simulation will run in any environment with docker, docker-compose and python venv.  The development environment was:
 
  - ubuntu 20.04 
  - python 3.8.10
