@@ -87,14 +87,14 @@ daily_operations = [
     ],
 ]
 
-# Synchronously process transactions and extract and load in warehouse.
+# Synchronously process generator_requests and extract and load in warehouse.
 for day, transactions in enumerate(daily_operations, start=1):
 
     print("-" * 60)
     print(f"Batch {day} starting")
     print("-" * 60)
 
-    operations_simulator.process(transactions=transactions, batch_id=day)
+    operations_simulator.process(generator_requests=transactions, batch_id=day)
     warehouse.direct_extract(data_generator.get_connection(), batch_id=day)
     warehouse.transform_load(batch_id=day)
 

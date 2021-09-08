@@ -87,7 +87,7 @@ class DataGenerator:
              in same batch.
 
         :param batch_id: Identifier used to group together multiple calls to generate, distinguishing current from prior
-        transactions.
+        generator_requests.
 
         :return: insert_records, update_records - lists of generated input and update rows, respectively.
         The psycopg2 DictRow class allows columns to be accessed directly by name.
@@ -170,7 +170,7 @@ class DataGenerator:
 
                 for pk in range(next_primary_key, next_primary_key + n_inserts):
                     insert_records.append(
-                        _get_new_row(
+                        _create_new_row(
                             table=table,
                             primary_key=pk,
                             parent_key=None,
@@ -208,7 +208,7 @@ class DataGenerator:
                 for row in linked_rs:
                     for _ in range(n_inserts):
                         insert_records.append(
-                            _get_new_row(
+                            _create_new_row(
                                 table=table,
                                 primary_key=next_primary_key,
                                 parent_key=row[0],
@@ -238,7 +238,7 @@ class DataGenerator:
         return insert_records, update_records
 
 
-def _get_new_row(
+def _create_new_row(
         table: Table,
         primary_key: int,
         parent_key: int = None,
@@ -246,17 +246,17 @@ def _get_new_row(
         timestamp: datetime = datetime.now(),
 ) -> Tuple:
     """
-    Make a new row for the generator.  Substitutes cross references and default values from the column metadata.
-    Plan to be extended to use value ranges and pick lists.
+    Create a new row for a table.  Substitute cross references and set default values using the column metadata.
 
-    :param primary_key:
-    :param parent_key:
+    :param table: Table metadata object
+    :param primary_key: value of primary key
+    :param parent_key:  value of parent key (where table has parent)
     :param batch_id:  batch identifier
     :param timestamp: insert/update time for record
-    :return: a tuple, in column order, suitable for insertion
+    :return: a tuple representing a row, in column order, suitable for database insertion
     """
 
-    d: List[object] = []
+    row = []
 
     xref_dict: Dict[str, XrefTableData] = table.get_xref_dict()
     for table_data in xref_dict.values():
@@ -264,24 +264,24 @@ def _get_new_row(
 
     for col in table.get_columns():
         if col.has_default():
-            d.append(col.get_default())
+            row.append(col.get_default())
         elif col.is_primary_key():
-            d.append(primary_key)
+            row.append(primary_key)
         elif col.is_batch_id():
-            d.append(batch_id)
+            row.append(batch_id)
         elif col.is_inserted_at() or col.is_updated_at():
-            d.append(timestamp)
+            row.append(timestamp)
         elif col.is_xref():
             xref_table = col.get_xref_table()
-            row = xref_dict[xref_table].next_random_row
-            value = xref_dict[xref_table].result_set[row][col.get_xref_column()]
-            d.append(value)
+            xref_row = xref_dict[xref_table].next_random_row
+            value = xref_dict[xref_table].result_set[xref_row][col.get_xref_column()]
+            row.append(value)
         elif col.is_parent_key() and parent_key is not None:
-            d.append(parent_key)
+            row.append(parent_key)
         else:
-            d.append(DEFAULT_INSERT_VALUES[col.get_type()])
+            row.append(DEFAULT_INSERT_VALUES[col.get_type()])
 
-    return tuple(d)
+    return tuple(row)
 
 
 

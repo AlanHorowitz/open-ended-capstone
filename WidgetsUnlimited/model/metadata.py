@@ -105,7 +105,7 @@ class Column:
 
 
 class Table:
-    """Database Table metadata used for DDL and data generation"""
+    """Database Table metadata (schema) used for DDL and data generation"""
 
     def __init__(self, name: str, *columns: Column, create_only=False, batch_id=True):
         """

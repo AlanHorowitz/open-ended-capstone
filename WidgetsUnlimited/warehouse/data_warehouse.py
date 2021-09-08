@@ -9,7 +9,7 @@ from mysql.connector import connect
 
 class DataWarehouse:
     """
-    The Data Warehouse ingests and processes incremental batches of transactions from multiple source
+    The Data Warehouse ingests and processes incremental batches of generator_requests from multiple source
     systems.  Data from the source systems are persisted to a staging area as parquet files.  When all the staging data
     have been written for a batch, a series of transformations are launched which update a star schema in mySQL.
     """

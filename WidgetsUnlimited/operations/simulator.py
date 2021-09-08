@@ -34,17 +34,19 @@ class OperationsSimulator:
         source_system.add_tables(tables)
         self._data_generator.add_tables(tables)
 
-    def process(self, batch_id: int, transactions: List[GeneratorRequest]) -> None:
+    def process(self, batch_id: int, generator_requests: List[GeneratorRequest]) -> None:
         """
-        Feed a list of transactions to the data generator
+        Feed a list of generator requests to the DataGenerator, then pass the inputs and updates for each table
+        on to the associated source system.
+
         :param batch_id:
-        :param transactions:
+        :param generator_requests:
         :return:
         """
 
-        for transaction in transactions:
-            table = transaction.table
+        for request in generator_requests:
+            table = request.table
             op_system: BaseSystem = self._source_system_lookup[table.get_name()]
-            i_rows, u_rows = self._data_generator.generate(transaction, batch_id)
+            i_rows, u_rows = self._data_generator.generate(request, batch_id)
             op_system.insert(table, i_rows)
             op_system.update(table, u_rows)
