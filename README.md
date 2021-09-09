@@ -1,10 +1,23 @@
 ##  Widgets Unlimited - A data warehousing simulation
 
-### Overview
-    - what is it
-    - what is the motivation
-    - Practice data transforming pipelines for different use cases
-    - A convenient testing infratructure where you could plug in different data siyrces and ingestions
+### Background:   
+Widgets Unlimited is a company that sells widgets via an e-commerce website and in physical retail stores.   They have three operational systems that support their business: Inventory, e-commerce, and in-store.
+### Problem: 
+The company needs accurate and timely sales information captured by these operational systems to support marketing and pricing decisions.  The systems have some limited reporting capabilities, but they do not consolidate sales across e-commerce and physical stores or support ad-hoc queries. It is determined that changes to the systems may be captured as follows: Inventory via csv file (daily); e-commerce via kafka topic (continuously); and in-store via postgres database (daily).
+### Proposal: 
+A data warehouse, which will extract data from the operational systems (source systems to the warehouse) and transform it into an analysis-friendly star schema format.
+### Source Systems and Data:
+This project includes a data generation component.  Datasets for commercial operational data may not be freely available and synthesized data is convenient for demonstrating cleaning and harmonization use cases.  The source system classes react to this data and expose in different formats as incremental updates  An operations simulator ties these all together by repeatedly populating the source systems which in turn produce the inputs for the data warehouse.
+### Goals: 
+A successful implementation of the data warehouse will ingest incremental initial and incremental loads, clean data errors, and harmonize the differences in the operational systems. In particular, date and location information will be standardized and the sales facts from the e-commerce and physical stores will be combined into a single fact table.  An orchestration layer will coordinate ingestion for the three source systems and trigger the transformations which update the star schema.
+### Tools:
+ - Languages: python, sql, pandas
+ - Databases: PostGres, mySQL
+ - Messaging: Kafka
+ - Containerization:  Docker
+ - Orchestration: Airflow
+###  Cloud Migration:  The application will be migrated to the Azure cloud to take advantage of hosted database and kafka cluster services.   As data volumes increase, a migration to Azure Synapse would be considered.
+
 ### Architecture
 
 ![overview](./images/overview.png)
@@ -20,8 +33,8 @@
     2. Other Dimensions and Facts
     3. Operation Systems and Ingestions (synchronous one container)
     4. Synchronous separate containers
-    4. Cloud Deployment
-    5. Asynchronous Orchestration
+    5. Cloud Deployment
+    6. Asynchronous Orchestration
 
 ### Install and run the project
 
@@ -59,6 +72,7 @@
 1. pytest
 
 ### To run demo1.py in a docker container
+
 1. cd ~/open-ended-capstone
 1. docker-compose build
 1. docker-compose up
