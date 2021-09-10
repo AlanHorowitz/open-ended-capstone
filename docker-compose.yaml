@@ -1,6 +1,6 @@
 version: "2"
 services:
-  sourcesystems:
+  operations:
     build:
       context: .
       dockerfile: Dockerfile-operations

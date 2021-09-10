@@ -39,7 +39,7 @@ update the star schema.
 ![overview](./images/overview.png)
 <p align="center">Widgets Unlimited Operational Systems and Warehouse</p>
 
-### Project structure
+## Project structure
 
 The source code is divided into three packages:
 
@@ -121,7 +121,7 @@ The project will roll out with the following milestones.  A demo will accompany 
     5. Cloud Deployment
     6. Asynchronous Orchestration
 
-### Install and run the demo
+## Install and run the demo
 
 ### Prerequisites: 
 The simulation will run in any environment with docker, docker-compose and python venv.  
@@ -159,16 +159,22 @@ The following diagram illustrates the data flows as built out in phase #1.
 1. cd ~/open-ended-capstone/WidgetsUnlimited
 1. python3 demo1.py
 
+### Expected results   
+![demo1_result_a](images/demo1_result.png)
+
 ### To run tests
 
 1. cd ~/open-ended-capstone/tests
-1. pytest
+1. pytest --disable-warnings
 
+### Expected results
+![demo1_result_b](images/pytest_result.png)
 ### To run demo1.py in a docker container
 
 1. cd ~/open-ended-capstone
 1. docker-compose build
 1. docker-compose up
 
-
+### Expected results
+![demo1_result_b](images/demo1_result_docker.png)
 
