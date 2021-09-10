@@ -96,7 +96,7 @@ The ingested data are reformatted as parquet files and written to a staging area
 
 ### Transformations
 Transformations update the star schema to incorporate incremental changes in the source systems. The star schema for
-Widgets Unlimited is made up of five tables, four dimension tables and one fact table. Each of these tables has 
+Widgets Unlimited is made up of five tables: four dimension tables and one fact table. Each of these tables has 
 an associated transformation which takes as input the staged incremental data and the current state of the star schema.
 The output of the transformation is an updated dimension or fact table.  
 
