@@ -63,7 +63,7 @@ The development environment is:
 1. if gateway host shown is not 172.18.0.1, edit config.sh to change the host to the shown ip address
 1. source config.sh
 1. docker-compose -f docker-compose-db.yaml up -d
-1. pip install -r requirements-sourcesystems.txt 
+1. pip install -r requirements-operations.txt 
    
 ### To run demo1.py
 
