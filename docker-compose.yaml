@@ -3,7 +3,7 @@ services:
   sourcesystems:
     build:
       context: .
-      dockerfile: Dockerfile-sourcesystems
+      dockerfile: Dockerfile-operations
     environment: 
       DATA_GENERATOR_HOST : postgres
       DATA_GENERATOR_PORT : 5432

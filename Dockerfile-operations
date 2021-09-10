@@ -1,7 +1,7 @@
 FROM python:3.8-slim
 
-ADD ./requirements-sourcesystems.txt ./
-RUN pip install -r requirements-sourcesystems.txt
+ADD ./requirements-operations.txt ./
+RUN pip install -r requirements-operations.txt
 
 COPY WidgetsUnlimited/ WidgetsUnlimited/
 

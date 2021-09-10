@@ -5,42 +5,46 @@ Widgets Unlimited is a company that sells widgets via an e-commerce website and 
 ### Problem: 
 The company needs accurate and timely sales information captured by these operational systems to support marketing and pricing decisions.  The systems have some limited reporting capabilities, but they do not consolidate sales across e-commerce and physical stores or support ad-hoc queries. It is determined that changes to the systems may be captured as follows: Inventory via csv file (daily); e-commerce via kafka topic (continuously); and in-store via postgres database (daily).
 ### Proposal: 
-A data warehouse, which will extract data from the operational systems (source systems to the warehouse) and transform it into an analysis-friendly star schema format.
+Build a data warehouse, which will extract data from the operational systems (source systems from the point of view of the warehouse) and transform it into an analysis-friendly star schema format.
 ### Source Systems and Data:
-This project includes a data generation component.  Datasets for commercial operational data may not be freely available and synthesized data is convenient for demonstrating cleaning and harmonization use cases.  The source system classes react to this data and expose in different formats as incremental updates  An operations simulator ties these all together by repeatedly populating the source systems which in turn produce the inputs for the data warehouse.
+This project includes a data generation component.  Datasets of commercial operational data may not be freely available and synthesized data is convenient for demonstrating cleaning and harmonization use cases.  Source system classes react to this data and expose it as incremental updates in different formats.  An operations' simulator ties this together by repeatedly populating the source systems which in turn produce the inputs for the data warehouse.
 ### Goals: 
-A successful implementation of the data warehouse will ingest incremental initial and incremental loads, clean data errors, and harmonize the differences in the operational systems. In particular, date and location information will be standardized and the sales facts from the e-commerce and physical stores will be combined into a single fact table.  An orchestration layer will coordinate ingestion for the three source systems and trigger the transformations which update the star schema.
+A successful implementation of the data warehouse will ingest initial and incremental loads, clean data errors, and harmonize the differences in the operational systems. In particular, date and location information will be standardized and the sales facts from the e-commerce and physical stores will be combined into a single fact table.  An orchestration layer will coordinate ingestion for the three source systems and trigger the transformations which update the star schema.
 ### Tools:
  - Languages: python, sql, pandas
  - Databases: PostGres, mySQL
  - Messaging: Kafka
  - Containerization:  Docker
  - Orchestration: Airflow
-###  Cloud Migration:  The application will be migrated to the Azure cloud to take advantage of hosted database and kafka cluster services.   As data volumes increase, a migration to Azure Synapse would be considered.
 
-### Architecture
+### Data Flow
 
 ![overview](./images/overview.png)
 
 ### Project structure
-### Use Cases
-    - Database 
-    - CSV
-    - Kafka Stream
-    - Data normalization and deduplication
+
+- the data model
+- the data generator
+- source systems 
+- transformation pipelines in the data warehouse
+- orchestration
+- containers
+- The Simulator -- feeding and running the project
+
+
 ### Phased Rollout
-    1. Data Generator and Customer Dimension
-    2. Other Dimensions and Facts
-    3. Operation Systems and Ingestions (synchronous one container)
+    1. Simulatior infrastructure, Data Generator and Customer Dimension tranformation
+    2. Transformations of remaining dimensions and facts
+    3. Operational Systems and Ingestions (synchronous one container)
     4. Synchronous separate containers
     5. Cloud Deployment
     6. Asynchronous Orchestration
 
 ### Install and run the project
 
-
-
-### Prerequisites: The simulation will run in any environment with docker, docker-compose and python venv.  The development environment was:
+### Prerequisites: 
+The simulation will run in any environment with docker, docker-compose and python venv.  
+The development environment is:
 
  - ubuntu 20.04 
  - python 3.8.10
@@ -76,4 +80,7 @@ A successful implementation of the data warehouse will ingest incremental initia
 1. cd ~/open-ended-capstone
 1. docker-compose build
 1. docker-compose up
+
+### demo1 image
+### expected result
 

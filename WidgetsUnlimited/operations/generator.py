@@ -37,10 +37,15 @@ class GeneratorRequest:
 
 class DataGenerator:
     """
-    The DataGenerator synthesizes sample data for tables described by Table and Column classes
-    in WidgetsUnlimited.tables, and is tightly integrated with these classes' methods.
-    It is invoked via its generate method with a GeneratorRequest and a batch_id (see below).  The cumulative product
-    of the create_only is stored in postgresql.
+    The DataGenerator synthesizes sample data for entities modeled by Table classes in package
+    WidgetsUnlimited.model. When processing a GeneratorRequest it applies inputs and updates to a
+    postgres database (maintaining cumulative state) and returns inputs and updates to the caller,
+    which are then routed to the associated operational system.
+
+    Example:
+         generator = DataGenerator()
+         request = GeneratorRequest(PRODUCT, n_inserts=50, n_updates=5)
+         insert, updates = generator.generate(request, 1)
 
     The DataGenerator supports tables linked together as a data model via foreign keys.
     In particular the following behaviors are supported:
@@ -78,7 +83,8 @@ class DataGenerator:
         self, generator_request: GeneratorRequest, batch_id: int = 0
     ) -> Tuple[List[Tuple], List[DictRow]]:
         """
-        Insert and update the given numbers of synthesized records for a table.
+        Synthesize insert and update records for a table. apply these changes to the generator postgres and return
+        to the caller for routing to an operational system.
 
         :param generator_request: class structure for generation options:
            - table - table object
