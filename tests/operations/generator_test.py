@@ -5,6 +5,7 @@ from .context import DataGenerator
 from .context import GeneratorRequest
 from .context import OrderTable
 from .context import ProductTable
+from .context import SupplierTable
 from .context import CustomerTable
 from .context import OrderLineItemTable
 
@@ -199,3 +200,9 @@ def test_generate_multiple_xref(
     cursor.execute(count_correct_xref)
     rs = cursor.fetchone()
     assert rs[0] == 30
+
+
+def test_generate_bridge(
+        data_generator, product_table
+):
+    pass

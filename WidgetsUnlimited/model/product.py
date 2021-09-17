@@ -13,7 +13,7 @@ class ProductTable(Table):
             Column("product_description", "VARCHAR"),
             Column("product_category", "VARCHAR", update=True),
             Column("product_brand", "VARCHAR"),
-            Column("product_preferred_supplier_id", "INTEGER"),
+            # Column("product_preferred_supplier_id", "INTEGER"),
             Column("product_unit_cost", "FLOAT"),
             Column("product_dimension_length", "FLOAT"),
             Column("product_dimension_width", "FLOAT"),
