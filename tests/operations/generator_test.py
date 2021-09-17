@@ -212,13 +212,14 @@ def test_generate_multiple_xref(
 def test_generate_bridge(
         data_generator, product_table, supplier_table
 ):
-    data_generator.generate(
-        GeneratorRequest(product_table, n_inserts=100, n_updates=0), 1
-    )
 
     data_generator.generate(
         GeneratorRequest(supplier_table, n_inserts=10, n_updates=0), 1
     )
+    data_generator.generate(
+        GeneratorRequest(product_table, n_inserts=100, n_updates=0), 1
+    )
+
     cursor = data_generator.cur
     cursor.execute(f"select * from {product_table.get_name()}")
     assert len(cursor.fetchall()) == 100

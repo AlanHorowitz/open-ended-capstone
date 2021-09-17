@@ -2,26 +2,45 @@ import random
 from typing import List, Dict, Any
 
 
+class XrefTableData:
+    """helper object for xref data"""
+
+    def __init__(self):
+        self.column_list = []
+        self.result_set = []
+        self.next_random_row = 0
+        self.num_rows = 0
+
+
+class BridgeTableDescriptor:
+    """ """
+
+    def __init__(self, bridge_table, partner_table, partner_key, links_on_insert):
+        self.bridge_table = bridge_table
+        self.partner_table = partner_table
+        self.partner_key = partner_key
+        self.inserts = links_on_insert
+
+
 class Column:
     """Database column metadata used for DDL and data generation"""
 
     def __init__(
-        self,
-        column_name: str,  # sql name of the column
-        column_type: str,  # sql type (INTEGER, VARCHAR, FLOAT, DATE, BOOLEAN, TIMESTAMP)
-        column_length=None,  # optional column length (e.g. 200 for VARCHAR(200))
-        primary_key: bool = False,  # column is primary key
-        inserted_at: bool = False,  # column is the inserted_at column
-        updated_at: bool = False,  # column is the updated_at column
-        batch_id: bool = False,  # column is batch_id column
-        update: bool = False,  # column is eligible for update by generator
-        xref_table: str = "",  # name of foreign reference table
-        xref_column: str = "",  # referenced column in referenced table
-        parent_table: str = "",  # parent table from which to populate column
-        parent_key: str = "",  # column within parent table (key) to populate column
-        default: Any = None,  # default value for column
+            self,
+            column_name: str,  # sql name of the column
+            column_type: str,  # sql type (INTEGER, VARCHAR, FLOAT, DATE, BOOLEAN, TIMESTAMP)
+            column_length=None,  # optional column length (e.g. 200 for VARCHAR(200))
+            primary_key: bool = False,  # column is primary key
+            inserted_at: bool = False,  # column is the inserted_at column
+            updated_at: bool = False,  # column is the updated_at column
+            batch_id: bool = False,  # column is batch_id column
+            update: bool = False,  # column is eligible for update by generator
+            xref_table: str = "",  # name of foreign reference table
+            xref_column: str = "",  # referenced column in referenced table
+            parent_table: str = "",  # parent table from which to populate column
+            parent_key: str = "",  # column within parent table (key) to populate column
+            default: Any = None,  # default value for column
     ):
-
         self._name = column_name
         self._type = column_type
         self._length = column_length
@@ -53,7 +72,7 @@ class Column:
         # when length attribute or default length found, append within parentheses
         if length or db_default_length:
             length_parameter = (
-                "(" + (str(length) if length else db_default_length) + ")"
+                    "(" + (str(length) if length else db_default_length) + ")"
             )
 
         return self.get_name() + " " + db_type + length_parameter
@@ -126,6 +145,7 @@ class Table:
         self._name = name
         self._create_only = create_only
         self._batch_id = batch_id
+        self._bridge = bridge
         self._columns = [col for col in columns]
         if self._batch_id:
             self._columns.append(Column("batch_id", "INTEGER", batch_id=True))
@@ -163,21 +183,26 @@ class Table:
 
             self._init_xref_dict()
 
+    def _xref_dict_add(self, table, column) -> None:
+        if table in self._xref_dict:
+            self._xref_dict[table].column_list.append(column)
+        else:
+            self._xref_dict[table] = XrefTableData()
+            self._xref_dict[table].column_list.append(column)
+
     def _init_xref_dict(self) -> None:
         """Create a dictionary mapping xref table names to helper objects used to manage cross table lookups"""
 
-        xref_dict: Dict[str, XrefTableData] = {}
+        self._xref_dict: Dict[str, XrefTableData] = {}
 
         for col in self.get_columns():
             if col.is_xref():
-                xref_table, xref_column = col.get_xref_table(), col.get_xref_column()
-                if xref_table in xref_dict:
-                    xref_dict[xref_table].column_list.append(xref_column)
-                else:
-                    xref_dict[xref_table] = XrefTableData()
-                    xref_dict[xref_table].column_list.append(xref_column)
+                self._xref_dict_add(col.get_xref_table(), col.get_xref_column())
 
-        self._xref_dict = xref_dict
+        # use of bridge table implies lookup of foreign key
+        bridge = self.get_bridge()
+        if bridge:
+            self._xref_dict_add(bridge.partner_table, bridge.partner_key)
 
     #
     #  Database table creation methods
@@ -281,22 +306,5 @@ class Table:
     def get_xref_dict(self) -> Dict:
         return self._xref_dict
 
-
-class XrefTableData:
-    """helper object for xref data"""
-
-    def __init__(self):
-        self.column_list = []
-        self.result_set = []
-        self.next_random_row = 0
-        self.num_rows = 0
-
-
-class BridgeTableDescriptor:
-    """ """
-
-    def __init__(self, bridge_table, partner_table, partner_key, links_on_insert):
-        self.bridge_table = bridge_table
-        self.partner_table = partner_table
-        self.partner_key = partner_key
-        self.inserts = links_on_insert
+    def get_bridge(self) -> BridgeTableDescriptor:
+        return self._bridge

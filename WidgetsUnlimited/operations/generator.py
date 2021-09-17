@@ -269,7 +269,7 @@ def _create_new_row(
 
     xref_dict: Dict[str, XrefTableData] = table.get_xref_dict()
     for table_data in xref_dict.values():
-        table_data.next_random_row = random.randint(0, table_data.num_rows - 1)
+        table_data.next_random_row = -1 if table_data.num_rows == 0 else random.randint(0, table_data.num_rows - 1)
 
     for col in table.get_columns():
         if col.has_default():
@@ -283,7 +283,10 @@ def _create_new_row(
         elif col.is_xref():
             xref_table = col.get_xref_table()
             xref_row = xref_dict[xref_table].next_random_row
-            value = xref_dict[xref_table].result_set[xref_row][col.get_xref_column()]
+            if xref_row == -1:
+                value = -1
+            else:
+                value = xref_dict[xref_table].result_set[xref_row][col.get_xref_column()]
             row.append(value)
         elif col.is_parent_key() and parent_key is not None:
             row.append(parent_key)
