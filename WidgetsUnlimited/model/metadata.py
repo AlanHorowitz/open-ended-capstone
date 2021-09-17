@@ -149,22 +149,17 @@ class Table:
         self._columns = [col for col in columns]
         if self._batch_id:
             self._columns.append(Column("batch_id", "INTEGER", batch_id=True))
-        primary_keys = [col.get_name() for col in columns if col.is_primary_key()]
+        self._primary_keys = [col.get_name() for col in columns if col.is_primary_key()]
         inserted_ats = [col.get_name() for col in columns if col.is_inserted_at()]
         updated_ats = [col.get_name() for col in columns if col.is_updated_at()]
         parent_keys = [col for col in columns if col.is_parent_key()]
 
-        # create-only tables can have zero or one key
-        if self._create_only:
-            self._primary_key = "" if len(primary_keys) != 1 else primary_keys[0]
-
-        else:
-            if (len(primary_keys), len(inserted_ats), len(updated_ats)) != (1, 1, 1):
+        if not self._create_only:
+            if (len(self._primary_keys), len(inserted_ats), len(updated_ats)) != (1, 1, 1):
                 raise Exception(
                     "Generator requires exactly one inserted_at, updated_at and primary_key column"
                 )
 
-            self._primary_key = primary_keys[0]
             self._inserted_at = inserted_ats[0]
             self._updated_at = updated_ats[0]
 
@@ -245,16 +240,22 @@ class Table:
 
         create_table = f"CREATE TABLE IF NOT EXISTS {self.get_name()} "
         left_paren = "(\n"
+
         columns = "\n".join(
             [
                 col.get_create_sql_text(definition_dict) + ","
                 for col in self.get_columns()
             ]
         ).rstrip(",")
-        primary_key = f",\nPRIMARY KEY ({self.get_primary_key()})" if self.get_primary_key() != "" else ""
+
+        primary_keys = ""
+        keys = ",".join([key for key in self.get_primary_keys()])
+        if keys != "":
+            primary_keys = f",\nPRIMARY KEY ({keys})"
+
         right_paren = ");"
 
-        return create_table + left_paren + columns + primary_key + right_paren
+        return create_table + left_paren + columns + primary_keys + right_paren
 
     def get_columns(self) -> List[Column]:
         """Return column objects"""
@@ -288,8 +289,11 @@ class Table:
     def get_name(self) -> str:
         return self._name
 
+    def get_primary_keys(self) -> List[str]:
+        return self._primary_keys
+
     def get_primary_key(self) -> str:
-        return self._primary_key
+        return self._primary_keys[0]
 
     def get_updated_at(self) -> str:
         return self._updated_at
