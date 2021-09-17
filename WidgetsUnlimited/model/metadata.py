@@ -110,7 +110,7 @@ class Column:
 class Table:
     """Database Table metadata (schema) used for DDL and data generation"""
 
-    def __init__(self, name: str, *columns: Column, create_only=False, batch_id=True):
+    def __init__(self, name: str, *columns: Column, create_only=False, batch_id=True, bridge=None):
         """
         Prepare the Table class for use by the DataGenerator
 
@@ -134,7 +134,7 @@ class Table:
         updated_ats = [col.get_name() for col in columns if col.is_updated_at()]
         parent_keys = [col for col in columns if col.is_parent_key()]
 
-        # create only tables can have zero or one key
+        # create-only tables can have zero or one key
         if self._create_only:
             self._primary_key = "" if len(primary_keys) != 1 else primary_keys[0]
 
@@ -225,8 +225,8 @@ class Table:
                 col.get_create_sql_text(definition_dict) + ","
                 for col in self.get_columns()
             ]
-        )
-        primary_key = f"\nPRIMARY KEY ({self.get_primary_key()})" if self.get_primary_key() != "" else ""
+        ).rstrip(",")
+        primary_key = f",\nPRIMARY KEY ({self.get_primary_key()})" if self.get_primary_key() != "" else ""
         right_paren = ");"
 
         return create_table + left_paren + columns + primary_key + right_paren
@@ -290,3 +290,13 @@ class XrefTableData:
         self.result_set = []
         self.next_random_row = 0
         self.num_rows = 0
+
+
+class BridgeTableDescriptor:
+    """ """
+
+    def __init__(self, bridge_table, partner_table, partner_key, links_on_insert):
+        self.bridge_table = bridge_table
+        self.partner_table = partner_table
+        self.partner_key = partner_key
+        self.inserts = links_on_insert

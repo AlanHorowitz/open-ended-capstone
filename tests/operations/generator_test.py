@@ -6,6 +6,7 @@ from .context import GeneratorRequest
 from .context import OrderTable
 from .context import ProductTable
 from .context import SupplierTable
+from .context import ProductSupplierTable
 from .context import CustomerTable
 from .context import OrderLineItemTable
 
@@ -39,6 +40,12 @@ def product_table(data_generator):
 @pytest.fixture
 def customer_table(data_generator):
     yield create_and_return_table(data_generator.cur, CustomerTable())
+
+
+@pytest.fixture
+def supplier_table(data_generator):
+    create_and_return_table(data_generator.cur, ProductSupplierTable())
+    yield create_and_return_table(data_generator.cur, SupplierTable())
 
 
 def make_rows(
@@ -203,6 +210,17 @@ def test_generate_multiple_xref(
 
 
 def test_generate_bridge(
-        data_generator, product_table
+        data_generator, product_table, supplier_table
 ):
-    pass
+    data_generator.generate(
+        GeneratorRequest(product_table, n_inserts=100, n_updates=0), 1
+    )
+
+    data_generator.generate(
+        GeneratorRequest(supplier_table, n_inserts=10, n_updates=0), 1
+    )
+    cursor = data_generator.cur
+    cursor.execute(f"select * from {product_table.get_name()}")
+    assert len(cursor.fetchall()) == 100
+    cursor.execute(f"select * from {supplier_table.get_name()}")
+    assert len(cursor.fetchall()) == 10
