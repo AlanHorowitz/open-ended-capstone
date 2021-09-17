@@ -134,16 +134,17 @@ class Table:
         updated_ats = [col.get_name() for col in columns if col.is_updated_at()]
         parent_keys = [col for col in columns if col.is_parent_key()]
 
-        if len(primary_keys) != 1:
-            raise Exception("Generator requires exactly one primary key.")
-        self._primary_key = primary_keys[0]
+        # create only tables can have zero or one key
+        if self._create_only:
+            self._primary_key = "" if len(primary_keys) != 1 else primary_keys[0]
 
-        if not self._create_only:
-            if (len(inserted_ats), len(updated_ats)) != (1, 1):
+        else:
+            if (len(primary_keys), len(inserted_ats), len(updated_ats)) != (1, 1, 1):
                 raise Exception(
-                    "Generator requires exactly one inserted_at and updated_at column"
+                    "Generator requires exactly one inserted_at, updated_at and primary_key column"
                 )
 
+            self._primary_key = primary_keys[0]
             self._inserted_at = inserted_ats[0]
             self._updated_at = updated_ats[0]
 
@@ -217,16 +218,18 @@ class Table:
         :return CREATE TABLE statement in print friendly format.
         """
 
-        create_table = f"CREATE TABLE IF NOT EXISTS {self.get_name()} ( \n"
+        create_table = f"CREATE TABLE IF NOT EXISTS {self.get_name()} "
+        left_paren = "(\n"
         columns = "\n".join(
             [
                 col.get_create_sql_text(definition_dict) + ","
                 for col in self.get_columns()
             ]
         )
-        primary_key = f"\nPRIMARY KEY ({self.get_primary_key()}));"
+        primary_key = f"\nPRIMARY KEY ({self.get_primary_key()})" if self.get_primary_key() != "" else ""
+        right_paren = ");"
 
-        return create_table + columns + primary_key
+        return create_table + left_paren + columns + primary_key + right_paren
 
     def get_columns(self) -> List[Column]:
         """Return column objects"""
