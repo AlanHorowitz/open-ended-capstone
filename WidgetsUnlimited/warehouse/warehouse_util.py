@@ -65,8 +65,6 @@ def extract_write_stage(connection, batch_id: int, tables: List[Table], cumulati
         "TIMESTAMP": "datetime64[ns]",
     }
 
-    clean_stage_dir(batch_id)
-
     for table in tables:
         table_name = table.get_name()
         column_names = ",".join(table.get_column_names())

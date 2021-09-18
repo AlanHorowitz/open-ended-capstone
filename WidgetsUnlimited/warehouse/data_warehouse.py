@@ -2,8 +2,10 @@ from .warehouse_util import extract_write_stage
 from model.customer import CustomerTable
 from model.customer_address import CustomerAddressTable
 from .customer_dimension import CustomerDimensionProcessor
+from model.product import ProductTable
+from model.product_supplier import ProductSupplierTable
 import os
-import pandas as pd
+from .warehouse_util import clean_stage_dir
 from mysql.connector import connect
 
 
@@ -45,8 +47,14 @@ class DataWarehouse:
         :param batch_id: identifier of incremental batch
         :return: None
         """
+        clean_stage_dir(batch_id)
+
         extract_write_stage(
             connection, batch_id, [CustomerTable(), CustomerAddressTable()]
+        )
+
+        extract_write_stage(
+            connection, batch_id, [ProductTable(), ProductSupplierTable()], cumulative=True
         )
 
     def transform_load(self, batch_id):

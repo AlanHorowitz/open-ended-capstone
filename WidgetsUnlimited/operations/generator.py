@@ -196,6 +196,7 @@ class DataGenerator:
                     f"INSERT INTO {table_name} ({column_names}) values {values_substitutions}",
                     insert_records,
                 )
+                insert_count = cur.rowcount
 
             # if there is a parent_link, read the keys from the parent table that were inserted in
             # the current batch. Insert n_insert records per parent key in one operation.
@@ -235,6 +236,7 @@ class DataGenerator:
                     f"INSERT INTO {table_name} ({column_names}) values {values_substitutions}",
                     insert_records,
                 )
+                insert_count = cur.rowcount
 
             """ Add bridge table entries """
             if bridge:
@@ -252,12 +254,14 @@ class DataGenerator:
                     )  # each %s holds one tuple row
 
                     bridge_table = bridge.bridge_table
+                    bridge_table_name = bridge_table.get_name()
                     column_names = f"{table.get_primary_key()}, {bridge.partner_key}, " \
                                    f"{bridge_table.get_updated_at()}, batch_id"
                     cur.execute(
-                        f"INSERT INTO {bridge_table.get_name()} ({column_names}) values {values_substitutions}",
+                        f"INSERT INTO {bridge_table_name} ({column_names}) values {values_substitutions}",
                         bridge_inserts,
                     )
+                    print(f"DataGenerator: {cur.rowcount} records inserted for {bridge_table_name}")
 
             """ Clear references in XrefTableData helper objects """
             for table_data in xref_dict.values():
@@ -265,7 +269,7 @@ class DataGenerator:
                 table_data.num_rows = 0
                 table_data.next_random_row = 0
 
-            print(f"DataGenerator: {cur.rowcount} records inserted for {table_name}")
+            print(f"DataGenerator: {insert_count} records inserted for {table_name}")
             conn.commit()
 
         return insert_records, update_records
