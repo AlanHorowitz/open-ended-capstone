@@ -8,6 +8,7 @@ from .context import DataGenerator, GeneratorRequest
 from .context import extract_write_stage
 
 from .context import ProductTable
+from .context import ProductSupplierTable
 from .context import CustomerTable
 from .context import CustomerAddressTable
 
@@ -24,11 +25,12 @@ def test_generator_and_transform():
     )
     data_generator = DataGenerator()
     product_table = ProductTable()
+    product_suppliers_table = ProductSupplierTable()
     customer_table = CustomerTable()
     customer_address_table = CustomerAddressTable()
     customer_dimension = CustomerDimensionProcessor(ms_connection)
 
-    data_generator.add_tables([product_table, customer_table, customer_address_table])
+    data_generator.add_tables([product_table, product_suppliers_table, customer_table, customer_address_table])
 
     data_generator.generate(GeneratorRequest(product_table, n_inserts=10))
 

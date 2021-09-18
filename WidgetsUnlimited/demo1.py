@@ -17,6 +17,7 @@ DataWarehouse       - Process that extracts incremental data produced by the sou
 """
 
 from model.product import ProductTable
+from model.product_supplier import ProductSupplierTable
 from model.customer import CustomerTable
 from model.customer_address import CustomerAddressTable
 from model.order import OrderTable
@@ -32,6 +33,7 @@ from warehouse.data_warehouse import DataWarehouse
 
 # table metadata
 PRODUCT = ProductTable()
+PRODUCT_SUPPLIERS = ProductSupplierTable()
 CUSTOMER = CustomerTable()
 CUSTOMER_ADDRESS = CustomerAddressTable()
 ORDER = OrderTable()
@@ -51,7 +53,7 @@ operations_simulator = OperationsSimulator(
 operations_simulator.add_tables(
     e_commerce_system, [CUSTOMER, CUSTOMER_ADDRESS, ORDER, ORDER_LINE_ITEM]
 )
-operations_simulator.add_tables(inventory_system, [PRODUCT])
+operations_simulator.add_tables(inventory_system, [PRODUCT, PRODUCT_SUPPLIERS])
 
 # create data warehouse
 warehouse = DataWarehouse()

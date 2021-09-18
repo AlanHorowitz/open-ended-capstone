@@ -17,6 +17,8 @@ from operations.generator import DataGenerator
 from operations.generator import GeneratorRequest
 
 from model.product import ProductTable
+from model.supplier import SupplierTable
+from model.product_supplier import ProductSupplierTable
 from model.store import StoreTable
 from model.store_location import StoreLocationTable
 from model.store_sales import StoreSalesTable
