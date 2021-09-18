@@ -150,19 +150,17 @@ class Table:
         if self._batch_id:
             self._columns.append(Column("batch_id", "INTEGER", batch_id=True))
         self._primary_keys = [col.get_name() for col in columns if col.is_primary_key()]
-        inserted_ats = [col.get_name() for col in columns if col.is_inserted_at()]
-        updated_ats = [col.get_name() for col in columns if col.is_updated_at()]
-        parent_keys = [col for col in columns if col.is_parent_key()]
+        self._inserted_ats = [col.get_name() for col in columns if col.is_inserted_at()]
+        self._updated_ats = [col.get_name() for col in columns if col.is_updated_at()]
 
         if not self._create_only:
-            if (len(self._primary_keys), len(inserted_ats), len(updated_ats)) != (1, 1, 1):
+
+            if (len(self._primary_keys), len(self._inserted_ats), len(self._updated_ats)) != (1, 1, 1):
                 raise Exception(
                     "Generator requires exactly one inserted_at, updated_at and primary_key column"
                 )
 
-            self._inserted_at = inserted_ats[0]
-            self._updated_at = updated_ats[0]
-
+            parent_keys = [col for col in columns if col.is_parent_key()]
             if len(parent_keys) > 1:
                 raise Exception("Generator may accept at most one parent key")
             elif len(parent_keys) == 1:
@@ -295,8 +293,11 @@ class Table:
     def get_primary_key(self) -> str:
         return self._primary_keys[0]
 
+    def get_inserted_at(self) -> str:
+        return self._inserted_ats[0]
+
     def get_updated_at(self) -> str:
-        return self._updated_at
+        return self._updated_ats[0]
 
     def get_parent_key(self) -> str:
         return self._parent_key

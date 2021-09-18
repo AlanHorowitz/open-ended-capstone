@@ -22,12 +22,12 @@ class GeneratorRequest:
     """A structure of options passed to DataGenerator.generate"""
 
     def __init__(
-        self,
-        table: Table,  # Table to be generated
-        n_inserts: int = 0,  # number of inserts to generate
-        n_updates: int = 0,  # number of updates to generate
-        link_parent: bool = False,  # If true, use n_inserts to describe how many records to insert
-        # per parent key inserted in the same batch.
+            self,
+            table: Table,  # Table to be generated
+            n_inserts: int = 0,  # number of inserts to generate
+            n_updates: int = 0,  # number of updates to generate
+            link_parent: bool = False,  # If true, use n_inserts to describe how many records to insert
+            # per parent key inserted in the same batch.
     ) -> None:
         self.table = table
         self.n_inserts = n_inserts
@@ -80,7 +80,7 @@ class DataGenerator:
             self._connection.commit()
 
     def generate(
-        self, generator_request: GeneratorRequest, batch_id: int = 0
+            self, generator_request: GeneratorRequest, batch_id: int = 0
     ) -> Tuple[List[Tuple], List[DictRow]]:
         """
         Synthesize insert and update records for a table. apply these changes to the generator postgres and return
@@ -125,6 +125,7 @@ class DataGenerator:
         table_name = table.get_name()
         primary_key_column = table.get_primary_key()
         updated_at_column = table.get_updated_at()
+        bridge = table.get_bridge()
         column_names = ",".join(table.get_column_names())
 
         cur.execute(f"SELECT COUNT(*), MAX({primary_key_column}) from {table_name};")
@@ -235,11 +236,34 @@ class DataGenerator:
                     insert_records,
                 )
 
-                """ Clear references in XrefTableData helper objects """
-                for table_data in xref_dict.values():
-                    table_data.result_set = []
-                    table_data.num_rows = 0
-                    table_data.next_random_row = 0
+            """ Add bridge table entries """
+            if bridge:
+                partner_rows = xref_dict[bridge.partner_table].result_set
+                if len(partner_rows) >= bridge.inserts:
+                    bridge_inserts = []
+                    for i in insert_records:
+                        r = random.sample(range(len(partner_rows)), k=bridge.inserts)
+                        for n in r:
+                            bridge_inserts.append((i[0], partner_rows[n][bridge.partner_key],
+                                                   timestamp, batch_id))
+
+                    values_substitutions = ",".join(
+                        ["%s"] * (n_inserts * bridge.inserts)
+                    )  # each %s holds one tuple row
+
+                    bridge_table = bridge.bridge_table
+                    column_names = f"{table.get_primary_key()}, {bridge.partner_key}, " \
+                                   f"{bridge_table.get_updated_at()}, batch_id"
+                    cur.execute(
+                        f"INSERT INTO {bridge_table.get_name()} ({column_names}) values {values_substitutions}",
+                        bridge_inserts,
+                    )
+
+            """ Clear references in XrefTableData helper objects """
+            for table_data in xref_dict.values():
+                table_data.result_set = []
+                table_data.num_rows = 0
+                table_data.next_random_row = 0
 
             print(f"DataGenerator: {cur.rowcount} records inserted for {table_name}")
             conn.commit()
@@ -248,11 +272,11 @@ class DataGenerator:
 
 
 def _create_new_row(
-    table: Table,
-    primary_key: int,
-    parent_key: int = None,
-    batch_id: int = None,
-    timestamp: datetime = datetime.now(),
+        table: Table,
+        primary_key: int,
+        parent_key: int = None,
+        batch_id: int = None,
+        timestamp: datetime = datetime.now(),
 ) -> Tuple:
     """
     Create a new row for a table.  Substitute cross references and set default values using the column metadata.

@@ -24,5 +24,5 @@ class ProductTable(Table):
             Column("product_no_longer_offered", "BOOLEAN"),
             Column("product_inserted_at", "TIMESTAMP", inserted_at=True),
             Column("product_updated_at", "TIMESTAMP", updated_at=True),
-            bridge=BridgeTableDescriptor(ProductSupplierTable.NAME, 'supplier', 'supplier_id', 2)
+            bridge=BridgeTableDescriptor(ProductSupplierTable(), 'supplier', 'supplier_id', 2)
         )
