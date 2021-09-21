@@ -89,7 +89,7 @@ class ProductDimensionProcessor:
         print(f"(New: {len(new_keys)})", end=" ")
         print(f"(Updated: {len(update_keys)})")
 
-        inserts = self._build_new_dimension(new_keys, prior_product_dim, product, product_supplier)
+        inserts = self._build_new_dimension(new_keys, product, product_supplier)
         updates = self._build_update_dimension(
             update_keys, prior_product_dim, product, product_supplier
         )
@@ -211,7 +211,7 @@ class ProductDimensionProcessor:
         return product_dim
 
     def _build_new_dimension(
-            self, new_keys: Index, product_dim: DataFrame, product: DataFrame, product_supplier: DataFrame
+            self, new_keys: Index, product: DataFrame, product_supplier: DataFrame
     ) -> DataFrame:
         """
         Create and initialize new records for customer_dimension table in star schema
@@ -229,10 +229,8 @@ class ProductDimensionProcessor:
         product = product.loc[new_keys]
         product_supplier = product_supplier.loc[new_keys]
 
-
-        # apply common transformation
-        product_dim = ProductDimensionProcessor.product_transform(
-            product_dim, product, product_supplier
+        product_dim = pd.DataFrame(
+            [], columns=ProductDimTable().get_column_names(), index=new_keys
         )
 
         # assign surrogate keys
@@ -242,23 +240,18 @@ class ProductDimensionProcessor:
             next_surrogate_key, next_surrogate_key + num_inserts
         )
 
-        # initialize values for new records
-
-        product_dim["activation_date"] = customer["customer_inserted_at"]
-        product_dim["deactivation_date"] = date(2099, 12, 31)
-        product_dim["start_date"] = customer["customer_inserted_at"]
         product_dim["effective_date"] = date(2020, 10, 10)
         product_dim["expiration_date"] = date(2099, 12, 31)
         product_dim["is_current_row"] = "Y"
 
+        # apply common transformation
+        product_dim = ProductDimensionProcessor.product_transform(
+            product_dim, product, product_supplier
+        )
+
         # conform output types
         product_dim = product_dim.astype(
             self._dimension_table.get_column_pandas_types()
-        )
-
-        # apply default values
-        product_dim = product_dim.fillna(
-            CustomerDimensionProcessor.get_address_defaults()
         )
 
         return product_dim
