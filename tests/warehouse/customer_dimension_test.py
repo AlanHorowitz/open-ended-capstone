@@ -108,7 +108,6 @@ def test_build_new_dimension():
     customer_data = {
         "customer_id": [1, 3, 4, 5],
         "customer_name": ["c1", "c3", "c4", "c5"],
-        "customer_user_id": ["XXX"] * 4,
         "customer_password": ["XXX"] * 4,
         "customer_email": [
             "aaa@gmail.com",
@@ -164,7 +163,6 @@ def test_transform_referral_type():
         "customer_user_id": [pd.NA] * 4,
         "customer_password": [pd.NA] * 4,
         "customer_email": [pd.NA] * 4,
-        "customer_user_id": [pd.NA] * 4,
         "customer_sex": [pd.NA] * 4,
         "customer_date_of_birth": [pd.NA] * 4,
         "customer_loyalty_number": [0] * 4,
@@ -191,7 +189,7 @@ def test_transform_referral_type():
     customer_address = pd.DataFrame(customer_address_data)
     customer_address = customer_address.set_index("customer_id", drop=False)
 
-    customer_dim = CustomerDimensionProcessor.customer_transform(
+    customer_dim = CustomerDimensionProcessor.product_transform(
         customer, customer_address
     )
 

@@ -9,35 +9,20 @@ from model.product import ProductTable
 from model.product_supplier import ProductSupplierTable
 
 # transformation mappings
-customer_dim_to_customer_mapping = {
-    "customer_key": "customer_id",
-    "name": "customer_name",
-    "user_id": "customer_user_id",
-    "password": "customer_password",
-    "email": "customer_email",
-    "referral_type": "customer_referral_type",
-    "sex": "customer_sex",
-    "date_of_birth": "customer_date_of_birth",
-    "loyalty_number": "customer_loyalty_number",
-    "credit_card_number": "customer_credit_card_number",
-    "is_preferred": "customer_is_preferred",
-    "is_active": "customer_is_active",
-}
 
-billing_to_customer_dim_mapping = {
-    "billing_name": "name",
-    "billing_street_number": "street_number",
-    "billing_city": "city",
-    "billing_state": "state",
-    "billing_zip": "zip",
-}
-
-shipping_to_customer_dim_mapping = {
-    "shipping_name": "name",
-    "shipping_street_number": "street_number",
-    "shipping_city": "city",
-    "shipping_state": "state",
-    "shipping_zip": "zip",
+product_dim_to_product_mapping = {
+    "product_key" : "product_id",  # natural key -- Add index
+    "name" : "product_name",
+    "description" : "product_description",
+    "category" : "product_category",
+    "brand" : "product_brand",
+    "unit_cost" : "product_unit_cost",
+    "dimension_length" : "product_dimension_length",
+    "dimension_width" : "product_dimension_width",
+    "dimension_height" : "product_dimension_height",
+    "introduced_date" : "product_introduced_date",
+    "discontinued" : "product_discontinued",
+    "no_longer_offered" : "product_no_longer_offered",
 }
 
 
@@ -104,7 +89,7 @@ class ProductDimensionProcessor:
         print(f"(New: {len(new_keys)})", end=" ")
         print(f"(Updated: {len(update_keys)})")
 
-        inserts = self._build_new_dimension(new_keys, product, product_supplier)
+        inserts = self._build_new_dimension(new_keys, prior_product_dim, product, product_supplier)
         updates = self._build_update_dimension(
             update_keys, prior_product_dim, product, product_supplier
         )
@@ -201,116 +186,39 @@ class ProductDimensionProcessor:
         }
 
     @staticmethod
-    def decode_referral_type(s) -> str:
-        """Translate referral_type code to text"""
-        referrals = {
-            "OA": "Online Advertising",
-            "AM": "Affiliate Marketing",
-            "": "None",
-        }
-        return referrals.get(s.strip().upper(), "Unknown")
-
-    @staticmethod
-    def parse_address(s: str) -> Series:
-        """
-        Parse the customer_address column and return a series of correctly labeled component fields.
-        The address is a string with the expected format: name\nstreet_address\ncity, state zip
-        """
-        name, street_number, rest = s.split("\n")
-        city, rest = rest.split(",")
-        state, zip_code = rest.strip().split()
-
-        return pd.Series(
-            {
-                "name": name,
-                "street_number": street_number,
-                "city": city,
-                "state": state,
-                "zip": zip_code,
-            }
-        )
-
-    @staticmethod
-    def customer_transform(
-            customer: DataFrame, customer_address: DataFrame
+    def product_transform(
+            product_dim: DataFrame, product: DataFrame, product_supplier: DataFrame
     ) -> DataFrame:
         """
         Common transformations that apply to both inserts and updates.
 
         - simple column to column mapping
-        - decoding of customer_referral_type
-        - parsing of billing and customer addresses
-        - resolution of last_update_date column
+        - append number_of_suppliers
 
-        :param customer: customer stage data, indexed with new_keys or update_keys
-        :param customer_address: customer address stage data, indexed with new_keys or update_keys
-        :return: a customer_dim dataframe with incremental changes. Values not included in the stage data
-        are returned as null.
+        :param product_dim:
+        :param product:
+        :param product_supplier: indexed by product_id
+        :return: a product_dim dataframe refreshed with current values.
 
         """
 
-        # make empty customer_dim dataframe indexed by target keys
-        union_index = customer.index.union(customer_address.index).unique()
-        customer_dim = pd.DataFrame(
-            [], columns=CustomerDimTable().get_column_names(), index=union_index
-        )
+        # simple copies from product to product_dim
+        for k, v in product_dim_to_product_mapping.items():
+            product_dim[k] = product[v]
 
-        # work area to compute latest of three possibly existing dates
-        update_dates = pd.DataFrame(
-            [], columns=["billing", "shipping", "customer"], index=union_index
-        )
+        product_dim['number_of_suppliers'] = product_supplier.index.value_counts(sort=False)
 
-        # simple copies from customer to customer_dim
-        for k, v in customer_dim_to_customer_mapping.items():
-            if v in customer:
-                customer_dim[k] = customer[v]
-
-        if "customer_referral_type" in customer.columns:
-            customer_dim.referral_type = customer["customer_referral_type"].map(
-                CustomerDimensionProcessor.decode_referral_type
-            )
-
-        # Collect billing and shipping information where available
-        is_billing = customer_address["customer_address_type"] == "B"
-        is_shipping = customer_address["customer_address_type"] == "S"
-
-        billing = customer_address[is_billing]["customer_address"].apply(
-            CustomerDimensionProcessor.parse_address
-        )
-
-        if billing.size != 0:
-            update_dates["billing"] = customer_address.loc[
-                is_billing, "customer_address_updated_at"
-            ]
-            for k, v in billing_to_customer_dim_mapping.items():
-                customer_dim[k] = billing[v]
-
-        shipping = customer_address[is_shipping]["customer_address"].apply(
-            CustomerDimensionProcessor.parse_address
-        )
-
-        if shipping.size != 0:
-            update_dates["shipping"] = customer_address.loc[
-                is_shipping, "customer_address_updated_at"
-            ]
-            for k, v in shipping_to_customer_dim_mapping.items():
-                customer_dim[k] = shipping[v]
-
-        # set last_update_date to latest of three dates
-        update_dates["customer"] = customer["customer_updated_at"]  # required column
-        customer_dim["last_update_date"] = update_dates.T.max()
-
-        return customer_dim
+        return product_dim
 
     def _build_new_dimension(
-            self, new_keys: Index, customer: DataFrame, customer_address: DataFrame
+            self, new_keys: Index, product_dim: DataFrame, product: DataFrame, product_supplier: DataFrame
     ) -> DataFrame:
         """
         Create and initialize new records for customer_dimension table in star schema
 
         :param new_keys: keys for records in batch not yet in star schema
-        :param customer: staged customer data
-        :param customer_address: staged customer address data
+        :param product: staged customer data
+        :param product_supplier: staged customer address data
         :return: a customer_dim dataframe ready to be written to mySQL
         """
 
@@ -318,43 +226,42 @@ class ProductDimensionProcessor:
             return pd.DataFrame([])
 
         # restrict stage date to new_keys
-        customer = customer.loc[new_keys.intersection(customer.index)]
-        customer_address = customer_address.loc[
-            new_keys.intersection(customer_address.index)
-        ]
+        product = product.loc[new_keys]
+        product_supplier = product_supplier.loc[new_keys]
+
 
         # apply common transformation
-        customer_dim = CustomerDimensionProcessor.customer_transform(
-            customer, customer_address
+        product_dim = ProductDimensionProcessor.product_transform(
+            product_dim, product, product_supplier
         )
 
         # assign surrogate keys
         next_surrogate_key = self._next_surrogate_key
-        num_inserts = customer_dim.shape[0]
-        customer_dim["surrogate_key"] = range(
+        num_inserts = product_dim.shape[0]
+        product_dim["surrogate_key"] = range(
             next_surrogate_key, next_surrogate_key + num_inserts
         )
 
         # initialize values for new records
-        customer_dim["age_cohort"] = "N/A"
-        customer_dim["activation_date"] = customer["customer_inserted_at"]
-        customer_dim["deactivation_date"] = date(2099, 12, 31)
-        customer_dim["start_date"] = customer["customer_inserted_at"]
-        customer_dim["effective_date"] = date(2020, 10, 10)
-        customer_dim["expiration_date"] = date(2099, 12, 31)
-        customer_dim["is_current_row"] = "Y"
+
+        product_dim["activation_date"] = customer["customer_inserted_at"]
+        product_dim["deactivation_date"] = date(2099, 12, 31)
+        product_dim["start_date"] = customer["customer_inserted_at"]
+        product_dim["effective_date"] = date(2020, 10, 10)
+        product_dim["expiration_date"] = date(2099, 12, 31)
+        product_dim["is_current_row"] = "Y"
 
         # conform output types
-        customer_dim = customer_dim.astype(
+        product_dim = product_dim.astype(
             self._dimension_table.get_column_pandas_types()
         )
 
         # apply default values
-        customer_dim = customer_dim.fillna(
+        product_dim = product_dim.fillna(
             CustomerDimensionProcessor.get_address_defaults()
         )
 
-        return customer_dim
+        return product_dim
 
     def _build_update_dimension(
             self,
@@ -383,7 +290,7 @@ class ProductDimensionProcessor:
         ]
 
         # apply common transformation
-        customer_dim = CustomerDimensionProcessor.customer_transform(
+        customer_dim = CustomerDimensionProcessor.product_transform(
             customer, customer_address
         )
 
