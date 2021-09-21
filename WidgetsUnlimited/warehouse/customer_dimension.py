@@ -82,10 +82,10 @@ class CustomerDimensionProcessor:
         1) Read customer and customer_address files from stage area into dataframes
         2) Compute incremental_keys
         3) Load customer_dim from mySQL to dataframe for incremental_keys
-        4) Compute input_keys and update_keys
-        5) Compute input and update customer_dim records using transformations taking customer, customer_address
+        4) Compute new_keys and update_keys
+        5) Compute insert and update customer_dim records using transformations taking customer, customer_address
         and customer_dim as inputs
-        6) Write inputs and updates to customer_dimension table in mySQL
+        6) Write inserts and updates to customer_dimension table in mySQL
         :param batch_id: Identifier for ETL process
         :return:None
         """

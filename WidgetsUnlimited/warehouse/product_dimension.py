@@ -77,15 +77,15 @@ class ProductDimensionProcessor:
 
     def process_update(self, batch_id: int) -> None:
         """
-        Perform the following steps to update the customer_dimension table for an ETL batch
+        Perform the following steps to update the product_dimension table for an ETL batch
 
-        1) Read customer and customer_address files from stage area into dataframes
-        2) Compute incremental_keys
-        3) Load customer_dim from mySQL to dataframe for incremental_keys
-        4) Compute input_keys and update_keys
-        5) Compute input and update customer_dim records using transformations taking customer, customer_address
-        and customer_dim as inputs
-        6) Write inputs and updates to customer_dimension table in mySQL
+        1) Read product and product_supplier files from stage area into dataframes
+        2) Load dimension header columns of product_dim from mySQL to dataframe
+        3) Compute new_keys and update_keys
+        4) Compute insert and update product_dim records using transformations taking product, product_supplier
+        and product_dim as inputs
+        5) concatenate input and update product_dim records
+        6) truncate product dimension table write concatenated records
         :param batch_id: Identifier for ETL process
         :return:None
         """
@@ -93,24 +93,20 @@ class ProductDimensionProcessor:
         product, product_supplier = read_stage(
             batch_id, [ProductTable(), ProductSupplierTable()]
         )
-        incremental_keys = customer.index.union(customer_address.index).unique()
+
+        prior_product_dim = self._read_dimension("product_key")
+        update_keys = prior_product_dim.index
+        new_keys = product.index.difference(update_keys)
         print(
-            f"CustomerDimensionProcessor: {len(incremental_keys)} unique customer ids detected",
+            f"ProductDimensionProcessor: {len(new_keys) + len(update_keys)} unique product ids detected",
             end=" ",
         )
-        if incremental_keys.size == 0:
-            print()  # Add newline to 0 keys message
-            return
-
-        prior_customer_dim = self._read_dimension("customer_key", incremental_keys)
-        update_keys = prior_customer_dim.index
-        new_keys = incremental_keys.difference(update_keys)
         print(f"(New: {len(new_keys)})", end=" ")
         print(f"(Updated: {len(update_keys)})")
 
-        inserts = self._build_new_dimension(new_keys, customer, customer_address)
+        inserts = self._build_new_dimension(new_keys, product, product_supplier)
         updates = self._build_update_dimension(
-            update_keys, prior_customer_dim, customer, customer_address
+            update_keys, prior_product_dim, product, product_supplier
         )
 
         self._write_dimension(inserts, "INSERT")
@@ -118,7 +114,7 @@ class ProductDimensionProcessor:
         self._write_dimension(updates, "REPLACE")
 
         print(
-            f"CustomerDimensionProcessor: {self._count_dimension()} total rows in customer_dim table"
+            f"ProductDimensionProcessor: {self._count_dimension()} total rows in product_dim table"
         )
 
     def _create_dimension(self):
@@ -128,18 +124,17 @@ class ProductDimensionProcessor:
         cur.execute(f"DROP TABLE IF EXISTS {self._dimension_table.get_name()};")
         cur.execute(self._dimension_table.get_create_sql_mysql())
 
-    def _read_dimension(self, key_name: str, key_values: Index) -> DataFrame:
+    def _read_dimension(self, key_name: str) -> DataFrame:
         """
-        Read rows from the customer_dimension table using a key filter
+        Read all header columns amd natural key from product_dim
 
-        :param key_name: Name of the filter key
-        :param key_values: Filter values
+        :param key_name: Name of the index key
         :return: A dataframe of the result set, indexed by the key column
         """
 
         table_name = self._dimension_table.get_name()
-        key_values_list = ",".join([str(k) for k in key_values])
-        query = f"SELECT * FROM {table_name} WHERE {key_name} IN ({key_values_list});"
+        columns_list = ",".join([col for col in self._dimension_table.get_header_columns()])
+        query = f"SELECT {key_name}, {columns_list} FROM {table_name});"
         dimension_df = pd.read_sql_query(query, self._connection)
         dimension_df = dimension_df.set_index(key_name, drop=False)
 
