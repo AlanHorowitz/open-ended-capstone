@@ -2,11 +2,11 @@ import os
 from datetime import date, datetime
 import pandas as pd
 import pytest
-from mysql.connector import connect
-
 
 # from WidgetsUnlimited.warehouse.warehouse_util import get_new_keys
-from .context import CustomerDimensionProcessor, CustomerTable
+from mysql.connector import connect
+
+from .context import CustomerDimensionProcessor
 
 # subset of customer_dim columns for testing
 customer_dim_cols = [
@@ -56,6 +56,18 @@ TEST_SHIPPING_ADDRESS = "First Middle Last\n15 Jones Boulevard\nFair Lawn,NJ 074
 
 
 @pytest.fixture
+def ms_connection():
+    yield connect(
+        host=os.getenv("WAREHOUSE_HOST"),
+        port=os.getenv("WAREHOUSE_PORT"),
+        user=os.getenv("WAREHOUSE_USER"),
+        password=os.getenv("WAREHOUSE_PASSWORD"),
+        database=os.getenv("WAREHOUSE_DB"),
+        charset="utf8",
+    )
+
+
+@pytest.fixture
 def base_dimension_record_45():
 
     customer_dim = pd.DataFrame(dim_records)
@@ -69,18 +81,6 @@ def base_dimension_records_all():
     customer_dim = pd.DataFrame(dim_records)
     customer_dim = customer_dim.set_index("customer_key", drop=False)
     yield customer_dim
-
-
-@pytest.fixture
-def ms_connection():
-    yield connect(
-        host=os.getenv("WAREHOUSE_HOST"),
-        port=os.getenv("WAREHOUSE_PORT"),
-        user=os.getenv("WAREHOUSE_USER"),
-        password=os.getenv("WAREHOUSE_PASSWORD"),
-        database=os.getenv("WAREHOUSE_DB"),
-        charset="utf8",
-    )
 
 
 def test_parse_address():
@@ -522,3 +522,5 @@ def test_update_all_2(base_dimension_records_all):
     assert customer_dim.loc[46, "billing_street_number"] == "44 Pine Street"
     assert customer_dim.loc[46, "email"] == "henry@hotmail.com"
     assert customer_dim.loc[46, "credit_card_number"] == "88888888"
+
+

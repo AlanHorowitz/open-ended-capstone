@@ -95,7 +95,7 @@ class ProductDimensionProcessor:
         )
 
         self._truncate_dimension()
-        self._write_dimension(inserts, "INSERT")
+        self._write_dimension(inserts.append(updates), "INSERT")
         self._next_surrogate_key += inserts.shape[0]
 
         print(
