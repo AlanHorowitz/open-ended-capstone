@@ -189,7 +189,7 @@ def test_transform_referral_type():
     customer_address = pd.DataFrame(customer_address_data)
     customer_address = customer_address.set_index("customer_id", drop=False)
 
-    customer_dim = CustomerDimensionProcessor.product_transform(
+    customer_dim = CustomerDimensionProcessor.customer_transform(
         customer, customer_address
     )
 

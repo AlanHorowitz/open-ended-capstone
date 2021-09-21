@@ -94,13 +94,19 @@ class ProductDimensionProcessor:
             update_keys, prior_product_dim, product, product_supplier
         )
 
+        self._truncate_dimension()
         self._write_dimension(inserts, "INSERT")
         self._next_surrogate_key += inserts.shape[0]
-        self._write_dimension(updates, "REPLACE")
 
         print(
             f"ProductDimensionProcessor: {self._count_dimension()} total rows in product_dim table"
         )
+
+    def _truncate_dimension(self):
+        """ Truncate dimension prior to rewrite """
+
+        cur = self._connection.cursor()
+        cur.execute(f"TRUNCATE TABLE  {self._dimension_table.get_name()};")
 
     def _create_dimension(self):
         """Create an empty product_dimension on warehouse initialization."""
@@ -167,25 +173,6 @@ class ProductDimensionProcessor:
         return cur.fetchone()[0]
 
     @staticmethod
-    def get_address_defaults() -> Dict[str, str]:
-        """Build a dictionary used to set missing address items to N/A"""
-        return {
-            col: "N/A"
-            for col in [
-                "billing_name",
-                "billing_street_number",
-                "billing_city",
-                "billing_state",
-                "billing_zip",
-                "shipping_name",
-                "shipping_street_number",
-                "shipping_city",
-                "shipping_state",
-                "shipping_zip",
-            ]
-        }
-
-    @staticmethod
     def product_transform(
             product_dim: DataFrame, product: DataFrame, product_supplier: DataFrame
     ) -> DataFrame:
@@ -235,7 +222,7 @@ class ProductDimensionProcessor:
 
         # assign surrogate keys
         next_surrogate_key = self._next_surrogate_key
-        num_inserts = product_dim.shape[0]
+        num_inserts = len(new_keys)
         product_dim["surrogate_key"] = range(
             next_surrogate_key, next_surrogate_key + num_inserts
         )
@@ -259,63 +246,30 @@ class ProductDimensionProcessor:
     def _build_update_dimension(
             self,
             update_keys: Index,
-            prior_customer_dim: DataFrame,
-            customer: DataFrame,
-            customer_address: DataFrame,
+            prior_product_dim: DataFrame,
+            product: DataFrame,
+            product_supplier: DataFrame,
     ) -> DataFrame:
+
         """
         Update existing records in customer_dimension table star schema
 
         :param update_keys: keys for records in batch already in star schema
-        :param prior_customer_dim:
+        :param prior_product_dim:
         :param customer: staged customer data
         :param customer_address: staged customer address data
         :return: a customer_dim dataframe ready to be written to mySQL
         """
 
-        if prior_customer_dim.shape[0] == 0:
+        if prior_product_dim.shape[0] == 0:
             return pd.DataFrame([])
 
         # restrict stage date to update_keys
-        customer = customer.loc[update_keys.intersection(customer.index)]
-        customer_address = customer_address.loc[
-            update_keys.intersection(customer_address.index)
-        ]
+        product = product.loc[update_keys]
+        product_supplier = product_supplier.loc[update_keys]
 
-        # apply common transformation
-        customer_dim = CustomerDimensionProcessor.product_transform(
-            customer, customer_address
-        )
-
-        # reset activation status and dates when change detected
-        customer = customer.reindex(update_keys)
-        if "customer_is_active" in customer.columns:
-            was_activated = (customer["customer_is_active"] == True) & (
-                    prior_customer_dim["is_active"] == False
-            )
-            was_deactivated = (customer["customer_is_active"] == False) & (
-                    prior_customer_dim["is_active"] == True
-            )
-
-            prior_customer_dim.loc[was_activated, "activation_date"] = customer[
-                "customer_updated_at"
-            ]
-            prior_customer_dim.loc[was_activated, "deactivation_date"] = date(
-                2099, 12, 31
-            )
-            prior_customer_dim.loc[was_deactivated, "deactivation_date"] = customer[
-                "customer_updated_at"
-            ]
-
-        # copy all non-null values from customer_dim over prior_customer_dim (old values not
-        # appearing in the incremental batch are preserved)
-        mask = customer_dim.notnull()
-        for col in customer_dim.columns:
-            prior_customer_dim.loc[mask[col], col] = customer_dim[col]
-
-        # make copy of result
-        update_dim = pd.DataFrame(
-            prior_customer_dim, columns=self._dimension_table.get_column_names()
+        update_dim = ProductDimensionProcessor.product_transform(
+            prior_product_dim, product, product_supplier
         )
 
         # conform output types
