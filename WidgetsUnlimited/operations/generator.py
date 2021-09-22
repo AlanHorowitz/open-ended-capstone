@@ -79,6 +79,16 @@ class DataGenerator:
             self.cur.execute(table.get_create_sql_postgres())
             self._connection.commit()
 
+    @staticmethod
+    def _insert_rows(cur, table_name, column_names, rows) -> int:
+
+        values_substitutions = ",".join(["%s"] * len(rows))
+        cur.execute(
+            f"INSERT INTO {table_name} ({column_names}) values {values_substitutions}",
+            rows
+        )
+        return cur.rowcount
+
     def generate(
             self, generator_request: GeneratorRequest, batch_id: int = 0
     ) -> Tuple[List[Tuple], List[DictRow]]:
@@ -188,15 +198,7 @@ class DataGenerator:
                         )
                     )
 
-                values_substitutions = ",".join(
-                    ["%s"] * n_inserts
-                )  # each %s holds one tuple row
-
-                cur.execute(
-                    f"INSERT INTO {table_name} ({column_names}) values {values_substitutions}",
-                    insert_records,
-                )
-                insert_count = cur.rowcount
+                insert_count = self._insert_rows(cur, table_name, column_names, insert_records)
 
             # if there is a parent_link, read the keys from the parent table that were inserted in
             # the current batch. Insert n_insert records per parent key in one operation.
@@ -228,15 +230,7 @@ class DataGenerator:
                         )
                         next_primary_key += 1
 
-                values_substitutions = ",".join(
-                    ["%s"] * (n_inserts * len(linked_rs))
-                )  # each %s holds one tuple row
-
-                cur.execute(
-                    f"INSERT INTO {table_name} ({column_names}) values {values_substitutions}",
-                    insert_records,
-                )
-                insert_count = cur.rowcount
+                insert_count = self._insert_rows(cur, table_name, column_names, insert_records)
 
             """ Add bridge table entries """
             if bridge:
@@ -249,19 +243,12 @@ class DataGenerator:
                             bridge_inserts.append((i[0], partner_rows[n][bridge.partner_key],
                                                    timestamp, batch_id))
 
-                    values_substitutions = ",".join(
-                        ["%s"] * (n_inserts * bridge.inserts)
-                    )  # each %s holds one tuple row
-
                     bridge_table = bridge.bridge_table
                     bridge_table_name = bridge_table.get_name()
                     column_names = f"{table.get_primary_key()}, {bridge.partner_key}, " \
                                    f"{bridge_table.get_updated_at()}, batch_id"
-                    cur.execute(
-                        f"INSERT INTO {bridge_table_name} ({column_names}) values {values_substitutions}",
-                        bridge_inserts,
-                    )
-                    print(f"DataGenerator: {cur.rowcount} records inserted for {bridge_table_name}")
+                    bridge_count = self._insert_rows(cur, bridge_table_name, column_names, bridge_inserts)
+                    print(f"DataGenerator: {bridge_count} records inserted for {bridge_table_name}")
 
             """ Clear references in XrefTableData helper objects """
             for table_data in xref_dict.values():
