@@ -153,6 +153,9 @@ class Table:
         self._inserted_ats = [col.get_name() for col in columns if col.is_inserted_at()]
         self._updated_ats = [col.get_name() for col in columns if col.is_updated_at()]
 
+        self._parent_key = ""
+        self._parent_table = ""
+
         if not self._create_only:
 
             if (len(self._primary_keys), len(self._inserted_ats), len(self._updated_ats)) != (1, 1, 1):
@@ -166,9 +169,6 @@ class Table:
             elif len(parent_keys) == 1:
                 self._parent_key = parent_keys[0].get_parent_key()
                 self._parent_table = parent_keys[0].get_parent_table()
-            else:
-                self._parent_key = ""
-                self._parent_table = ""
 
             self._update_columns = [col for col in columns if col.can_update()]
             if len(self._update_columns) == 0:

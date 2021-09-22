@@ -125,7 +125,7 @@ class ProductDimensionProcessor:
 
         table_name = self._dimension_table.get_name()
         columns_list = ",".join([col for col in self._dimension_table.get_header_columns()])
-        query = f"SELECT {key_name}, {columns_list} FROM {table_name});"
+        query = f"SELECT {key_name}, {columns_list} FROM {table_name};"
         dimension_df = pd.read_sql_query(query, self._connection)
         dimension_df = dimension_df.set_index(key_name, drop=False)
 
@@ -194,6 +194,7 @@ class ProductDimensionProcessor:
             product_dim[k] = product[v]
 
         product_dim['number_of_suppliers'] = product_supplier.index.value_counts(sort=False)
+        product_dim['percent_returns'] = 0
 
         return product_dim
 

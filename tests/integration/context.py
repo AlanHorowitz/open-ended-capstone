@@ -7,6 +7,7 @@ sys.path.insert(
 )
 
 from warehouse.customer_dimension import CustomerDimensionProcessor
+from warehouse.product_dimension import ProductDimensionProcessor
 from warehouse.warehouse_util import extract_write_stage
 from warehouse.data_warehouse import DataWarehouse
 
