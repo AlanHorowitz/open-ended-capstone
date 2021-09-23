@@ -182,8 +182,12 @@ class DataGenerator:
                 )
 
                 if bridge:
+                    bridge_table = bridge.bridge_table
+                    bridge_table_name = bridge_table.get_name()
+                    bridge_column_names = f"{table.get_primary_key()}, {bridge.partner_key}, " \
+                                   f"{bridge_table.get_updated_at()}, batch_id"
                     partner_rows = xref_dict[bridge.partner_table].result_set
-                    bridge_rows = xref_dict[bridge.bridge_table].result_set
+                    bridge_rows = xref_dict[bridge_table_name].result_set
                     if choice([True, False]):
                         # True: get a row from bridge and delete it (where PK) and delete it.
                         # Loop through bridge_table, delete the first one that exists
@@ -207,11 +211,7 @@ class DataGenerator:
                         if new_partner_key:
                             new_row = [(r[primary_key_column], new_partner_key,
                                         timestamp, batch_id)]
-                            bridge_table = bridge.bridge_table
-                            bridge_table_name = bridge_table.get_name()
-                            column_names = f"{table.get_primary_key()}, {bridge.partner_key}, " \
-                                           f"{bridge_table.get_updated_at()}, batch_id"
-                            self._insert_rows(cur, bridge_table_name, column_names, new_row)
+                            self._insert_rows(cur, bridge_table_name, bridge_column_names, new_row)
 
             print(f"DataGenerator: {len(update_records)} records updated for {table_name}")
 
@@ -277,9 +277,9 @@ class DataGenerator:
 
                     bridge_table = bridge.bridge_table
                     bridge_table_name = bridge_table.get_name()
-                    column_names = f"{table.get_primary_key()}, {bridge.partner_key}, " \
+                    bridge_column_names = f"{table.get_primary_key()}, {bridge.partner_key}, " \
                                    f"{bridge_table.get_updated_at()}, batch_id"
-                    bridge_count = self._insert_rows(cur, bridge_table_name, column_names, new_row)
+                    bridge_count = self._insert_rows(cur, bridge_table_name, bridge_column_names, new_row)
                     print(f"DataGenerator: {bridge_count} records inserted for {bridge_table_name}")
 
             """ Clear references in XrefTableData helper objects """
