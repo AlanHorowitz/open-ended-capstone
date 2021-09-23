@@ -187,6 +187,11 @@ class DataGenerator:
                         for b_row in bridge_rows:
                             if b_row[primary_key_column] == u_row[primary_key_column]:
                                 # delete where primary_key and partner_key
+                                cur.execute(
+                                    f"DELETE from {bridge_table_name}"
+                                    f" WHERE {primary_key_column} = {u_row[primary_key_column]}\n"
+                                    f" AND {bridge.partner_key} = {b_row[bridge.partner_key]};"
+                                )
                                 break
                     else:
                         # False: select a supplier not already connected with pkey and add
