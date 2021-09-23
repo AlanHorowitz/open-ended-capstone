@@ -181,12 +181,12 @@ class DataGenerator:
 
                     partner_rows = xref_dict[bridge.partner_table].result_set
                     bridge_rows = xref_dict[bridge_table_name].result_set
+
                     if choice([True, False]):
                         # True: get a row from bridge and delete it (where PK) and delete it.
                         # Loop through bridge_table, delete the first one that exists
                         for b_row in bridge_rows:
                             if b_row[primary_key_column] == u_row[primary_key_column]:
-                                # delete where primary_key and partner_key
                                 cur.execute(
                                     f"DELETE from {bridge_table_name}"
                                     f" WHERE {primary_key_column} = {u_row[primary_key_column]}\n"
@@ -198,18 +198,15 @@ class DataGenerator:
                         # Collect all the suppliers already in the bridge table.  Then take the first supplier found
                         # that is not in the list
 
-                        new_partner_key = None
                         partner_keys = [b_row[bridge.partner_key] for b_row in bridge_rows
                                         if b_row[primary_key_column] == u_row[primary_key_column]]
 
                         for p_row in partner_rows:
                             if p_row[bridge.partner_key] not in partner_keys:
-                                new_partner_key = p_row[bridge.partner_key]
+                                new_row = [(u_row[primary_key_column], p_row[bridge.partner_key],
+                                            timestamp, batch_id)]
+                                _insert_rows(cur, bridge_table_name, bridge_column_names, new_row)
                                 break
-                        if new_partner_key:
-                            new_row = [(u_row[primary_key_column], new_partner_key,
-                                        timestamp, batch_id)]
-                            _insert_rows(cur, bridge_table_name, bridge_column_names, new_row)
 
             print(f"DataGenerator: {len(update_rows)} records updated for {table_name}")
 
