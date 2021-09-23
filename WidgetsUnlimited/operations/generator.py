@@ -262,11 +262,11 @@ class DataGenerator:
                 partner_rows = xref_dict[bridge.partner_table].result_set
                 if len(partner_rows) >= bridge.inserts:
                     bridge_insert_rows = []
-                    for i in bridge_insert_rows:
+                    for i in insert_rows:
                         u_row = random.sample(range(len(partner_rows)), k=bridge.inserts)
                         for n in u_row:
-                            insert_rows.append((i[0], partner_rows[n][bridge.partner_key],
-                                                timestamp, batch_id))
+                            bridge_insert_rows.append((i[0], partner_rows[n][bridge.partner_key],
+                                                       timestamp, batch_id))
 
                     bridge_count = _insert_rows(cur, bridge_table_name, bridge_column_names, bridge_insert_rows)
                     print(f"DataGenerator: {bridge_count} records inserted for {bridge_table_name}")
