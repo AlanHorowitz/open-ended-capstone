@@ -86,35 +86,37 @@ def test_product(ms_connection):
 
     data_generator.add_tables([product_table, supplier_table, product_supplier_table])
 
-    data_generator.generate(GeneratorRequest(supplier_table, n_inserts=10), 1)
-    data_generator.generate(GeneratorRequest(product_table, n_inserts=50), 1)  # each gets 3 suppliers
+    data_generator.generate(GeneratorRequest(supplier_table, n_inserts=10), 1)  # each gets 3 products
+    data_generator.generate(GeneratorRequest(product_table, n_inserts=50), 1)  # each gets 2 suppliers
 
     extract_write_stage(
         data_generator.get_connection(),
         batch_id=1,
         tables=[product_table, supplier_table, product_supplier_table],
+        cumulative=True
     )
     product_dimension.process_update(1)
 
     cur = ms_connection.cursor()
     cur.execute("SELECT COUNT(*) from product_dim;")
-
     assert cur.fetchone()[0] == 50
 
-    # try modifying two customers
-    # data_generator.generate(
-    #     GeneratorRequest(customer_table, n_inserts=0, n_updates=2), batch_id=2
-    # )
-    #
-    # extract_write_stage(
-    #     data_generator.get_connection(),
-    #     batch_id=2,
-    #     tables=[customer_table, customer_address_table],
-    # )
-    # customer_dimension.process_update(2)
-    #
-    # cur.execute("SELECT COUNT(*) from customer_dim;")
-    # assert cur.fetchone()[0] == 20
-    #
-    # cur.execute("SELECT COUNT(email) from customer_dim where email like '%_UPD';")
-    # assert cur.fetchone()[0] == 2
+    data_generator.generate(GeneratorRequest(supplier_table, n_inserts=4), 2)
+    data_generator.generate(GeneratorRequest(product_table, n_inserts=20), 2)
+
+    extract_write_stage(
+        data_generator.get_connection(),
+        batch_id=2,
+        tables=[product_table, supplier_table, product_supplier_table],
+        cumulative=True
+    )
+    product_dimension.process_update(2)
+
+    cur.execute("SELECT COUNT(*) from product_dim;")
+    assert cur.fetchone()[0] == 70
+
+    cur.execute("select COUNT(surrogate_key) from product_dim"
+                " WHERE number_of_suppliers  > 2;"
+                )
+    assert cur.fetchone()[0] > 0
+
