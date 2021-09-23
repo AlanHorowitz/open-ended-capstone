@@ -2,6 +2,7 @@ from typing import List, Tuple, Dict
 from model.metadata import Table, XrefTableData
 from datetime import datetime
 import random
+from random import choice
 import os
 
 import psycopg2
@@ -146,6 +147,15 @@ class DataGenerator:
         update_records: List[DictRow] = []
         insert_records: List[Tuple] = []
 
+        # for each cross referenced table, prefetch the needed columns and store
+        # state data in XrefTableData helper object
+        xref_dict: Dict[str, XrefTableData] = table.get_xref_dict()
+        for xref_table_name, xref_data in xref_dict.items():
+            xref_column_names = ",".join(xref_data.column_list)
+            cur.execute(f"SELECT {xref_column_names} from {xref_table_name};")
+            xref_data.result_set = cur.fetchall()
+            xref_data.num_rows = len(xref_data.result_set)
+
         if n_updates > 0:
 
             n_updates = min(n_updates, row_count)
@@ -170,23 +180,46 @@ class DataGenerator:
                     f" WHERE {primary_key_column} = %s",
                     [r[update_column], timestamp, batch_id, r[primary_key_column]],
                 )
+
+                if bridge:
+                    partner_rows = xref_dict[bridge.partner_table].result_set
+                    bridge_rows = xref_dict[bridge.bridge_table].result_set
+                    if choice([True, False]):
+                        # True: get a row from bridge and delete it (where PK) and delete it.
+                        # Loop through bridge_table, delete the first one that exists
+                        for b_row in bridge_rows:
+                            if b_row[primary_key_column] == r[primary_key_column]:
+                                # delete where primary_key and partner_key
+                                break
+                    else:
+                        # False: select a supplier not already connected with pkey and add
+                        # Collect all the suppliers already in the bridge table.  Then take the first supplier found
+                        # that is not in the list
+
+                        new_partner_key = None
+                        partner_keys = [b_row[bridge.partner_key] for b_row in bridge_rows
+                                        if b_row[primary_key_column] == r[primary_key_column]]
+
+                        for p_row in partner_rows:
+                            if p_row[bridge.partner_key] not in partner_keys:
+                                new_partner_key = p_row[bridge.partner_key]
+                                break
+                        if new_partner_key:
+                            new_row = [(r[primary_key_column], new_partner_key,
+                                        timestamp, batch_id)]
+                            bridge_table = bridge.bridge_table
+                            bridge_table_name = bridge_table.get_name()
+                            column_names = f"{table.get_primary_key()}, {bridge.partner_key}, " \
+                                           f"{bridge_table.get_updated_at()}, batch_id"
+                            self._insert_rows(cur, bridge_table_name, column_names, new_row)
+
             print(f"DataGenerator: {len(update_records)} records updated for {table_name}")
 
             conn.commit()
 
         if n_inserts > 0:
 
-            # for each cross referenced table, prefetch the needed columns and store
-            # state data in XrefTableData helper object
-            xref_dict: Dict[str, XrefTableData] = table.get_xref_dict()
-            for xref_table_name, xref_data in xref_dict.items():
-                xref_column_names = ",".join(xref_data.column_list)
-                cur.execute(f"SELECT {xref_column_names} from {xref_table_name};")
-                xref_data.result_set = cur.fetchall()
-                xref_data.num_rows = len(xref_data.result_set)
-
             if not link_parent:
-
                 for pk in range(next_primary_key, next_primary_key + n_inserts):
                     insert_records.append(
                         _create_new_row(
@@ -197,7 +230,6 @@ class DataGenerator:
                             timestamp=timestamp,
                         )
                     )
-
                 insert_count = self._insert_rows(cur, table_name, column_names, insert_records)
 
             # if there is a parent_link, read the keys from the parent table that were inserted in
@@ -236,18 +268,18 @@ class DataGenerator:
             if bridge:
                 partner_rows = xref_dict[bridge.partner_table].result_set
                 if len(partner_rows) >= bridge.inserts:
-                    bridge_inserts = []
+                    new_row = []
                     for i in insert_records:
                         r = random.sample(range(len(partner_rows)), k=bridge.inserts)
                         for n in r:
-                            bridge_inserts.append((i[0], partner_rows[n][bridge.partner_key],
-                                                   timestamp, batch_id))
+                            new_row.append((i[0], partner_rows[n][bridge.partner_key],
+                                            timestamp, batch_id))
 
                     bridge_table = bridge.bridge_table
                     bridge_table_name = bridge_table.get_name()
                     column_names = f"{table.get_primary_key()}, {bridge.partner_key}, " \
                                    f"{bridge_table.get_updated_at()}, batch_id"
-                    bridge_count = self._insert_rows(cur, bridge_table_name, column_names, bridge_inserts)
+                    bridge_count = self._insert_rows(cur, bridge_table_name, column_names, new_row)
                     print(f"DataGenerator: {bridge_count} records inserted for {bridge_table_name}")
 
             """ Clear references in XrefTableData helper objects """

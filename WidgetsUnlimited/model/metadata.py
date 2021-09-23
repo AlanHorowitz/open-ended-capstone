@@ -196,6 +196,8 @@ class Table:
         bridge = self.get_bridge()
         if bridge:
             self._xref_dict_add(bridge.partner_table, bridge.partner_key)
+            self._xref_dict_add(bridge.bridge_table.get_name(), self.get_primary_key())
+            self._xref_dict_add(bridge.bridge_table.get_name(), bridge.partner_key)
 
     #
     #  Database table creation methods
