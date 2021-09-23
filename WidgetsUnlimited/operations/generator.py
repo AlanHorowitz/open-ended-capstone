@@ -140,8 +140,8 @@ class DataGenerator:
         row_count = result[0]
         next_primary_key = 1 if result[1] is None else result[1] + 1
 
-        update_records: List[DictRow] = []
-        insert_records: List[Tuple] = []
+        update_rows: List[DictRow] = []
+        insert_rows: List[Tuple] = []
 
         # for each cross referenced table, prefetch the needed columns and store
         # state data in XrefTableData helper object
@@ -163,18 +163,18 @@ class DataGenerator:
                 f" WHERE {primary_key_column} IN ({update_keys});"
             )
 
-            update_records = cur.fetchall()
+            update_rows = cur.fetchall()
 
-            for r in update_records:
+            for u_row in update_rows:
                 update_column = table.get_update_column().get_name()
-                r[update_column] = r[update_column] + "_UPD"
+                u_row[update_column] = u_row[update_column] + "_UPD"
                 cur.execute(
                     f"UPDATE {table_name}"
                     f" SET {update_column} = %s,"
                     f" {updated_at_column} = %s,"
                     f" batch_id = %s"
                     f" WHERE {primary_key_column} = %s",
-                    [r[update_column], timestamp, batch_id, r[primary_key_column]],
+                    [u_row[update_column], timestamp, batch_id, u_row[primary_key_column]],
                 )
 
                 if bridge:
@@ -185,7 +185,7 @@ class DataGenerator:
                         # True: get a row from bridge and delete it (where PK) and delete it.
                         # Loop through bridge_table, delete the first one that exists
                         for b_row in bridge_rows:
-                            if b_row[primary_key_column] == r[primary_key_column]:
+                            if b_row[primary_key_column] == u_row[primary_key_column]:
                                 # delete where primary_key and partner_key
                                 break
                     else:
@@ -195,18 +195,18 @@ class DataGenerator:
 
                         new_partner_key = None
                         partner_keys = [b_row[bridge.partner_key] for b_row in bridge_rows
-                                        if b_row[primary_key_column] == r[primary_key_column]]
+                                        if b_row[primary_key_column] == u_row[primary_key_column]]
 
                         for p_row in partner_rows:
                             if p_row[bridge.partner_key] not in partner_keys:
                                 new_partner_key = p_row[bridge.partner_key]
                                 break
                         if new_partner_key:
-                            new_row = [(r[primary_key_column], new_partner_key,
+                            new_row = [(u_row[primary_key_column], new_partner_key,
                                         timestamp, batch_id)]
                             _insert_rows(cur, bridge_table_name, bridge_column_names, new_row)
 
-            print(f"DataGenerator: {len(update_records)} records updated for {table_name}")
+            print(f"DataGenerator: {len(update_rows)} records updated for {table_name}")
 
             conn.commit()
 
@@ -214,7 +214,7 @@ class DataGenerator:
 
             if not link_parent:
                 for pk in range(next_primary_key, next_primary_key + n_inserts):
-                    insert_records.append(
+                    insert_rows.append(
                         _create_new_row(
                             table=table,
                             primary_key=pk,
@@ -223,7 +223,7 @@ class DataGenerator:
                             timestamp=timestamp,
                         )
                     )
-                insert_count = _insert_rows(cur, table_name, column_names, insert_records)
+                insert_count = _insert_rows(cur, table_name, column_names, insert_rows)
 
             # if there is a parent_link, read the keys from the parent table that were inserted in
             # the current batch. Insert n_insert records per parent key in one operation.
@@ -234,47 +234,47 @@ class DataGenerator:
                         f" FROM   {table.get_parent_table()}"
                         f" WHERE batch_id = {batch_id};"
                     )
-                    linked_rs = cur.fetchall()
-                    if len(linked_rs) == 0:
+                    parent_rows = cur.fetchall()
+                    if len(parent_rows) == 0:
                         raise Exception(
                             "Invalid request.  No parent records discovered in batch"
                         )
                 else:
                     raise Exception("Invalid request.  Table has no parent")
 
-                for row in linked_rs:
+                for p_row in parent_rows:
                     for _ in range(n_inserts):
-                        insert_records.append(
+                        insert_rows.append(
                             _create_new_row(
                                 table=table,
                                 primary_key=next_primary_key,
-                                parent_key=row[0],
+                                parent_key=p_row[0],
                                 batch_id=batch_id,
                                 timestamp=timestamp,
                             )
                         )
                         next_primary_key += 1
 
-                insert_count = _insert_rows(cur, table_name, column_names, insert_records)
+                insert_count = _insert_rows(cur, table_name, column_names, insert_rows)
 
             """ Add bridge table entries """
             if bridge:
                 partner_rows = xref_dict[bridge.partner_table].result_set
                 if len(partner_rows) >= bridge.inserts:
-                    insert_rows = []
-                    for i in insert_records:
-                        r = random.sample(range(len(partner_rows)), k=bridge.inserts)
-                        for n in r:
+                    bridge_insert_rows = []
+                    for i in bridge_insert_rows:
+                        u_row = random.sample(range(len(partner_rows)), k=bridge.inserts)
+                        for n in u_row:
                             insert_rows.append((i[0], partner_rows[n][bridge.partner_key],
                                                 timestamp, batch_id))
 
-                    bridge_count = _insert_rows(cur, bridge_table_name, bridge_column_names, insert_rows)
+                    bridge_count = _insert_rows(cur, bridge_table_name, bridge_column_names, bridge_insert_rows)
                     print(f"DataGenerator: {bridge_count} records inserted for {bridge_table_name}")
 
             print(f"DataGenerator: {insert_count} records inserted for {table_name}")
             conn.commit()
 
-        return insert_records, update_records
+        return insert_rows, update_rows
 
 
 def _create_new_row(
