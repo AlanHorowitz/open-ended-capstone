@@ -44,14 +44,17 @@ def customer_table(data_generator):
 
 @pytest.fixture
 def supplier_table(data_generator):
-    create_and_return_table(data_generator.cur, ProductSupplierTable())
     yield create_and_return_table(data_generator.cur, SupplierTable())
 
 
-def make_rows(
-    cursor, table: Table, n_rows: int = 10, start_key: int = 1, batch_id: int = 0
-):
+@pytest.fixture
+def product_supplier_table(data_generator):
+    yield create_and_return_table(data_generator.cur, ProductSupplierTable())
 
+
+def make_rows(
+        cursor, table: Table, n_rows: int = 10, start_key: int = 1, batch_id: int = 0
+):
     insert_rows = []
     key = start_key
     table_name = table.get_name()
@@ -76,7 +79,6 @@ def make_rows(
 
 
 def test_generate_insert(data_generator, customer_table):
-
     data_generator.generate(
         GeneratorRequest(customer_table, n_inserts=10, n_updates=0), 1
     )
@@ -86,7 +88,6 @@ def test_generate_insert(data_generator, customer_table):
 
 
 def test_generate_update(data_generator, customer_table):
-
     cursor = data_generator.cur
     make_rows(cursor, customer_table, n_rows=10, start_key=1)
     data_generator.generate(
@@ -102,7 +103,6 @@ def test_generate_update(data_generator, customer_table):
 
 
 def test_generate_insert_and_update(data_generator, customer_table):
-
     cursor = data_generator.cur
     make_rows(cursor, customer_table, n_rows=10, start_key=1)
     data_generator.generate(
@@ -118,7 +118,7 @@ def test_generate_insert_and_update(data_generator, customer_table):
 
 
 def test_generate_link_parent(
-    data_generator, order_table, order_line_item_table, product_table
+        data_generator, order_table, order_line_item_table, product_table
 ):
     cursor = data_generator.cur
 
@@ -185,7 +185,7 @@ def test_set_default(data_generator, customer_table):
 
 
 def test_generate_multiple_xref(
-    data_generator, order_table, order_line_item_table, product_table
+        data_generator, order_table, order_line_item_table, product_table
 ):
     cursor = data_generator.cur
     make_rows(cursor, product_table, n_rows=5, start_key=1, batch_id=1)
@@ -209,10 +209,42 @@ def test_generate_multiple_xref(
     assert rs[0] == 30
 
 
-def test_generate_bridge(
-        data_generator, product_table, supplier_table
+def test_generate_bridge_insert(
+        data_generator, product_table, supplier_table, product_supplier_table
 ):
+    data_generator.generate(
+        GeneratorRequest(supplier_table, n_inserts=10, n_updates=0), 1
+    )
+    data_generator.generate(
+        GeneratorRequest(product_table, n_inserts=200, n_updates=0), 1
+    )
 
+    cursor = data_generator.cur
+    cursor.execute(f"select * from {product_table.get_name()}")
+    assert len(cursor.fetchall()) == 200
+    cursor.execute(f"select * from {supplier_table.get_name()}")
+    assert len(cursor.fetchall()) == 10
+    cursor.execute(f"select * from {product_supplier_table.get_name()}")
+    assert len(cursor.fetchall()) == 400
+    cursor.execute(f"select COUNT (DISTINCT product_id) from {product_supplier_table.get_name()}")
+    assert cursor.fetchone()[0] == 200
+
+    data_generator.generate(
+        GeneratorRequest(supplier_table, n_inserts=5, n_updates=0), 1
+    )
+    cursor.execute(f"select * from {product_supplier_table.get_name()}")
+    assert len(cursor.fetchall()) == 415
+    cursor.execute(f"select COUNT (DISTINCT product_id) from {product_supplier_table.get_name()}")
+    assert cursor.fetchone()[0] == 200
+    cursor.execute(f"select COUNT(supplier_id), product_id from {product_supplier_table.get_name()}"
+                   f" GROUP BY product_id HAVING COUNT(supplier_id) > 2;"
+                   )
+    assert 10 < len(cursor.fetchall()) <= 15  # odds for failing due to random number selection are negligible
+
+
+def test_generate_bridge_update(
+        data_generator, product_table, supplier_table, product_supplier_table
+):
     data_generator.generate(
         GeneratorRequest(supplier_table, n_inserts=10, n_updates=0), 1
     )
@@ -221,7 +253,26 @@ def test_generate_bridge(
     )
 
     cursor = data_generator.cur
-    cursor.execute(f"select * from {product_table.get_name()}")
-    assert len(cursor.fetchall()) == 100
-    cursor.execute(f"select * from {supplier_table.get_name()}")
-    assert len(cursor.fetchall()) == 10
+    cursor.execute(f"select * from {product_supplier_table.get_name()}")
+    assert len(cursor.fetchall()) == 200
+
+    data_generator.generate(
+        GeneratorRequest(product_table, n_inserts=0, n_updates=1), 1
+    )
+
+    cursor.execute(f"select * from {product_supplier_table.get_name()}")
+    assert len(cursor.fetchall()) in (199, 201)  # 2 +/- 1
+
+    data_generator.generate(
+        GeneratorRequest(supplier_table, n_inserts=5, n_updates=0), 1
+    )
+
+    cursor.execute(f"select * from {product_supplier_table.get_name()}")
+    assert len(cursor.fetchall()) in (214, 216)
+
+    data_generator.generate(
+        GeneratorRequest(supplier_table, n_inserts=0, n_updates=2), 1
+    )
+
+    cursor.execute(f"select * from {product_supplier_table.get_name()}")
+    assert 210 <= len(cursor.fetchall()) <= 220
