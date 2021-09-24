@@ -315,3 +315,6 @@ class Table:
 
     def get_bridge(self) -> BridgeTableDescriptor:
         return self._bridge
+
+    def has_bridge_table(self) -> bool:
+        return self._bridge is not None

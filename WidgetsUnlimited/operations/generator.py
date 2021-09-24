@@ -53,6 +53,10 @@ class DataGenerator:
 
         - Generate a table record with a random reference to an existing foreign key
         - Generate a table reference or references to a specific foreign key (parent/child create_only)
+
+    It also supports many to many relationships between tables via a BridgeTableDescriptor. On insert operations,
+    a specified number of rows with the primary keys from the linked tabled are added to a bridge table. On update a
+    row is randomly inserted or deleted from the bridge table.
     """
 
     def __init__(self) -> None:
@@ -74,7 +78,7 @@ class DataGenerator:
         return self._connection
 
     def add_tables(self, tables: List[Table]) -> None:
-        """Create new postgresql tables"""
+        """Create postgresql tables to back the generator"""
         for table in tables:
             self.cur.execute(f"DROP TABLE IF EXISTS {table.get_name()};")
             self.cur.execute(table.get_create_sql_postgres())
@@ -107,34 +111,51 @@ class DataGenerator:
         For insert, n_insert dummy records are written to the table. The primary key is a sequence of
         incrementing integers, starting at the prior maximum value + 1.
 
-        Foreign key references are resolved by random selection from previously generated keys in the
-        referenced tables, unless link_parent=True, in which case, they are correlated with parent keys
+        Foreign key references and bridge table keys are resolved by random selection from previously generated keys
+        from prior batches. For parent key references (link_parent=True) the child keys are correlated with parent keys
         that are included in the current batch.
         """
 
         conn = self._connection
         cur: cursor = conn.cursor(cursor_factory=DictCursor)
         table = generator_request.table
+        table_name = table.get_name()
         n_inserts = generator_request.n_inserts
         n_updates = generator_request.n_updates
         link_parent = generator_request.link_parent
-        timestamp = datetime.now()
-
         if link_parent and not table.has_parent():
-            raise Exception(f"Invalid Request. No parent for table {table.get_name()}")
+            raise Exception(f"Invalid Request. No parent for table {table_name}")
 
-        table_name = table.get_name()
+        timestamp = datetime.now()
         primary_key_column = table.get_primary_key()
         updated_at_column = table.get_updated_at()
-
         column_names = ",".join(table.get_column_names())
-        bridge = table.get_bridge()
 
-        bridge_table = bridge.bridge_table if bridge else None
-        bridge_table_name = bridge_table.get_name() if bridge else None
-        bridge_column_names = f"{table.get_primary_key()}, {bridge.partner_key}, " \
-                              f"{bridge_table.get_updated_at()}, batch_id" if bridge else None
+        # Load any required cross referenced data
+        xref_dict: Dict[str, XrefTableData] = table.get_xref_dict()
+        for xref_table_name, xref_data in xref_dict.items():
+            xref_column_names = ",".join(xref_data.column_list)
+            cur.execute(f"SELECT {xref_column_names} from {xref_table_name};")
+            xref_data.result_set = cur.fetchall()
+            xref_data.num_rows = len(xref_data.result_set)
 
+        # Set local variables for bridge table operations
+        if table.has_bridge_table():
+            bridge = table.get_bridge()
+            bridge_table = bridge.bridge_table
+
+            bridge_table_name = bridge_table.get_name()
+            bridge_inserts = bridge.inserts
+            bridge_column_names = f"{table.get_primary_key()}, {bridge.partner_key}, " \
+                                  f"{bridge_table.get_updated_at()}, batch_id"
+            bridge_partner_key = bridge.partner_key
+            bridge_partner_table = bridge.partner_table
+
+        else:
+            bridge_table_name, bridge_inserts, bridge_column_names = None, None, None
+            bridge_partner_key, bridge_partner_table = None, None
+
+        # Initialize primary key from last used
         cur.execute(f"SELECT COUNT(*), MAX({primary_key_column}) from {table_name};")
         result: DictRow = cur.fetchone()
         row_count = result[0]
@@ -142,15 +163,6 @@ class DataGenerator:
 
         update_rows: List[DictRow] = []
         insert_rows: List[Tuple] = []
-
-        # for each cross referenced table, prefetch the needed columns and store
-        # state data in XrefTableData helper object
-        xref_dict: Dict[str, XrefTableData] = table.get_xref_dict()
-        for xref_table_name, xref_data in xref_dict.items():
-            xref_column_names = ",".join(xref_data.column_list)
-            cur.execute(f"SELECT {xref_column_names} from {xref_table_name};")
-            xref_data.result_set = cur.fetchall()
-            xref_data.num_rows = len(xref_data.result_set)
 
         if n_updates > 0:
 
@@ -177,33 +189,33 @@ class DataGenerator:
                     [u_row[update_column], timestamp, batch_id, u_row[primary_key_column]],
                 )
 
-                if bridge:
+                # For update, randomly add or remove a bridge table row
+                if table.has_bridge_table():
 
-                    partner_rows = xref_dict[bridge.partner_table].result_set
+                    partner_rows = xref_dict[bridge_partner_table].result_set
                     bridge_rows = xref_dict[bridge_table_name].result_set
 
                     if choice([True, False]):
-                        # True: get a row from bridge and delete it (where PK) and delete it.
-                        # Loop through bridge_table, delete the first one that exists
+
+                        # Delete the first bridge table row matching update key
                         for b_row in bridge_rows:
                             if b_row[primary_key_column] == u_row[primary_key_column]:
                                 cur.execute(
                                     f"DELETE from {bridge_table_name}"
                                     f" WHERE {primary_key_column} = {u_row[primary_key_column]}\n"
-                                    f" AND {bridge.partner_key} = {b_row[bridge.partner_key]};"
+                                    f" AND {bridge_partner_key} = {b_row[bridge_partner_key]};"
                                 )
                                 break
                     else:
-                        # False: select a supplier not already connected with pkey and add
-                        # Collect all the suppliers already in the bridge table.  Then take the first supplier found
-                        # that is not in the list
 
-                        partner_keys = [b_row[bridge.partner_key] for b_row in bridge_rows
+                        # Insert a bridge table row for the first partner key found not already associated with
+                        # the update key.
+                        partner_keys = [b_row[bridge_partner_key] for b_row in bridge_rows
                                         if b_row[primary_key_column] == u_row[primary_key_column]]
 
                         for p_row in partner_rows:
-                            if p_row[bridge.partner_key] not in partner_keys:
-                                new_row = [(u_row[primary_key_column], p_row[bridge.partner_key],
+                            if p_row[bridge_partner_key] not in partner_keys:
+                                new_row = [(u_row[primary_key_column], p_row[bridge_partner_key],
                                             timestamp, batch_id)]
                                 _insert_rows(cur, bridge_table_name, bridge_column_names, new_row)
                                 break
@@ -259,18 +271,21 @@ class DataGenerator:
 
                 insert_count = _insert_rows(cur, table_name, column_names, insert_rows)
 
-            """ Add bridge table entries """
-            if bridge:
-                partner_rows = xref_dict[bridge.partner_table].result_set
-                if len(partner_rows) >= bridge.inserts:
+            # Iterate over insert_rows to add bridge table entries
+            if table.has_bridge_table():
+
+                partner_rows = xref_dict[bridge_partner_table].result_set
+                if len(partner_rows) >= bridge_inserts:
+
                     bridge_insert_rows = []
                     for i_row in insert_rows:
-                        u_row = random.sample(range(len(partner_rows)), k=bridge.inserts)
-                        for n in u_row:
-                            bridge_insert_rows.append((i_row[0], partner_rows[n][bridge.partner_key],
+                        u_row = random.sample(range(len(partner_rows)), k=bridge_inserts)
+                        for idx in u_row:
+                            bridge_insert_rows.append((i_row[0], partner_rows[idx][bridge_partner_key],
                                                        timestamp, batch_id))
 
                     bridge_count = _insert_rows(cur, bridge_table_name, bridge_column_names, bridge_insert_rows)
+
                     print(f"DataGenerator: {bridge_count} records inserted for {bridge_table_name}")
 
             print(f"DataGenerator: {insert_count} records inserted for {table_name}")
