@@ -7,7 +7,7 @@ from mysql.connector import connect
 from .context import CustomerDimensionProcessor
 from .context import ProductDimensionProcessor
 from .context import DataGenerator, GeneratorRequest
-from .context import extract_write_stage
+from .context import extract_write_stage, clean_stage_dir
 
 from .context import ProductTable
 from .context import SupplierTable
@@ -45,7 +45,7 @@ def test_customer(ms_connection):
     data_generator.generate(
         GeneratorRequest(customer_address_table, n_inserts=1, link_parent=True), 1
     )
-
+    clean_stage_dir(1)
     extract_write_stage(
         data_generator.get_connection(),
         batch_id=1,
@@ -63,6 +63,7 @@ def test_customer(ms_connection):
         GeneratorRequest(customer_table, n_inserts=0, n_updates=2), batch_id=2
     )
 
+    clean_stage_dir(2)
     extract_write_stage(
         data_generator.get_connection(),
         batch_id=2,

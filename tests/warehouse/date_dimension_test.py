@@ -34,6 +34,9 @@ def test_build_dimension():
 
     date_dim = p._build_dimension(DATE_DIMENSION_START, DATE_DIMENSION_END)
 
+    assert date_dim['date'].min == DATE_DIMENSION_START
+    assert date_dim['date'].max == DATE_DIMENSION_END
+
 
 def test_build_dimension_persist(ms_connection):
 

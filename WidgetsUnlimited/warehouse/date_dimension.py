@@ -30,6 +30,9 @@ class DateDimensionProcessor:
         pass
 
     def _build_dimension(self, start_date: date, end_date: date):
+       date_dim = pd.DataFrame(
+            [], columns=DateDimTable().get_column_names(), index=union_index
+        )
         return pd.DataFrame([])
 
     def _create_dimension(self):
