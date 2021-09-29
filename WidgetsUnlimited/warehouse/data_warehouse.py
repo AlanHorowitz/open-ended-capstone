@@ -3,11 +3,16 @@ from model.customer import CustomerTable
 from model.customer_address import CustomerAddressTable
 from .customer_dimension import CustomerDimensionProcessor
 from .product_dimension import ProductDimensionProcessor
+from .date_dimension import DateDimensionProcessor
 from model.product import ProductTable
 from model.product_supplier import ProductSupplierTable
 import os
 from .warehouse_util import clean_stage_dir
 from mysql.connector import connect
+from datetime import date
+
+DATE_DIMENSION_START = date(2020, 1, 1)
+DATE_DIMENSION_END = date(2024, 12, 31)
 
 
 class DataWarehouse:
@@ -32,6 +37,8 @@ class DataWarehouse:
 
         self._customer_dimension = CustomerDimensionProcessor(self._ms_connection)
         self._product_dimension = ProductDimensionProcessor(self._ms_connection)
+        self._date_dimension = DateDimensionProcessor(self._ms_connection)
+        self._date_dimension.build_dimension(DATE_DIMENSION_START, DATE_DIMENSION_END)
 
     @staticmethod
     def direct_extract(connection, batch_id):
@@ -67,4 +74,3 @@ class DataWarehouse:
         """
         self._customer_dimension.process_update(batch_id=batch_id)
         self._product_dimension.process_update(batch_id=batch_id)
-
