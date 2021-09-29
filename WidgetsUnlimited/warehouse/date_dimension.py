@@ -30,7 +30,7 @@ class DateDimensionProcessor:
         pass
 
     def _build_dimension(self, start_date: date, end_date: date):
-        return self._dimension_table
+        return pd.DataFrame([])
 
     def _create_dimension(self):
         """Create an empty product_dimension on warehouse initialization."""
