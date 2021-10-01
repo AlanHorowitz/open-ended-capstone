@@ -1,9 +1,8 @@
-from typing import Tuple, Dict
 import pandas as pd
 import numpy as np
 from datetime import date
 
-from pandas.core.frame import DataFrame, Series, Index
+from pandas.core.frame import DataFrame
 from pandas.tseries.holiday import USFederalHolidayCalendar as HolidayCalendar
 from model.date_dim import DateDimTable
 
@@ -19,7 +18,6 @@ class DateDimensionProcessor:
 
         self._connection = connection
         self._dimension_table = DateDimTable()
-        self._next_surrogate_key = 1
         if connection:
             self._create_dimension()
 

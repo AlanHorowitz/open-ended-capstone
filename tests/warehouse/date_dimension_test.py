@@ -1,14 +1,10 @@
 import os
 from datetime import date, datetime
-import pandas as pd
 import numpy as np
 import pytest
-
-# from WidgetsUnlimited.warehouse.warehouse_util import get_new_keys
 from mysql.connector import connect
 
 from .context import DateDimensionProcessor
-from .context import DateDimTable
 
 
 @pytest.fixture
@@ -33,6 +29,7 @@ def test_build_dimension():
 
     date_dim = p._build_dimension(DATE_DIMENSION_START, DATE_DIMENSION_END)
 
+    assert date_dim.shape[0] == 1827
     assert date_dim['date'].min() == DATE_DIMENSION_START
     assert date_dim['date'].max() == DATE_DIMENSION_END
 
@@ -63,4 +60,15 @@ def test_build_dimension():
 
 
 def test_build_dimension_persist(ms_connection):
-    c = DateDimensionProcessor(ms_connection)
+
+    p = DateDimensionProcessor(ms_connection)
+    p.build_dimension(DATE_DIMENSION_START, DATE_DIMENSION_END)
+
+    cur = ms_connection.cursor()
+
+    cur.execute("SELECT COUNT(*), MIN(date), MAX(date) from date_dim;")
+    row = cur.fetchone()
+
+    assert row[0] == 1827
+    assert row[1] == DATE_DIMENSION_START
+    assert row[2] == DATE_DIMENSION_END

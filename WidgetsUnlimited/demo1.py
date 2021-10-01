@@ -30,7 +30,7 @@ from operations.inventory import InventorySystem
 from operations.generator import DataGenerator, GeneratorRequest
 from operations.simulator import OperationsSimulator
 
-from warehouse.data_warehouse import DataWarehouse
+from warehouse.warehouse import DataWarehouse
 
 # table metadata
 PRODUCT = ProductTable()
