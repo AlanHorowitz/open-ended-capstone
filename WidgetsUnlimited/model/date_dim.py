@@ -9,8 +9,8 @@ class DateDimTable(Table):
         super().__init__(
             DateDimTable.NAME,
             # dimension control header columns
-            Column("surrogate_key", "INTEGER", primary_key=True),  # surrogate key
-            Column("date", "DATE"),
+            # Column("surrogate_key", "INTEGER", primary_key=True),  # surrogate key
+            Column("date", "DATE", primary_key=True),
 
             Column("date_text_description", "VARCHAR"),
             Column("day_name", "VARCHAR"),

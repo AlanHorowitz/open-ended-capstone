@@ -1,11 +1,11 @@
 from typing import Tuple, Dict
 import pandas as pd
+import numpy as np
 from datetime import date
 
 from pandas.core.frame import DataFrame, Series, Index
+from pandas.tseries.holiday import USFederalHolidayCalendar as HolidayCalendar
 from model.date_dim import DateDimTable
-
-
 
 
 class DateDimensionProcessor:
@@ -30,10 +30,24 @@ class DateDimensionProcessor:
         pass
 
     def _build_dimension(self, start_date: date, end_date: date):
-       date_dim = pd.DataFrame(
-            [], columns=DateDimTable().get_column_names(), index=union_index
-        )
-        return pd.DataFrame([])
+        date_dim = pd.DataFrame(
+             [], columns=self._dimension_table.get_column_names()
+         )
+        dr = pd.date_range(start=start_date, end=end_date)
+
+        holidays = HolidayCalendar().holidays(start=dr.min(), end=dr.max())
+        date_dim['date'] = dr
+
+        date_dim['day_name'] = date_dim['date'].dt.day_name()
+        date_dim['month_name'] = date_dim['date'].dt.month_name()
+        date_dim['year_name'] = date_dim['date'].dt.year
+        date_dim['day_number_in_month'] = date_dim['date'].dt.day
+        date_dim['day_number_in_year'] = date_dim['date'].dt.day_of_year
+        date_dim['date_text_description'] = date_dim['date'].dt.strftime('%B %d, %Y')
+        date_dim['weekday_indicator'] = np.where(date_dim['date'].dt.dayofweek < 5, "WEEKDAY", "WEEKEND")
+        date_dim['holiday_indicator'] = np.where(date_dim['date'].isin(holidays), "HOLIDAY", "NOT HOLIDAY")
+
+        return date_dim.set_index('date', drop=False)
 
     def _create_dimension(self):
         """Create an empty product_dimension on warehouse initialization."""
