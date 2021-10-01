@@ -8,6 +8,9 @@ from model.product_dim import ProductDimTable
 from model.product import ProductTable
 from model.product_supplier import ProductSupplierTable
 
+from .dimension_processor import DimensionProcessor
+
+
 # transformation mappings
 
 product_dim_to_product_mapping = {
@@ -26,7 +29,7 @@ product_dim_to_product_mapping = {
 }
 
 
-class ProductDimensionProcessor:
+class ProductDimensionProcessor(DimensionProcessor):
     """
     Transform the customer_dimension table in the mySQL star schema.
 
@@ -54,6 +57,7 @@ class ProductDimensionProcessor:
         :param connection: mySQL connection created by the warehouse.  None is used for test.
         """
 
+        super().__init__()
         self._connection = connection
         self._dimension_table = ProductDimTable()
         self._next_surrogate_key = 1
@@ -107,13 +111,6 @@ class ProductDimensionProcessor:
 
         cur = self._connection.cursor()
         cur.execute(f"TRUNCATE TABLE  {self._dimension_table.get_name()};")
-
-    def _create_dimension(self):
-        """Create an empty product_dimension on warehouse initialization."""
-
-        cur = self._connection.cursor()
-        cur.execute(f"DROP TABLE IF EXISTS {self._dimension_table.get_name()};")
-        cur.execute(self._dimension_table.get_create_sql_mysql())
 
     def _read_dimension(self, key_name: str) -> DataFrame:
         """

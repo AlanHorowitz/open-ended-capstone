@@ -7,6 +7,8 @@ from .warehouse_util import read_stage
 from model.customer_dim import CustomerDimTable
 from model.customer import CustomerTable
 from model.customer_address import CustomerAddressTable
+from .dimension_processor import DimensionProcessor
+
 
 # transformation mappings
 customer_dim_to_customer_mapping = {
@@ -41,7 +43,7 @@ shipping_to_customer_dim_mapping = {
 }
 
 
-class CustomerDimensionProcessor:
+class CustomerDimensionProcessor(DimensionProcessor):
     """
     Transform the customer_dimension table in the mySQL star schema.
 
@@ -120,13 +122,6 @@ class CustomerDimensionProcessor:
         print(
             f"CustomerDimensionProcessor: {self._count_dimension()} total rows in customer_dim table"
         )
-
-    def _create_dimension(self):
-        """Create an empty customer_dimension on warehouse initialization."""
-
-        cur = self._connection.cursor()
-        cur.execute(f"DROP TABLE IF EXISTS {self._dimension_table.get_name()};")
-        cur.execute(self._dimension_table.get_create_sql_mysql())
 
     def _read_dimension(self, key_name: str, key_values: Index) -> DataFrame:
         """

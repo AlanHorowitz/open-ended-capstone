@@ -6,8 +6,10 @@ from pandas.core.frame import DataFrame
 from pandas.tseries.holiday import USFederalHolidayCalendar as HolidayCalendar
 from model.date_dim import DateDimTable
 
+from .dimension_processor import DimensionProcessor
 
-class DateDimensionProcessor:
+
+class DateDimensionProcessor(DimensionProcessor):
     """ Initialize a static date dimension """
 
     def __init__(self, connection=None):
@@ -16,6 +18,7 @@ class DateDimensionProcessor:
         :param connection: mySQL connection created by the warehouse.  None is used for test.
         """
 
+        super().__init__()
         self._connection = connection
         self._dimension_table = DateDimTable()
         if connection:
@@ -46,13 +49,6 @@ class DateDimensionProcessor:
         date_dim['holiday_indicator'] = np.where(date_dim['date'].isin(holidays), "HOLIDAY", "NOT HOLIDAY")
 
         return date_dim.set_index('date', drop=False)
-
-    def _create_dimension(self):
-        """Create an empty product_dimension on warehouse initialization."""
-
-        cur = self._connection.cursor()
-        cur.execute(f"DROP TABLE IF EXISTS {self._dimension_table.get_name()};")
-        cur.execute(self._dimension_table.get_create_sql_mysql())
 
     def _read_dimension(self, key_name: str) -> DataFrame:
         """
