@@ -62,7 +62,10 @@ class DataWarehouse:
         )
 
         extract_write_stage(
-            connection, batch_id, [ProductTable(), ProductSupplierTable()], cumulative=True
+            connection,
+            batch_id,
+            [ProductTable(), ProductSupplierTable()],
+            cumulative=True,
         )
 
     def transform_load(self, batch_id):

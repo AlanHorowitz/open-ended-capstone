@@ -14,18 +14,18 @@ from .dimension_processor import DimensionProcessor
 # transformation mappings
 
 product_dim_to_product_mapping = {
-    "product_key" : "product_id",  # natural key -- Add index
-    "name" : "product_name",
-    "description" : "product_description",
-    "category" : "product_category",
-    "brand" : "product_brand",
-    "unit_cost" : "product_unit_cost",
-    "dimension_length" : "product_dimension_length",
-    "dimension_width" : "product_dimension_width",
-    "dimension_height" : "product_dimension_height",
-    "introduced_date" : "product_introduced_date",
-    "discontinued" : "product_discontinued",
-    "no_longer_offered" : "product_no_longer_offered",
+    "product_key": "product_id",  # natural key -- Add index
+    "name": "product_name",
+    "description": "product_description",
+    "category": "product_category",
+    "brand": "product_brand",
+    "unit_cost": "product_unit_cost",
+    "dimension_length": "product_dimension_length",
+    "dimension_width": "product_dimension_width",
+    "dimension_height": "product_dimension_height",
+    "introduced_date": "product_introduced_date",
+    "discontinued": "product_discontinued",
+    "no_longer_offered": "product_no_longer_offered",
 }
 
 
@@ -98,7 +98,7 @@ class ProductDimensionProcessor(DimensionProcessor):
         )
 
     def _truncate_dimension(self):
-        """ Truncate dimension prior to rewrite """
+        """Truncate dimension prior to rewrite"""
 
         cur = self._connection.cursor()
         cur.execute(f"TRUNCATE TABLE  {self._dimension_table.get_name()};")
@@ -112,7 +112,9 @@ class ProductDimensionProcessor(DimensionProcessor):
         """
 
         table_name = self._dimension_table.get_name()
-        columns_list = ",".join([col for col in self._dimension_table.get_header_columns()])
+        columns_list = ",".join(
+            [col for col in self._dimension_table.get_header_columns()]
+        )
         query = f"SELECT {columns_list}, {key_name} FROM {table_name};"
         dimension_df = pd.read_sql_query(query, self._connection)
         dimension_df = dimension_df.set_index(key_name, drop=False)
@@ -128,7 +130,7 @@ class ProductDimensionProcessor(DimensionProcessor):
 
     @staticmethod
     def product_transform(
-            product_dim: DataFrame, product: DataFrame, product_supplier: DataFrame
+        product_dim: DataFrame, product: DataFrame, product_supplier: DataFrame
     ) -> DataFrame:
         """
         Common transformations that apply to both inserts and updates.
@@ -147,13 +149,15 @@ class ProductDimensionProcessor(DimensionProcessor):
         for k, v in product_dim_to_product_mapping.items():
             product_dim[k] = product[v]
 
-        product_dim['number_of_suppliers'] = product_supplier.index.value_counts(sort=False)
-        product_dim['percent_returns'] = 0
+        product_dim["number_of_suppliers"] = product_supplier.index.value_counts(
+            sort=False
+        )
+        product_dim["percent_returns"] = 0
 
         return product_dim
 
     def _build_new_dimension(
-            self, new_keys: Index, product: DataFrame, product_supplier: DataFrame
+        self, new_keys: Index, product: DataFrame, product_supplier: DataFrame
     ) -> DataFrame:
         """
         Create and initialize new records for customer_dimension table in star schema
@@ -199,11 +203,11 @@ class ProductDimensionProcessor(DimensionProcessor):
         return product_dim
 
     def _build_update_dimension(
-            self,
-            update_keys: Index,
-            prior_product_dim: DataFrame,
-            product: DataFrame,
-            product_supplier: DataFrame,
+        self,
+        update_keys: Index,
+        prior_product_dim: DataFrame,
+        product: DataFrame,
+        product_supplier: DataFrame,
     ) -> DataFrame:
 
         """

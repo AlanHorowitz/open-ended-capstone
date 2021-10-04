@@ -29,7 +29,6 @@ class ProductDimTable(Table):
             Column("no_longer_offered", "BOOLEAN"),
             Column("number_of_suppliers", "INTEGER"),
             Column("percent_returns", "FLOAT"),
-
             create_only=True,
             batch_id=False,
         )

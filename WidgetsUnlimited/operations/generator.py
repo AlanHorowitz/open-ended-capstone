@@ -23,12 +23,12 @@ class GeneratorRequest:
     """A structure of options passed to DataGenerator.generate"""
 
     def __init__(
-            self,
-            table: Table,  # Table to be generated
-            n_inserts: int = 0,  # number of inserts to generate
-            n_updates: int = 0,  # number of updates to generate
-            link_parent: bool = False,  # If true, use n_inserts to describe how many records to insert
-            # per parent key inserted in the same batch.
+        self,
+        table: Table,  # Table to be generated
+        n_inserts: int = 0,  # number of inserts to generate
+        n_updates: int = 0,  # number of updates to generate
+        link_parent: bool = False,  # If true, use n_inserts to describe how many records to insert
+        # per parent key inserted in the same batch.
     ) -> None:
         self.table = table
         self.n_inserts = n_inserts
@@ -85,7 +85,7 @@ class DataGenerator:
             self._connection.commit()
 
     def generate(
-            self, generator_request: GeneratorRequest, batch_id: int = 0
+        self, generator_request: GeneratorRequest, batch_id: int = 0
     ) -> Tuple[List[Tuple], List[DictRow]]:
         """
         Synthesize insert and update records for a table. apply these changes to the generator postgres and return
@@ -146,8 +146,10 @@ class DataGenerator:
 
             bridge_table_name = bridge_table.get_name()
             bridge_inserts = bridge.inserts
-            bridge_column_names = f"{table.get_primary_key()}, {bridge.partner_key}, " \
-                                  f"{bridge_table.get_updated_at()}, batch_id"
+            bridge_column_names = (
+                f"{table.get_primary_key()}, {bridge.partner_key}, "
+                f"{bridge_table.get_updated_at()}, batch_id"
+            )
             bridge_partner_key = bridge.partner_key
             bridge_partner_table = bridge.partner_table
 
@@ -186,7 +188,12 @@ class DataGenerator:
                     f" {updated_at_column} = %s,"
                     f" batch_id = %s"
                     f" WHERE {primary_key_column} = %s",
-                    [u_row[update_column], timestamp, batch_id, u_row[primary_key_column]],
+                    [
+                        u_row[update_column],
+                        timestamp,
+                        batch_id,
+                        u_row[primary_key_column],
+                    ],
                 )
 
                 # For update, randomly add or remove a bridge table row
@@ -210,14 +217,25 @@ class DataGenerator:
 
                         # Insert a bridge table row for the first partner key found not already associated with
                         # the update key.
-                        partner_keys = [b_row[bridge_partner_key] for b_row in bridge_rows
-                                        if b_row[primary_key_column] == u_row[primary_key_column]]
+                        partner_keys = [
+                            b_row[bridge_partner_key]
+                            for b_row in bridge_rows
+                            if b_row[primary_key_column] == u_row[primary_key_column]
+                        ]
 
                         for p_row in partner_rows:
                             if p_row[bridge_partner_key] not in partner_keys:
-                                new_row = [(u_row[primary_key_column], p_row[bridge_partner_key],
-                                            timestamp, batch_id)]
-                                _insert_rows(cur, bridge_table_name, bridge_column_names, new_row)
+                                new_row = [
+                                    (
+                                        u_row[primary_key_column],
+                                        p_row[bridge_partner_key],
+                                        timestamp,
+                                        batch_id,
+                                    )
+                                ]
+                                _insert_rows(
+                                    cur, bridge_table_name, bridge_column_names, new_row
+                                )
                                 break
 
             print(f"DataGenerator: {len(update_rows)} records updated for {table_name}")
@@ -279,14 +297,26 @@ class DataGenerator:
 
                     bridge_insert_rows = []
                     for i_row in insert_rows:
-                        u_row = random.sample(range(len(partner_rows)), k=bridge_inserts)
+                        u_row = random.sample(
+                            range(len(partner_rows)), k=bridge_inserts
+                        )
                         for idx in u_row:
-                            bridge_insert_rows.append((i_row[0], partner_rows[idx][bridge_partner_key],
-                                                       timestamp, batch_id))
+                            bridge_insert_rows.append(
+                                (
+                                    i_row[0],
+                                    partner_rows[idx][bridge_partner_key],
+                                    timestamp,
+                                    batch_id,
+                                )
+                            )
 
-                    bridge_count = _insert_rows(cur, bridge_table_name, bridge_column_names, bridge_insert_rows)
+                    bridge_count = _insert_rows(
+                        cur, bridge_table_name, bridge_column_names, bridge_insert_rows
+                    )
 
-                    print(f"DataGenerator: {bridge_count} records inserted for {bridge_table_name}")
+                    print(
+                        f"DataGenerator: {bridge_count} records inserted for {bridge_table_name}"
+                    )
 
             print(f"DataGenerator: {insert_count} records inserted for {table_name}")
             conn.commit()
@@ -295,11 +325,11 @@ class DataGenerator:
 
 
 def _create_new_row(
-        table: Table,
-        primary_key: int,
-        parent_key: int = None,
-        batch_id: int = None,
-        timestamp: datetime = datetime.now(),
+    table: Table,
+    primary_key: int,
+    parent_key: int = None,
+    batch_id: int = None,
+    timestamp: datetime = datetime.now(),
 ) -> Tuple:
     """
     Create a new row for a table.  Substitute cross references and set default values using the column metadata.
@@ -316,7 +346,11 @@ def _create_new_row(
 
     xref_dict: Dict[str, XrefTableData] = table.get_xref_dict()
     for table_data in xref_dict.values():
-        table_data.next_random_row = -1 if table_data.num_rows == 0 else random.randint(0, table_data.num_rows - 1)
+        table_data.next_random_row = (
+            -1
+            if table_data.num_rows == 0
+            else random.randint(0, table_data.num_rows - 1)
+        )
 
     for col in table.get_columns():
         if col.has_default():
@@ -333,7 +367,9 @@ def _create_new_row(
             if xref_row == -1:
                 value = -1
             else:
-                value = xref_dict[xref_table].result_set[xref_row][col.get_xref_column()]
+                value = xref_dict[xref_table].result_set[xref_row][
+                    col.get_xref_column()
+                ]
             row.append(value)
         elif col.is_parent_key() and parent_key is not None:
             row.append(parent_key)
@@ -346,7 +382,6 @@ def _create_new_row(
 def _insert_rows(cur, table_name, column_names, rows) -> int:
     values_substitutions = ",".join(["%s"] * len(rows))
     cur.execute(
-        f"INSERT INTO {table_name} ({column_names}) values {values_substitutions}",
-        rows
+        f"INSERT INTO {table_name} ({column_names}) values {values_substitutions}", rows
     )
     return cur.rowcount

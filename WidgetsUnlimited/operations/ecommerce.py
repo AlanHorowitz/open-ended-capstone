@@ -76,5 +76,3 @@ class eCommerceSystem(BaseSystem):
             insert_records = [tuple(dr.values()) for dr in records]  # DictRow to tuple
             n = self._insert(table, insert_records)
             print(f"eCommerceSystem: Processed {n} updates for {table_name}")
-
-

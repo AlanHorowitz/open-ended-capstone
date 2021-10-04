@@ -46,7 +46,9 @@ def read_stage(batch_id: int, tables) -> List[pd.DataFrame]:
     return stages
 
 
-def extract_write_stage(connection, batch_id: int, tables: List[Table], cumulative: bool = False) -> None:
+def extract_write_stage(
+    connection, batch_id: int, tables: List[Table], cumulative: bool = False
+) -> None:
     """
     Read from data generator and write to stage parquet file for each table in batch
     :param cumulative: If true, do not filter on batch_id

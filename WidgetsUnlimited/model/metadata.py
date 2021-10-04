@@ -26,20 +26,20 @@ class Column:
     """Database column metadata used for DDL and data generation"""
 
     def __init__(
-            self,
-            column_name: str,  # sql name of the column
-            column_type: str,  # sql type (INTEGER, VARCHAR, FLOAT, DATE, BOOLEAN, TIMESTAMP)
-            column_length=None,  # optional column length (e.g. 200 for VARCHAR(200))
-            primary_key: bool = False,  # column is primary key
-            inserted_at: bool = False,  # column is the inserted_at column
-            updated_at: bool = False,  # column is the updated_at column
-            batch_id: bool = False,  # column is batch_id column
-            update: bool = False,  # column is eligible for update by generator
-            xref_table: str = "",  # name of foreign reference table
-            xref_column: str = "",  # referenced column in referenced table
-            parent_table: str = "",  # parent table from which to populate column
-            parent_key: str = "",  # column within parent table (key) to populate column
-            default: Any = None,  # default value for column
+        self,
+        column_name: str,  # sql name of the column
+        column_type: str,  # sql type (INTEGER, VARCHAR, FLOAT, DATE, BOOLEAN, TIMESTAMP)
+        column_length=None,  # optional column length (e.g. 200 for VARCHAR(200))
+        primary_key: bool = False,  # column is primary key
+        inserted_at: bool = False,  # column is the inserted_at column
+        updated_at: bool = False,  # column is the updated_at column
+        batch_id: bool = False,  # column is batch_id column
+        update: bool = False,  # column is eligible for update by generator
+        xref_table: str = "",  # name of foreign reference table
+        xref_column: str = "",  # referenced column in referenced table
+        parent_table: str = "",  # parent table from which to populate column
+        parent_key: str = "",  # column within parent table (key) to populate column
+        default: Any = None,  # default value for column
     ):
         self._name = column_name
         self._type = column_type
@@ -72,7 +72,7 @@ class Column:
         # when length attribute or default length found, append within parentheses
         if length or db_default_length:
             length_parameter = (
-                    "(" + (str(length) if length else db_default_length) + ")"
+                "(" + (str(length) if length else db_default_length) + ")"
             )
 
         return self.get_name() + " " + db_type + length_parameter
@@ -129,7 +129,9 @@ class Column:
 class Table:
     """Database Table metadata (schema) used for DDL and data generation"""
 
-    def __init__(self, name: str, *columns: Column, create_only=False, batch_id=True, bridge=None):
+    def __init__(
+        self, name: str, *columns: Column, create_only=False, batch_id=True, bridge=None
+    ):
         """
         Prepare the Table class for use by the DataGenerator
 
@@ -158,7 +160,11 @@ class Table:
 
         if not self._create_only:
 
-            if (len(self._primary_keys), len(self._inserted_ats), len(self._updated_ats)) != (1, 1, 1):
+            if (
+                len(self._primary_keys),
+                len(self._inserted_ats),
+                len(self._updated_ats),
+            ) != (1, 1, 1):
                 raise Exception(
                     "Generator requires exactly one inserted_at, updated_at and primary_key column"
                 )

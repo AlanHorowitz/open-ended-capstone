@@ -15,9 +15,7 @@ class DimensionProcessor:
         cur = self._connection.cursor()
         cur.execute(f"DROP TABLE IF EXISTS {table_name};")
         cur.execute(self._dimension_table.get_create_sql_mysql())
-        print(
-            f"{self.__class__.__name__}: {table_name} table created"
-        )
+        print(f"{self.__class__.__name__}: {table_name} table created")
 
     def _write_dimension(self, customer_dim: DataFrame, operation: str) -> None:
         """
