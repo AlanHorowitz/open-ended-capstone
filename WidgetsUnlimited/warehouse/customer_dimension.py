@@ -66,16 +66,9 @@ class CustomerDimensionProcessor(DimensionProcessor):
     """
 
     def __init__(self, connection=None):
-        """
-        Initialize CustomerDimensionProcessor
-        :param connection: mySQL connection created by the warehouse.  None is used for test.
-        """
 
-        self._connection = connection
-        self._dimension_table = CustomerDimTable()
+        super().__init__(connection, CustomerDimTable())
         self._next_surrogate_key = 1
-        if connection:
-            self._create_dimension()
 
     def process_update(self, batch_id: int) -> None:
         """
@@ -139,40 +132,6 @@ class CustomerDimensionProcessor(DimensionProcessor):
         dimension_df = dimension_df.set_index(key_name, drop=False)
 
         return dimension_df
-
-    def _write_dimension(self, customer_dim: DataFrame, operation: str) -> None:
-        """
-        Write a dataframe containing inserts or updates to the mySQL customer_dimension table.
-        Convert the dataframe to a python list and use mysql-connector-python for bulk execution call.
-
-        :param customer_dim: dataframe conforming to customer_dim schema
-        :param operation: INSERT/REPLACE -- mirror mySQL verbs for insert/upsert
-        :return: None
-        """
-        if customer_dim.shape[0] > 0:
-            table = self._dimension_table
-            table_name = table.get_name()
-            column_names = ",".join(table.get_column_names())
-            values_substitutions = ",".join(["%s"] * len(table.get_column_names()))
-            cur = self._connection.cursor()
-            rows = customer_dim.to_numpy().tolist()
-
-            cur.executemany(
-                f"{operation} INTO {table_name} ({column_names}) values ({values_substitutions})",
-                rows,
-            )
-
-            if operation == "INSERT":
-                operation_text = "inserts"
-                rows_affected = cur.rowcount
-            else:
-                operation_text = "updates"
-                rows_affected = cur.rowcount // 2
-            print(
-                f"CustomerDimensionProcessor: {rows_affected} {operation_text} written to {table_name} table"
-            )
-
-            self._connection.commit()
 
     def _count_dimension(self) -> int:
         """Return number of rows in dimension table"""
