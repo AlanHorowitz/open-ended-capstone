@@ -15,24 +15,27 @@ class DimensionProcessor:
         cur = self._connection.cursor()
         cur.execute(f"DROP TABLE IF EXISTS {table_name};")
         cur.execute(self._dimension_table.get_create_sql_mysql())
+
         print(f"{self.__class__.__name__}: {table_name} table created")
 
-    def _write_dimension(self, customer_dim: DataFrame, operation: str) -> None:
+        self._connection.commit()
+
+    def _write_dimension(self, dim_table: DataFrame, operation: str) -> None:
         """
-        Write a dataframe containing inserts or updates to the mySQL customer_dimension table.
+        Write a dataframe containing inserts or updates to mySQL dimension table.
         Convert the dataframe to a python list and use mysql-connector-python for bulk execution call.
 
-        :param customer_dim: dataframe conforming to customer_dim schema
+        :param dim_table: dataframe conforming to customer_dim schema
         :param operation: INSERT/REPLACE -- mirror mySQL verbs for insert/upsert
         :return: None
         """
-        if customer_dim.shape[0] > 0:
+        if dim_table.shape[0] > 0:
             table = self._dimension_table
             table_name = table.get_name()
             column_names = ",".join(table.get_column_names())
             values_substitutions = ",".join(["%s"] * len(table.get_column_names()))
             cur = self._connection.cursor()
-            rows = customer_dim.to_numpy().tolist()
+            rows = dim_table.to_numpy().tolist()
 
             cur.executemany(
                 f"{operation} INTO {table_name} ({column_names}) values ({values_substitutions})",
@@ -44,7 +47,7 @@ class DimensionProcessor:
                 rows_affected = cur.rowcount
             else:
                 operation_text = "updates"
-                rows_affected = cur.rowcount // 2
+                rows_affected = cur.rowcount // 2  # REPLACE implemented as DELETE then INSERT
             print(
                 f"{self.__class__.__name__}: {rows_affected} {operation_text} written to {table_name} table"
             )
