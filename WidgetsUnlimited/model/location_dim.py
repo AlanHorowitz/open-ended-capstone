@@ -24,6 +24,7 @@ class LocationDimTable(Table):
     def get_location_data():
         # Use 15 locations in 6 regions
         # Each location covers a list of zip code ranges
+
         location_data = {
             1: ('LOC1',   'REG1', ((0, 9999), (11000, 19999))),
             2: ('LOC2',   'REG1', ((10000, 10999), (20000, 23999))),
@@ -43,3 +44,8 @@ class LocationDimTable(Table):
         }
 
         return location_data
+
+    @staticmethod
+    def get_location_from_zip(zip: int) -> int:
+        return 0
+
