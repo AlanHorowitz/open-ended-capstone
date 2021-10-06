@@ -3,6 +3,7 @@ from model.customer import CustomerTable
 from model.customer_address import CustomerAddressTable
 from .customer_dimension import CustomerDimensionProcessor
 from .product_dimension import ProductDimensionProcessor
+from .location_dimension import LocationDimensionProcessor
 from .date_dimension import DateDimensionProcessor
 from model.product import ProductTable
 from model.product_supplier import ProductSupplierTable
@@ -37,6 +38,7 @@ class DataWarehouse:
 
         self._customer_dimension = CustomerDimensionProcessor(self._ms_connection)
         self._product_dimension = ProductDimensionProcessor(self._ms_connection)
+        self._location_dimension = LocationDimensionProcessor(self._ms_connection)
         self._date_dimension = DateDimensionProcessor(self._ms_connection)
         self._date_dimension.build_dimension(DATE_DIMENSION_START, DATE_DIMENSION_END)
 
@@ -77,3 +79,4 @@ class DataWarehouse:
         """
         self._customer_dimension.process_update(batch_id=batch_id)
         self._product_dimension.process_update(batch_id=batch_id)
+        self._location_dimension.process_update(batch_id=batch_id)

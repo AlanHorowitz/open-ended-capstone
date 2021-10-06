@@ -6,15 +6,15 @@ class DimensionProcessor:
         self._connection = connection
         self._dimension_table = dim_table
         if connection:
-            self._create_dimension()
+            self._create(self._dimension_table)
 
-    def _create_dimension(self):
-        """Create an empty dimension table on warehouse initialization."""
+    def _create(self, table):
+        """Create an empty mySQL table on warehouse initialization."""
 
-        table_name = self._dimension_table.get_name()
+        table_name = table.get_name()
         cur = self._connection.cursor()
         cur.execute(f"DROP TABLE IF EXISTS {table_name};")
-        cur.execute(self._dimension_table.get_create_sql_mysql())
+        cur.execute(table.get_create_sql_mysql())
 
         print(f"{self.__class__.__name__}: {table_name} table created")
 
