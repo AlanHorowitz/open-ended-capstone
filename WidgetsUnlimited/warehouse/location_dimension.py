@@ -15,18 +15,15 @@ class LocationDimensionProcessor(DimensionProcessor):
         self._create(StoreLocationStageTable())
         # table headers plus zip into
         zip_locations_df = pd.DataFrame(dim_table.get_location_data(),
-                                        list(dim_header_columns).append('zip_ranges')) \
-            .drop('zip_ranges', axis='columns')
-        location_dim = pd.DataFrame([], columns=dim_table.get_column_names)
+                                        columns=dim_header_columns + ['zip_ranges'])
+        location_dim = pd.DataFrame([], columns=dim_table.get_column_names())
         location_dim[dim_header_columns] = zip_locations_df[dim_header_columns]
         location_dim['number_of_customers'] = 0
         location_dim['number_of_stores'] = 0
         location_dim['square_footage_of_stores'] = 0.0
 
         location_dim = location_dim.astype(dim_table.get_column_pandas_types())
-        self._write_dimension(location_dim)
-
-
+        self._write_dimension(location_dim, "INSERT")
 
     def process_update(self, batch_id: int) -> None:
         # read incremental storage_location

@@ -9,6 +9,7 @@ sys.path.insert(
 from warehouse.customer_dimension import CustomerDimensionProcessor
 from warehouse.product_dimension import ProductDimensionProcessor
 from warehouse.date_dimension import DateDimensionProcessor
+from warehouse.location_dimension import LocationDimensionProcessor
 
 
 from model.customer import CustomerTable
