@@ -57,9 +57,9 @@ def test_init_dimension(ms_connection):
 
 
 def test_get_location_from_zip():
-    location_dim = LocationDimTable()
-    assert location_dim.get_location_from_zip(12345) == 1
-    assert location_dim.get_location_from_zip(80000) == 13
-    assert location_dim.get_location_from_zip(87999) == 13
+
+    assert LocationDimTable.get_location_from_zip(12345) == 1
+    assert LocationDimTable.get_location_from_zip(80000) == 13
+    assert LocationDimTable.get_location_from_zip(87999) == 13
     with pytest.raises(Exception):
-        location_dim.get_location_from_zip(111111)
+        LocationDimTable.get_location_from_zip(111111)

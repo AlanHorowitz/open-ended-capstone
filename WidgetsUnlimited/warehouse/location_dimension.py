@@ -14,7 +14,7 @@ class LocationDimensionProcessor(DimensionProcessor):
         super().__init__(connection, dim_table)
         self._create(StoreLocationStageTable())
         # table headers plus zip into
-        zip_locations_df = pd.DataFrame(dim_table.get_location_data(),
+        zip_locations_df = pd.DataFrame(LocationDimTable.LOCATION_DATA,
                                         columns=dim_header_columns + ['zip_ranges'])
         location_dim = pd.DataFrame([], columns=dim_table.get_column_names())
         location_dim[dim_header_columns] = zip_locations_df[dim_header_columns]
@@ -40,17 +40,10 @@ class LocationDimensionProcessor(DimensionProcessor):
         store_location_stage = pd.DataFrame([])
         store_location_stage['store_id'] = store_location['store_id']
         store_location_stage['store_location_sq_footage'] = store_location['store_location_sq_footage']
-        store_location_stage['location_id'] = store_location['store_id']
-
-
-
-    self._apply_stage_updates(store_location)
+        store_location_stage['location_id'] = store_location['store_id'].apply(LocationDimTable.get_location_from_zip)
+        self._write_dimension(store_location_stage, "REPLACE")
 
         # THREE pandas computations.
-        location_dim['number_of_customers'] = 0
-        location_dim['number_of_stores'] = 0
-        location_dim['square_footage_of_stores'] = 0.0
-
-    def _apply_stage_updates(self, store_location):
-        n = LocationDimTable.get_location_from_zip(2)
-        pass
+        self._location_dim['number_of_customers'] = 0
+        self._location_dim['number_of_stores'] = 0
+        self._location_dim['square_footage_of_stores'] = 0.0
