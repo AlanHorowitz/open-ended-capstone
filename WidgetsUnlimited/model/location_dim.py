@@ -46,9 +46,9 @@ class LocationDimTable(Table):
     def get_location_from_zip(self, zip_code: int) -> int:
 
         for loc in self._location_data:
-            key, zip_ranges = loc
-            for zip_range in zip_ranges:
-                if zip_range[0] <= zip_code <= zip_range[1]:
+            key, zip_ranges = loc[0], loc[3]
+            for low, high in zip_ranges:
+                if low <= zip_code <= high:
                     return key
 
         raise Exception(f"Invalid zip code: {zip_code}")

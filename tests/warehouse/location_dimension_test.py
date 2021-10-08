@@ -3,6 +3,7 @@ import os
 from mysql.connector import connect
 
 from .context import LocationDimensionProcessor
+from .context import LocationDimTable
 
 
 @pytest.fixture
@@ -53,3 +54,12 @@ def test_init_dimension(ms_connection):
     assert rows[0][3] == 0
     assert rows[0][4] == 0
     assert rows[0][5] == 0.0
+
+
+def test_get_location_from_zip():
+    location_dim = LocationDimTable()
+    assert location_dim.get_location_from_zip(12345) == 1
+    assert location_dim.get_location_from_zip(80000) == 13
+    assert location_dim.get_location_from_zip(87999) == 13
+    with pytest.raises(Exception):
+        location_dim.get_location_from_zip(111111)

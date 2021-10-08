@@ -17,3 +17,4 @@ from model.customer_address import CustomerAddressTable
 
 from model.product_dim import ProductDimTable
 from model.date_dim import DateDimTable
+from model.location_dim import LocationDimTable
