@@ -37,13 +37,27 @@ class LocationDimensionProcessor(DimensionProcessor):
             batch_id, [StoreLocationTable(), ]
         )
 
+        store_location_stage = self._update_store_location_stage(store_location)
+        self._write_dimension(store_location_stage, "REPLACE")
+
+        customer_dim = pd.DataFrame()
+        location_dim = self._update_location_dim(self._location_dim, store_location_stage, customer_dim)
+
+        self._write_dimension(location_dim, "REPLACE")
+
+    @staticmethod
+    def _update_store_location_stage(store_location):
         store_location_stage = pd.DataFrame([])
         store_location_stage['store_id'] = store_location['store_id']
         store_location_stage['store_location_sq_footage'] = store_location['store_location_sq_footage']
-        store_location_stage['location_id'] = store_location['store_id'].apply(LocationDimTable.get_location_from_zip)
-        self._write_dimension(store_location_stage, "REPLACE")
+        store_location_stage['location_id'] = (store_location['store_location_zip_code'].apply(int)). \
+            apply(LocationDimTable.get_location_from_zip)
+        return store_location_stage
 
-        # THREE pandas computations.
-        self._location_dim['number_of_customers'] = 0
-        self._location_dim['number_of_stores'] = 0
-        self._location_dim['square_footage_of_stores'] = 0.0
+    @staticmethod
+    def _update_location_dim(location_dim, store_location_stage, customer_dim):
+        location_dim['number_of_customers'] = 0
+        location_dim['number_of_stores'] = 0
+        location_dim['square_footage_of_stores'] = 0.0
+
+        return location_dim

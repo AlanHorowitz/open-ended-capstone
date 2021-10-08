@@ -1,9 +1,13 @@
+import pandas as pd
 import pytest
 import os
 from mysql.connector import connect
+from datetime import datetime
 
 from .context import LocationDimensionProcessor
 from .context import LocationDimTable
+
+_date = datetime.now()
 
 
 @pytest.fixture
@@ -57,9 +61,32 @@ def test_init_dimension(ms_connection):
 
 
 def test_get_location_from_zip():
-
     assert LocationDimTable.get_location_from_zip(12345) == 1
     assert LocationDimTable.get_location_from_zip(80000) == 13
     assert LocationDimTable.get_location_from_zip(87999) == 13
     with pytest.raises(Exception):
         LocationDimTable.get_location_from_zip(111111)
+
+
+def test_update_store_location_stage():
+    store_location_data = {
+        "store_id": [1, 2, 3, 4],
+        "store_location_street_address": ['10 Oak', '20 Oak', '30 Oak', '40 Oak'],
+        "store_location_state": ['NY', 'NJ', 'PA', 'CT'],
+        "store_location_zip_code": ["11111", "22222", "33333", "44444"],
+        "store_location_sq_footage": [10000, 20000, 30000, 40000],
+        "customer_address_inserted_at": [_date] * 4,
+        "customer_address_updated_at": [_date] * 4,
+        "batch_id": [1] * 4,
+    }
+
+    store_location = pd.DataFrame(store_location_data)
+    store_location_stage = LocationDimensionProcessor._update_store_location_stage(store_location)
+
+    assert store_location_stage.iloc[0]['store_id'] == 1
+    assert store_location_stage.iloc[0]['store_location_sq_footage'] == 10000
+    assert store_location_stage.iloc[0]['location_id'] == 1
+
+    assert store_location_stage.iloc[3]['store_id'] == 4
+    assert store_location_stage.iloc[3]['store_location_sq_footage'] == 40000
+    assert store_location_stage.iloc[3]['location_id'] == 7
