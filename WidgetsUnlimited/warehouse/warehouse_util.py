@@ -35,12 +35,16 @@ def read_stage(batch_id: int, tables) -> List[pd.DataFrame]:
         index_column = (
             table.get_parent_key() if table.has_parent() else table.get_primary_key()
         )
-        df = pd.read_parquet(get_stage_file(batch_id, table_name))
-        df = df.astype(table.get_column_pandas_types())
-        df = df.set_index(index_column, drop=False)
+        stage_file = get_stage_file(batch_id, table_name)
+        if os.path.exists(stage_file):
+            df = pd.read_parquet(stage_file)
+            df = df.astype(table.get_column_pandas_types())
+        else:
+            df = pd.DataFrame([], columns=table.get_column_names())
         print(
-            f"CustomerDimensionProcessor: {df.shape[0]} {table_name} records read from stage"
+            f"ReadStage: {df.shape[0]} {table_name} records read from stage."
         )
+        df = df.set_index(index_column, drop=False)
         stages.append(df)
 
     return stages

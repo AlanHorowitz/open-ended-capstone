@@ -1,4 +1,8 @@
 from pandas.core.frame import DataFrame
+import logging
+
+logger = logging.getLogger(__name__)
+logger.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
 
 class DimensionProcessor:
@@ -51,5 +55,6 @@ class DimensionProcessor:
             print(
                 f"{self.__class__.__name__}: {rows_affected} {operation_text} written to {table_name} table"
             )
+            logger.warning('Watch out!')  # will print a message to the console
 
             self._connection.commit()
