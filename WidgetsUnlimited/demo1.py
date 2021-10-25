@@ -32,6 +32,9 @@ from operations.simulator import OperationsSimulator
 
 from warehouse.warehouse import DataWarehouse
 
+from logging.config import fileConfig
+fileConfig("logging.conf")
+
 # table metadata
 PRODUCT = ProductTable()
 SUPPLIER = SupplierTable()

@@ -2,7 +2,7 @@ from pandas.core.frame import DataFrame
 import logging
 
 logger = logging.getLogger(__name__)
-logger.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+# logger.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
 
 class DimensionProcessor:
