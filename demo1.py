@@ -16,13 +16,13 @@ DataWarehouse       - Process that extracts incremental data produced by the sou
                       star schema.
 """
 
-from WidgetsUnlimited.model.product import ProductTable
-from WidgetsUnlimited.model.supplier import SupplierTable
-from WidgetsUnlimited.model.product_supplier import ProductSupplierTable
-from WidgetsUnlimited.model.customer import CustomerTable
-from WidgetsUnlimited.model.customer_address import CustomerAddressTable
-from WidgetsUnlimited.model.order import OrderTable
-from WidgetsUnlimited.model.order_line_item import OrderLineItemTable
+from WidgetsUnlimited.model import (ProductTable,
+                                    SupplierTable,
+                                    ProductSupplierTable,
+                                    CustomerTable,
+                                    CustomerAddressTable,
+                                    OrderTable,
+                                    OrderLineItemTable)
 
 from WidgetsUnlimited.operations.base import BaseSystem
 from WidgetsUnlimited.operations.ecommerce import eCommerceSystem
@@ -32,8 +32,6 @@ from WidgetsUnlimited.operations.simulator import OperationsSimulator
 
 from WidgetsUnlimited.warehouse.warehouse import DataWarehouse
 
-from logging.config import fileConfig
-fileConfig("logging.conf")
 
 # table metadata
 PRODUCT = ProductTable()
@@ -97,7 +95,6 @@ daily_operations = [
 
 # Synchronously process generator_requests and extract and load in warehouse.
 for day, transactions in enumerate(daily_operations, start=1):
-
     print("-" * 60)
     print(f"Batch {day} starting")
     print("-" * 60)
