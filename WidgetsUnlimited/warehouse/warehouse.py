@@ -1,12 +1,12 @@
 from .warehouse_util import extract_write_stage
-from model.customer import CustomerTable
-from model.customer_address import CustomerAddressTable
+from WidgetsUnlimited.model.customer import CustomerTable
+from WidgetsUnlimited.model.customer_address import CustomerAddressTable
 from .customer_dimension import CustomerDimensionProcessor
 from .product_dimension import ProductDimensionProcessor
 from .location_dimension import LocationDimensionProcessor
 from .date_dimension import DateDimensionProcessor
-from model.product import ProductTable
-from model.product_supplier import ProductSupplierTable
+from WidgetsUnlimited.model.product import ProductTable
+from WidgetsUnlimited.model.product_supplier import ProductSupplierTable
 import os
 from .warehouse_util import clean_stage_dir
 from mysql.connector import connect

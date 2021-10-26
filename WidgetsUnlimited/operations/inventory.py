@@ -1,7 +1,6 @@
-from model.metadata import Table
+from WidgetsUnlimited.model.metadata import Table
 from typing import List
 
-from .generator import DataGenerator
 from .base import BaseSystem
 
 

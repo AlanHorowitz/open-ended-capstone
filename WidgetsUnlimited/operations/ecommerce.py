@@ -2,11 +2,10 @@ from typing import List
 import os
 
 import psycopg2
-from psycopg2.extras import DictCursor, DictRow
+from psycopg2.extras import DictCursor
 from psycopg2.extensions import connection, cursor
 
-from model.metadata import Table
-from .generator import DataGenerator
+from WidgetsUnlimited.model.metadata import Table
 from .base import BaseSystem
 
 

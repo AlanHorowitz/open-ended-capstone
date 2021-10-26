@@ -1,4 +1,4 @@
-from model.metadata import Table, Column
+from WidgetsUnlimited.model.metadata import Table
 from typing import List
 
 

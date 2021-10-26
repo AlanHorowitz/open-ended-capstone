@@ -1,5 +1,5 @@
 from typing import List, Tuple, Dict
-from model.metadata import Table, XrefTableData
+from WidgetsUnlimited.model.metadata import Table, XrefTableData
 from datetime import datetime
 import random
 from random import choice

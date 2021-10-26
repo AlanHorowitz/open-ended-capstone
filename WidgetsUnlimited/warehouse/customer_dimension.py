@@ -1,12 +1,12 @@
-from typing import Tuple, Dict
+from typing import Dict
 import pandas as pd
 from datetime import date
 
 from pandas.core.frame import DataFrame, Series, Index
 from .warehouse_util import read_stage
-from model.customer_dim import CustomerDimTable
-from model.customer import CustomerTable
-from model.customer_address import CustomerAddressTable
+from WidgetsUnlimited.model.customer_dim import CustomerDimTable
+from WidgetsUnlimited.model.customer import CustomerTable
+from WidgetsUnlimited.model.customer_address import CustomerAddressTable
 from .dimension_processor import DimensionProcessor
 
 

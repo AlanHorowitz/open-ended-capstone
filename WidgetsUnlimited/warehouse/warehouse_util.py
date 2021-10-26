@@ -2,7 +2,7 @@ import os
 from typing import List
 
 import pandas as pd
-from model.metadata import Column, Table
+from WidgetsUnlimited.model.metadata import Table
 
 STAGE_DIRECTORY_PREFIX = "/tmp/warehouse/stage/batch"
 

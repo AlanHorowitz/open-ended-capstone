@@ -1,6 +1,5 @@
 from .metadata import Table, Column
-from model.customer import CustomerTable
-from model.customer_address import CustomerAddressTable
+from .customer_address import CustomerAddressTable
 
 
 class OrderTable(Table):

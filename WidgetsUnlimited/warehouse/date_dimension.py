@@ -4,7 +4,7 @@ from datetime import date
 
 from pandas.core.frame import DataFrame
 from pandas.tseries.holiday import USFederalHolidayCalendar as HolidayCalendar
-from model.date_dim import DateDimTable
+from WidgetsUnlimited.model.date_dim import DateDimTable
 
 from .dimension_processor import DimensionProcessor
 

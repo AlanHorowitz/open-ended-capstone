@@ -1,7 +1,6 @@
 from typing import List
-from datetime import datetime
 
-from model.metadata import Table
+from WidgetsUnlimited.model.metadata import Table
 
 
 class BaseSystem:

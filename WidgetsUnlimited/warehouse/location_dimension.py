@@ -1,10 +1,10 @@
-from model.location_dim import LocationDimTable
+from WidgetsUnlimited.model.location_dim import LocationDimTable
 from .warehouse_util import read_stage
 import pandas as pd
 
 from .dimension_processor import DimensionProcessor
-from model.store_location_stage import StoreLocationStageTable
-from model.store_location import StoreLocationTable
+from WidgetsUnlimited.model.store_location_stage import StoreLocationStageTable
+from WidgetsUnlimited.model.store_location import StoreLocationTable
 
 
 class LocationDimensionProcessor(DimensionProcessor):

@@ -1,12 +1,11 @@
-from typing import Tuple, Dict
 import pandas as pd
 from datetime import date
 
-from pandas.core.frame import DataFrame, Series, Index
+from pandas.core.frame import DataFrame, Index
 from .warehouse_util import read_stage
-from model.product_dim import ProductDimTable
-from model.product import ProductTable
-from model.product_supplier import ProductSupplierTable
+from WidgetsUnlimited.model.product_dim import ProductDimTable
+from WidgetsUnlimited.model.product import ProductTable
+from WidgetsUnlimited.model.product_supplier import ProductSupplierTable
 
 from .dimension_processor import DimensionProcessor
 
@@ -215,8 +214,8 @@ class ProductDimensionProcessor(DimensionProcessor):
 
         :param update_keys: keys for records in batch already in star schema
         :param prior_product_dim:
-        :param customer: staged customer data
-        :param customer_address: staged customer address data
+        :param product: staged customer data
+        :param product_supplier: staged customer address data
         :return: a customer_dim dataframe ready to be written to mySQL
         """
 

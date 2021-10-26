@@ -16,21 +16,21 @@ DataWarehouse       - Process that extracts incremental data produced by the sou
                       star schema.
 """
 
-from model.product import ProductTable
-from model.supplier import SupplierTable
-from model.product_supplier import ProductSupplierTable
-from model.customer import CustomerTable
-from model.customer_address import CustomerAddressTable
-from model.order import OrderTable
-from model.order_line_item import OrderLineItemTable
+from WidgetsUnlimited.model.product import ProductTable
+from WidgetsUnlimited.model.supplier import SupplierTable
+from WidgetsUnlimited.model.product_supplier import ProductSupplierTable
+from WidgetsUnlimited.model.customer import CustomerTable
+from WidgetsUnlimited.model.customer_address import CustomerAddressTable
+from WidgetsUnlimited.model.order import OrderTable
+from WidgetsUnlimited.model.order_line_item import OrderLineItemTable
 
-from operations.base import BaseSystem
-from operations.ecommerce import eCommerceSystem
-from operations.inventory import InventorySystem
-from operations.generator import DataGenerator, GeneratorRequest
-from operations.simulator import OperationsSimulator
+from WidgetsUnlimited.operations.base import BaseSystem
+from WidgetsUnlimited.operations.ecommerce import eCommerceSystem
+from WidgetsUnlimited.operations.inventory import InventorySystem
+from WidgetsUnlimited.operations.generator import DataGenerator, GeneratorRequest
+from WidgetsUnlimited.operations.simulator import OperationsSimulator
 
-from warehouse.warehouse import DataWarehouse
+from WidgetsUnlimited.warehouse.warehouse import DataWarehouse
 
 from logging.config import fileConfig
 fileConfig("logging.conf")

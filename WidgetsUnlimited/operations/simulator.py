@@ -1,4 +1,4 @@
-from model.metadata import Table
+from WidgetsUnlimited.model.metadata import Table
 from .generator import DataGenerator, GeneratorRequest
 from .base import BaseSystem
 from typing import List
