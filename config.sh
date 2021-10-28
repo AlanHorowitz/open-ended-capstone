@@ -18,3 +18,7 @@ export WAREHOUSE_PORT=3306
 export WAREHOUSE_USER=user1
 export WAREHOUSE_PASSWORD=user1
 
+export WIDGETS_HOME=~/open-ended-capstone/
+export WIDGETS_LOG_DIR=$WIDGETS_HOME/logs
+export WIDGETS_LOG_CONF=$WIDGETS_HOME/logging.conf
+
