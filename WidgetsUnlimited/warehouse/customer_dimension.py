@@ -1,6 +1,7 @@
 from typing import Dict
 import pandas as pd
 from datetime import date
+import logging
 
 from pandas.core.frame import DataFrame, Series, Index
 from .warehouse_util import read_stage
@@ -9,6 +10,7 @@ from WidgetsUnlimited.model.customer import CustomerTable
 from WidgetsUnlimited.model.customer_address import CustomerAddressTable
 from .dimension_processor import DimensionProcessor
 
+logger = logging.getLogger(__name__)
 
 # transformation mappings
 customer_dim_to_customer_mapping = {
@@ -112,7 +114,7 @@ class CustomerDimensionProcessor(DimensionProcessor):
         self._next_surrogate_key += inserts.shape[0]
         self._write_dimension(updates, "REPLACE")
 
-        print(
+        logger.debug(
             f"CustomerDimensionProcessor: {self._count_dimension()} total rows in customer_dim table"
         )
 

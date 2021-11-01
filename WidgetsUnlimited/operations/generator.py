@@ -4,6 +4,7 @@ from datetime import datetime
 import random
 from random import choice
 import os
+import logging
 
 import psycopg2
 from psycopg2.extras import DictCursor, DictRow
@@ -17,6 +18,8 @@ DEFAULT_INSERT_VALUES: Dict[str, object] = {
     "BOOLEAN": True,
     "TIMESTAMP": datetime(2020, 11, 11),
 }
+
+logger = logging.getLogger(__name__)
 
 
 class GeneratorRequest:
@@ -238,7 +241,7 @@ class DataGenerator:
                                 )
                                 break
 
-            print(f"DataGenerator: {len(update_rows)} records updated for {table_name}")
+            logger.debug(f"DataGenerator: {len(update_rows)} records updated for {table_name}")
 
             conn.commit()
 
@@ -314,11 +317,11 @@ class DataGenerator:
                         cur, bridge_table_name, bridge_column_names, bridge_insert_rows
                     )
 
-                    print(
+                    logger.debug(
                         f"DataGenerator: {bridge_count} records inserted for {bridge_table_name}"
                     )
 
-            print(f"DataGenerator: {insert_count} records inserted for {table_name}")
+            logger.debug(f"DataGenerator: {insert_count} records inserted for {table_name}")
             conn.commit()
 
         return insert_rows, update_rows

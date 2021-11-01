@@ -1,10 +1,12 @@
 import os
+import logging
 from typing import List
 
 import pandas as pd
 from WidgetsUnlimited.model.metadata import Table
 
 STAGE_DIRECTORY_PREFIX = "/tmp/warehouse/stage/batch"
+logger = logging.getLogger(__name__)
 
 
 def clean_stage_dir(batch_id):
@@ -41,7 +43,7 @@ def read_stage(batch_id: int, tables) -> List[pd.DataFrame]:
             df = df.astype(table.get_column_pandas_types())
         else:
             df = pd.DataFrame([], columns=table.get_column_names())
-        print(
+        logger.debug(
             f"ReadStage: {df.shape[0]} {table_name} records read from stage."
         )
         df = df.set_index(index_column, drop=False)
@@ -87,4 +89,4 @@ def extract_write_stage(
         }
         df = df.astype(df_type)
         df.to_parquet(get_stage_file(batch_id, table_name), compression="gzip")
-        print(f"direct-extract: {df.shape[0]} {table_name} records extracted to stage")
+        logger.debug(f"direct-extract: {df.shape[0]} {table_name} records extracted to stage")

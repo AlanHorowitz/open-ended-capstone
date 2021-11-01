@@ -1,5 +1,6 @@
 from typing import List
 import os
+import logging
 
 import psycopg2
 from psycopg2.extras import DictCursor
@@ -7,6 +8,8 @@ from psycopg2.extensions import connection, cursor
 
 from WidgetsUnlimited.model.metadata import Table
 from .base import BaseSystem
+
+logger = logging.getLogger(__name__)
 
 
 class eCommerceSystem(BaseSystem):
@@ -74,4 +77,4 @@ class eCommerceSystem(BaseSystem):
             self.connection.commit()
             insert_records = [tuple(dr.values()) for dr in records]  # DictRow to tuple
             n = self._insert(table, insert_records)
-            print(f"eCommerceSystem: Processed {n} updates for {table_name}")
+            logger.debug(f"eCommerceSystem: Processed {n} updates for {table_name}")

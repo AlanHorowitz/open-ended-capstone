@@ -1,4 +1,5 @@
 import pandas as pd
+import logging
 from datetime import date
 
 from pandas.core.frame import DataFrame, Index
@@ -9,6 +10,7 @@ from WidgetsUnlimited.model.product_supplier import ProductSupplierTable
 
 from .dimension_processor import DimensionProcessor
 
+logger = logging.getLogger(__name__)
 
 # transformation mappings
 
@@ -76,6 +78,8 @@ class ProductDimensionProcessor(DimensionProcessor):
         prior_product_dim = self._read_dimension("product_key")
         update_keys = prior_product_dim.index
         new_keys = product.index.difference(update_keys)
+        logger.debug("%d unique product ids detected (New: %d) (Updated: %d)", len(new_keys) + len(update_keys),
+                     len(new_keys), len(update_keys))
         print(
             f"ProductDimensionProcessor: {len(new_keys) + len(update_keys)} unique product ids detected",
             end=" ",
