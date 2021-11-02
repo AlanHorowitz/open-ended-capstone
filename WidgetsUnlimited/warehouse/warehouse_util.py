@@ -44,7 +44,7 @@ def read_stage(batch_id: int, tables) -> List[pd.DataFrame]:
         else:
             df = pd.DataFrame([], columns=table.get_column_names())
         logger.debug(
-            f"ReadStage: {df.shape[0]} {table_name} records read from stage."
+            f"{df.shape[0]} {table_name} records read from stage"
         )
         df = df.set_index(index_column, drop=False)
         stages.append(df)
@@ -89,4 +89,4 @@ def extract_write_stage(
         }
         df = df.astype(df_type)
         df.to_parquet(get_stage_file(batch_id, table_name), compression="gzip")
-        logger.debug(f"direct-extract: {df.shape[0]} {table_name} records extracted to stage")
+        logger.debug(f"{df.shape[0]} {table_name} records extracted to stage")

@@ -241,7 +241,7 @@ class DataGenerator:
                                 )
                                 break
 
-            logger.debug(f"DataGenerator: {len(update_rows)} records updated for {table_name}")
+            logger.debug(f"{len(update_rows)} records updated for {table_name}")
 
             conn.commit()
 
@@ -318,10 +318,10 @@ class DataGenerator:
                     )
 
                     logger.debug(
-                        f"DataGenerator: {bridge_count} records inserted for {bridge_table_name}"
+                        f"{bridge_count} records inserted for {bridge_table_name}"
                     )
 
-            logger.debug(f"DataGenerator: {insert_count} records inserted for {table_name}")
+            logger.debug(f"{insert_count} records inserted for {table_name}")
             conn.commit()
 
         return insert_rows, update_rows

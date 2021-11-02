@@ -91,19 +91,16 @@ class CustomerDimensionProcessor(DimensionProcessor):
             batch_id, [CustomerTable(), CustomerAddressTable()]
         )
         incremental_keys = customer.index.union(customer_address.index).unique()
-        print(
-            f"CustomerDimensionProcessor: {len(incremental_keys)} unique customer ids detected",
-            end=" ",
-        )
+
         if incremental_keys.size == 0:
-            print()  # Add newline to 0 keys message
+            logger.debug("0 unique customer ids detected")
             return
 
         prior_customer_dim = self._read_dimension("customer_key", incremental_keys)
         update_keys = prior_customer_dim.index
         new_keys = incremental_keys.difference(update_keys)
-        print(f"(New: {len(new_keys)})", end=" ")
-        print(f"(Updated: {len(update_keys)})")
+        logger.debug(f"{len(incremental_keys)} unique customer ids detected (New: {len(new_keys)}) "
+                     f"(Updated: {len(update_keys)})")
 
         inserts = self._build_new_dimension(new_keys, customer, customer_address)
         updates = self._build_update_dimension(
@@ -115,7 +112,7 @@ class CustomerDimensionProcessor(DimensionProcessor):
         self._write_dimension(updates, "REPLACE")
 
         logger.debug(
-            f"CustomerDimensionProcessor: {self._count_dimension()} total rows in customer_dim table"
+            f"{self._count_dimension()} total rows in customer_dim table"
         )
 
     def _read_dimension(self, key_name: str, key_values: Index) -> DataFrame:

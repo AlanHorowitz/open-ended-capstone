@@ -80,12 +80,6 @@ class ProductDimensionProcessor(DimensionProcessor):
         new_keys = product.index.difference(update_keys)
         logger.debug("%d unique product ids detected (New: %d) (Updated: %d)", len(new_keys) + len(update_keys),
                      len(new_keys), len(update_keys))
-        print(
-            f"ProductDimensionProcessor: {len(new_keys) + len(update_keys)} unique product ids detected",
-            end=" ",
-        )
-        print(f"(New: {len(new_keys)})", end=" ")
-        print(f"(Updated: {len(update_keys)})")
 
         inserts = self._build_new_dimension(new_keys, product, product_supplier)
         updates = self._build_update_dimension(
@@ -96,9 +90,7 @@ class ProductDimensionProcessor(DimensionProcessor):
         self._write_dimension(inserts.append(updates), "INSERT")
         self._next_surrogate_key += inserts.shape[0]
 
-        print(
-            f"ProductDimensionProcessor: {self._count_dimension()} total rows in product_dim table"
-        )
+        logger.debug("%d total rows in product_dim table", self._count_dimension())
 
     def _truncate_dimension(self):
         """Truncate dimension prior to rewrite"""

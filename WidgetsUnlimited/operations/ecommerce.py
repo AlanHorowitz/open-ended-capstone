@@ -39,7 +39,7 @@ class eCommerceSystem(BaseSystem):
 
     def insert(self, table, records):
         n = self._insert(table, records)
-        print(f"eCommerceSystem: Processed {n} inserts for {table.get_name()}")
+        logger.debug(f"Processed {n} inserts for {table.get_name()}")
 
     def _insert(self, table, records) -> int:
 
@@ -77,4 +77,4 @@ class eCommerceSystem(BaseSystem):
             self.connection.commit()
             insert_records = [tuple(dr.values()) for dr in records]  # DictRow to tuple
             n = self._insert(table, insert_records)
-            logger.debug(f"eCommerceSystem: Processed {n} updates for {table_name}")
+            logger.debug(f"Processed {n} updates for {table_name}")

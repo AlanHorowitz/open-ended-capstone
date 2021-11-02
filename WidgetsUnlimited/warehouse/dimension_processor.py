@@ -19,7 +19,7 @@ class DimensionProcessor:
         cur.execute(f"DROP TABLE IF EXISTS {table_name};")
         cur.execute(table.get_create_sql_mysql())
 
-        print(f"{self.__class__.__name__}: {table_name} table created")
+        logger.debug(f"{table_name} table created")
 
         self._connection.commit()
 
@@ -51,8 +51,8 @@ class DimensionProcessor:
             else:
                 operation_text = "updates"
                 rows_affected = cur.rowcount // 2  # REPLACE implemented as DELETE then INSERT
-            print(
-                f"{self.__class__.__name__}: {rows_affected} {operation_text} written to {table_name} table"
+            logger.debug(
+                f"{rows_affected} {operation_text} written to {table_name} table"
             )
 
             self._connection.commit()
