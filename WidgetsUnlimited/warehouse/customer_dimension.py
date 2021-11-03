@@ -111,9 +111,7 @@ class CustomerDimensionProcessor(DimensionProcessor):
         self._next_surrogate_key += inserts.shape[0]
         self._write_dimension(updates, "REPLACE")
 
-        logger.debug(
-            f"{self._count_dimension()} total rows in customer_dim table"
-        )
+        logger.debug("%d total rows in customer_dim table", self._count_dimension())
 
     def _read_dimension(self, key_name: str, key_values: Index) -> DataFrame:
         """

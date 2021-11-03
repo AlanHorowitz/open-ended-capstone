@@ -5,6 +5,7 @@ from .customer_dimension import CustomerDimensionProcessor
 from .product_dimension import ProductDimensionProcessor
 from .location_dimension import LocationDimensionProcessor
 from .date_dimension import DateDimensionProcessor
+from .sales_fact import SalesFactsProcessor
 from WidgetsUnlimited.model.product import ProductTable
 from WidgetsUnlimited.model.product_supplier import ProductSupplierTable
 import os
@@ -41,6 +42,7 @@ class DataWarehouse:
         self._location_dimension = LocationDimensionProcessor(self._ms_connection)
         self._date_dimension = DateDimensionProcessor(self._ms_connection)
         self._date_dimension.build_dimension(DATE_DIMENSION_START, DATE_DIMENSION_END)
+        self._sales_fact = SalesFactsProcessor(self._ms_connection)
 
     @staticmethod
     def direct_extract(connection, batch_id):
@@ -80,3 +82,4 @@ class DataWarehouse:
         self._customer_dimension.process_update(batch_id=batch_id)
         self._product_dimension.process_update(batch_id=batch_id)
         self._location_dimension.process_update(batch_id=batch_id)
+        self._sales_fact.process_update(batch_id=batch_id)
