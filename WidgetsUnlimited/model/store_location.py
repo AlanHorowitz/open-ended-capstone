@@ -19,7 +19,7 @@ class StoreLocationTable(Table):
             Column("store_location_street_address", "VARCHAR", update=True),
             Column("store_location_city", "VARCHAR"),
             Column("store_location_state", "VARCHAR"),
-            Column("store_location_zip_code", "VARCHAR"),
+            Column("store_location_zip_code", "VARCHAR", default='12345'),
             Column("store_location_sq_footage", "FLOAT"),
             Column("store_inserted_at", "TIMESTAMP", inserted_at=True),
             Column("store_updated_at", "TIMESTAMP", updated_at=True),

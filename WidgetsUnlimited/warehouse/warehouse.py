@@ -1,17 +1,26 @@
 from .warehouse_util import extract_write_stage
-from WidgetsUnlimited.model.customer import CustomerTable
-from WidgetsUnlimited.model.customer_address import CustomerAddressTable
+
 from .customer_dimension import CustomerDimensionProcessor
 from .product_dimension import ProductDimensionProcessor
 from .location_dimension import LocationDimensionProcessor
 from .date_dimension import DateDimensionProcessor
 from .sales_fact import SalesFactsProcessor
-from WidgetsUnlimited.model.product import ProductTable
-from WidgetsUnlimited.model.product_supplier import ProductSupplierTable
+
 import os
 from .warehouse_util import clean_stage_dir
 from mysql.connector import connect
 from datetime import date
+
+from WidgetsUnlimited.model import (ProductTable,
+                                    SupplierTable,
+                                    ProductSupplierTable,
+                                    CustomerTable,
+                                    CustomerAddressTable,
+                                    OrderTable,
+                                    OrderLineItemTable,
+                                    StoreTable,
+                                    StoreLocationTable,
+                                    StoreSalesTable)
 
 DATE_DIMENSION_START = date(2020, 1, 1)
 DATE_DIMENSION_END = date(2024, 12, 31)
@@ -62,7 +71,11 @@ class DataWarehouse:
         clean_stage_dir(batch_id)
 
         extract_write_stage(
-            connection, batch_id, [CustomerTable(), CustomerAddressTable()]
+            connection, batch_id, [CustomerTable(),
+                                   CustomerAddressTable(),
+                                   StoreTable(),
+                                   StoreLocationTable(),
+                                   StoreSalesTable()]
         )
 
         extract_write_stage(

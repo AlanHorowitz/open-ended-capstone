@@ -107,9 +107,9 @@ class CustomerDimensionProcessor(DimensionProcessor):
             update_keys, prior_customer_dim, customer, customer_address
         )
 
-        self._write_dimension(inserts, "INSERT")
+        self._write_table(None, inserts, "INSERT")
         self._next_surrogate_key += inserts.shape[0]
-        self._write_dimension(updates, "REPLACE")
+        self._write_table(None, updates, "REPLACE")
 
         logger.debug("%d total rows in customer_dim table", self._count_dimension())
 
@@ -123,7 +123,7 @@ class CustomerDimensionProcessor(DimensionProcessor):
         """
 
         table_name = self._dimension_table.get_name()
-        key_values_list = ",".join([str(k) for k in key_values])
+        key_values_list = ",".join(str(k) for k in key_values)
         query = f"SELECT * FROM {table_name} WHERE {key_name} IN ({key_values_list});"
         dimension_df = pd.read_sql_query(query, self._connection)
         dimension_df = dimension_df.set_index(key_name, drop=False)

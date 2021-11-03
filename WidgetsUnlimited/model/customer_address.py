@@ -25,7 +25,7 @@ class CustomerAddressTable(Table):
                 update=True,
             ),
             # Column("customer_temp_updateable", "VARCHAR", update=True),
-            Column("customer_address_type", "VARCHAR", default="S"),
+            Column("customer_address_type", "VARCHAR", default="B"),
             Column("customer_address_inserted_at", "TIMESTAMP", inserted_at=True),
             Column("customer_address_updated_at", "TIMESTAMP", updated_at=True),
         )

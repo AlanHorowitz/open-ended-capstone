@@ -22,7 +22,7 @@ class DateDimensionProcessor(DimensionProcessor):
         """
 
         date_dim = self._build_dimension(start_date, end_date)
-        self._write_dimension(date_dim, "INSERT")
+        self._write_table(None, date_dim, "INSERT")
 
     def _build_dimension(self, start_date: date, end_date: date) -> DataFrame:
         """

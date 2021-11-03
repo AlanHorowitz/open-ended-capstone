@@ -23,17 +23,18 @@ class DimensionProcessor:
 
         self._connection.commit()
 
-    def _write_dimension(self, dim_table: DataFrame, operation: str) -> None:
+    def _write_table(self, table, dim_table: DataFrame, operation: str) -> None:
         """
         Write a dataframe containing inserts or updates to mySQL dimension table.
         Convert the dataframe to a python list and use mysql-connector-python for bulk execution call.
 
+        :param table:
         :param dim_table: dataframe conforming to customer_dim schema
         :param operation: INSERT/REPLACE -- mirror mySQL verbs for insert/upsert
         :return: None
         """
         if dim_table.shape[0] > 0:
-            table = self._dimension_table
+            table = table if table else self._dimension_table  # FIXME
             table_name = table.get_name()
             column_names = ",".join(table.get_column_names())
             values_substitutions = ",".join(["%s"] * len(table.get_column_names()))

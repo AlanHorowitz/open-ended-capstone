@@ -374,7 +374,7 @@ def test_write_dimension(ms_connection, base_dimension_records_all):
     c = CustomerDimensionProcessor(ms_connection)
 
     # insert two rows in empty table
-    c._write_dimension(base_dimension_records_all, "INSERT")
+    c._write_table(None, base_dimension_records_all, "INSERT")
 
     table = c._dimension_table
     table_name = table.get_name()
@@ -394,7 +394,7 @@ def test_write_dimension(ms_connection, base_dimension_records_all):
     two_new.reset_index(inplace=True, drop=True)
     two_new.at[0, ["surrogate_key", "customer_key", "name"]] = [100, 100, "John Doe"]
     two_new.at[1, ["surrogate_key", "customer_key", "name"]] = [101, 101, "Jane Doe"]
-    c._write_dimension(two_new, "INSERT")
+    c._write_table(None, two_new, "INSERT")
 
     df = pd.read_sql_query(query, ms_connection)
     df = df.set_index("customer_key", drop=False)
@@ -410,7 +410,7 @@ def test_write_dimension(ms_connection, base_dimension_records_all):
 
     two_updates.loc[45, "billing_state"] = "NY"
     two_updates.loc[101, "shipping_state"] = "NY"
-    c._write_dimension(two_updates, "REPLACE")
+    c._write_table(None, two_updates, "REPLACE")
 
     df = pd.read_sql_query(query, ms_connection)
     df = df.set_index("customer_key", drop=False)

@@ -16,4 +16,6 @@ class SalesFactTable(Table):
             Column("is_current_row", "BOOLEAN"),  # type 2 scd
             # customer columns
             Column("customer_key", "INTEGER"),  # natural key -- Add index
+            create_only=True,
+            batch_id=False,
         )

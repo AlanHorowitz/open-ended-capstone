@@ -87,7 +87,7 @@ class ProductDimensionProcessor(DimensionProcessor):
         )
 
         self._truncate_dimension()
-        self._write_dimension(inserts.append(updates), "INSERT")
+        self._write_table(None, inserts.append(updates), "INSERT")
         self._next_surrogate_key += inserts.shape[0]
 
         logger.debug("%d total rows in product_dim table", self._count_dimension())

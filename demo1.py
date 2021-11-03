@@ -23,11 +23,16 @@ from WidgetsUnlimited.model import (ProductTable,
                                     CustomerTable,
                                     CustomerAddressTable,
                                     OrderTable,
-                                    OrderLineItemTable)
+                                    OrderLineItemTable,
+                                    StoreTable,
+                                    StoreLocationTable,
+                                    StoreSalesTable)
 
 from WidgetsUnlimited.operations.base import BaseSystem
 from WidgetsUnlimited.operations.ecommerce import eCommerceSystem
 from WidgetsUnlimited.operations.inventory import InventorySystem
+from WidgetsUnlimited.operations.instore import InStoreSystem
+
 from WidgetsUnlimited.operations.generator import DataGenerator, GeneratorRequest
 from WidgetsUnlimited.operations.simulator import OperationsSimulator
 
@@ -43,6 +48,10 @@ CUSTOMER = CustomerTable()
 CUSTOMER_ADDRESS = CustomerAddressTable()
 ORDER = OrderTable()
 ORDER_LINE_ITEM = OrderLineItemTable()
+STORE = StoreTable()
+STORE_LOCATION = StoreLocationTable()
+STORE_SALES = StoreSalesTable()
+
 
 # create data generator
 data_generator = DataGenerator()
@@ -50,15 +59,19 @@ data_generator = DataGenerator()
 # create source systems
 e_commerce_system: BaseSystem = eCommerceSystem()
 inventory_system: BaseSystem = InventorySystem()
+instore_system: BaseSystem = InStoreSystem()
+
 
 # Initialize simulator with data generator and source systems.  Allocate tables to source systems.
 operations_simulator = OperationsSimulator(
-    data_generator, [e_commerce_system, inventory_system]
+    data_generator, [e_commerce_system, inventory_system, instore_system]
 )
 operations_simulator.add_tables(
     e_commerce_system, [CUSTOMER, CUSTOMER_ADDRESS, ORDER, ORDER_LINE_ITEM]
 )
 operations_simulator.add_tables(inventory_system, [PRODUCT, SUPPLIER, PRODUCT_SUPPLIER])
+operations_simulator.add_tables(instore_system, [STORE, STORE_LOCATION, STORE_SALES])
+
 
 # create data warehouse
 warehouse = DataWarehouse()
@@ -71,6 +84,8 @@ daily_operations = [
         GeneratorRequest(PRODUCT, n_inserts=500, n_updates=0),
         GeneratorRequest(CUSTOMER, n_inserts=200, n_updates=0),
         GeneratorRequest(CUSTOMER_ADDRESS, n_inserts=1, n_updates=0, link_parent=True),
+        GeneratorRequest(STORE, n_inserts=20, n_updates=0),
+        GeneratorRequest(STORE_LOCATION, n_inserts=1, n_updates=0, link_parent=True),
     ],
     [
         # day 2
@@ -79,6 +94,8 @@ daily_operations = [
         GeneratorRequest(CUSTOMER_ADDRESS, n_inserts=1, n_updates=0, link_parent=True),
         GeneratorRequest(ORDER, n_inserts=1000, n_updates=0),
         GeneratorRequest(ORDER_LINE_ITEM, n_inserts=5, n_updates=0, link_parent=True),
+        GeneratorRequest(STORE_SALES, n_inserts=1000, n_updates=0),
+
     ],
     [
         # day 3
@@ -106,4 +123,4 @@ for day, transactions in enumerate(daily_operations, start=1):
     warehouse.direct_extract(data_generator.get_connection(), batch_id=day)
     warehouse.transform_load(batch_id=day)
 
-logger.info("\ndemo1.py completed successfully.")
+logger.info("demo1.py completed successfully")
