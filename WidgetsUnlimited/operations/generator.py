@@ -25,18 +25,14 @@ logger = logging.getLogger(__name__)
 class GeneratorRequest:
     """A structure of options passed to DataGenerator.generate"""
 
-    def __init__(
-        self,
-        table: Table,  # Table to be generated
-        n_inserts: int = 0,  # number of inserts to generate
-        n_updates: int = 0,  # number of updates to generate
-        link_parent: bool = False,  # If true, use n_inserts to describe how many records to insert
-        # per parent key inserted in the same batch.
-    ) -> None:
+    def __init__(self, table: Table, n_inserts: int = 0, n_updates: int = 0, link_parent: bool = False,
+                 update_columns=None, defaults=None) -> None:
         self.table = table
         self.n_inserts = n_inserts
         self.n_updates = n_updates
         self.link_parent = link_parent
+        self.update_columns = update_columns
+        self.defaults = defaults
 
 
 class DataGenerator:
@@ -357,7 +353,8 @@ def _create_new_row(
 
     for col in table.get_columns():
         if col.has_default():
-            row.append(col.get_default())
+            dflt = col.get_default()
+            row.append(dflt() if callable(dflt) else dflt)
         elif col.is_primary_key():
             row.append(primary_key)
         elif col.is_batch_id():

@@ -1,6 +1,7 @@
 from psycopg2.extensions import TRANSACTION_STATUS_IDLE
 from .metadata import Table, Column
 from .customer import CustomerTable
+from .default_functions import name_address_generator
 
 
 class CustomerAddressTable(Table):
@@ -21,7 +22,8 @@ class CustomerAddressTable(Table):
                 "customer_address",
                 "VARCHAR",
                 255,
-                default="First Middle Last\n123 Snickersnack Lane\nBrooklyn, NY 11229",
+                # default="First Middle Last\n123 Snickersnack Lane\nBrooklyn, NY 11229",
+                default=name_address_generator,
                 update=True,
             ),
             # Column("customer_temp_updateable", "VARCHAR", update=True),
