@@ -121,6 +121,7 @@ class DataGenerator:
         table_name = table.get_name()
         n_inserts = generator_request.n_inserts
         n_updates = generator_request.n_updates
+        defaults = generator_request.defaults
         link_parent = generator_request.link_parent
         if link_parent and not table.has_parent():
             raise Exception(f"Invalid Request. No parent for table {table_name}")
@@ -246,13 +247,8 @@ class DataGenerator:
             if not link_parent:
                 for pk in range(next_primary_key, next_primary_key + n_inserts):
                     insert_rows.append(
-                        _create_new_row(
-                            table=table,
-                            primary_key=pk,
-                            parent_key=None,
-                            batch_id=batch_id,
-                            timestamp=timestamp,
-                        )
+                        _create_new_row(table=table, primary_key=pk, parent_key=None, batch_id=batch_id,
+                                        timestamp=timestamp)
                     )
                 insert_count = _insert_rows(cur, table_name, column_names, insert_rows)
 
@@ -276,13 +272,8 @@ class DataGenerator:
                 for p_row in parent_rows:
                     for _ in range(n_inserts):
                         insert_rows.append(
-                            _create_new_row(
-                                table=table,
-                                primary_key=next_primary_key,
-                                parent_key=p_row[0],
-                                batch_id=batch_id,
-                                timestamp=timestamp,
-                            )
+                            _create_new_row(table=table, primary_key=next_primary_key, parent_key=p_row[0],
+                                            batch_id=batch_id, timestamp=timestamp)
                         )
                         next_primary_key += 1
 
@@ -323,16 +314,12 @@ class DataGenerator:
         return insert_rows, update_rows
 
 
-def _create_new_row(
-    table: Table,
-    primary_key: int,
-    parent_key: int = None,
-    batch_id: int = None,
-    timestamp: datetime = datetime.now(),
-) -> Tuple:
+def _create_new_row(table: Table, primary_key: int, parent_key: int = None, batch_id: int = None,
+                    timestamp: datetime = datetime.now(), defaults=None) -> Tuple:
     """
     Create a new row for a table.  Substitute cross references and set default values using the column metadata.
 
+    :param defaults:
     :param table: Table metadata object
     :param primary_key: value of primary key
     :param parent_key:  value of parent key (where table has parent)
@@ -352,10 +339,18 @@ def _create_new_row(
         )
 
     for col in table.get_columns():
-        if col.has_default():
+
+        # if column has default scalar or callable, use it.
+        dflt = None
+        if col.get_name() in defaults:
+            dflt = defaults[col.get_name()]
+        elif not dflt or col.has_default():
             dflt = col.get_default()
+        if dflt:
             row.append(dflt() if callable(dflt) else dflt)
-        elif col.is_primary_key():
+            continue
+
+        if col.is_primary_key():
             row.append(primary_key)
         elif col.is_batch_id():
             row.append(batch_id)
