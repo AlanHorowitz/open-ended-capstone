@@ -1,5 +1,5 @@
-from typing import List, Tuple, Dict
-from WidgetsUnlimited.model.metadata import Table, XrefTableData
+from typing import List, Tuple, Dict, Any
+from WidgetsUnlimited.model.metadata import Table, XrefTableData, Column
 from datetime import datetime
 import random
 from random import choice
@@ -27,12 +27,27 @@ class GeneratorRequest:
 
     def __init__(self, table: Table, n_inserts: int = 0, n_updates: int = 0, link_parent: bool = False,
                  update_columns=None, defaults=None) -> None:
+        if defaults is None:
+            defaults = {}
         self.table = table
         self.n_inserts = n_inserts
         self.n_updates = n_updates
         self.link_parent = link_parent
         self.update_columns = update_columns
         self.defaults = defaults
+
+        # Check for errors and resolve default rvalue if presented as None
+        if defaults:
+            if not isinstance(defaults, dict):
+                raise TypeError('defaults must be a dictionary')
+            column_names = self.table.get_column_names()
+            for column_name in defaults:
+                if column_name not in column_names:
+                    raise TypeError(f'unknown column name {column_name} in defaults')
+            for col in self.table.get_columns():
+                if col.get_name() in defaults:
+                    dflt = self.defaults[col.get_name()]
+                    self.defaults[col.get_name()] = dflt if dflt is not None else col.get_default()
 
 
 class DataGenerator:
@@ -84,7 +99,7 @@ class DataGenerator:
             self._connection.commit()
 
     def generate(
-        self, generator_request: GeneratorRequest, batch_id: int = 0
+            self, generator_request: GeneratorRequest, batch_id: int = 0
     ) -> Tuple[List[Tuple], List[DictRow]]:
         """
         Synthesize insert and update records for a table. apply these changes to the generator postgres and return
@@ -168,6 +183,13 @@ class DataGenerator:
 
         if n_updates > 0:
 
+            # default values required for updates
+            if len(defaults) == 0 or not all(defaults.values()):
+                logger.error("Default values invalid for batch %s %r", batch_id, defaults)
+                return insert_rows, update_rows
+
+            set_sql = " ".join([" SET " + update_column + " = %s," for update_column in defaults.keys()])
+
             n_updates = min(n_updates, row_count)
             update_keys = ",".join(
                 [str(i) for i in random.sample(range(1, next_primary_key), n_updates)]
@@ -180,20 +202,24 @@ class DataGenerator:
             update_rows = cur.fetchall()
 
             for u_row in update_rows:
-                update_column = table.get_update_column().get_name()
-                u_row[update_column] = u_row[update_column] + "_UPD"
+
+                update_column_values = []
+                for update_column, dflt in defaults.items():
+                    dflt = dflt() if callable(dflt) else dflt
+                    update_column_values.append(dflt)
+
                 cur.execute(
-                    f"UPDATE {table_name}"
-                    f" SET {update_column} = %s,"
+                    f"UPDATE {table_name}" +
+                    set_sql +
                     f" {updated_at_column} = %s,"
                     f" batch_id = %s"
                     f" WHERE {primary_key_column} = %s",
+                    update_column_values.extend(
                     [
-                        u_row[update_column],
                         timestamp,
                         batch_id,
                         u_row[primary_key_column],
-                    ],
+                    ]),
                 )
 
                 # For update, randomly add or remove a bridge table row
@@ -248,7 +274,7 @@ class DataGenerator:
                 for pk in range(next_primary_key, next_primary_key + n_inserts):
                     insert_rows.append(
                         _create_new_row(table=table, primary_key=pk, parent_key=None, batch_id=batch_id,
-                                        timestamp=timestamp)
+                                        timestamp=timestamp, defaults=defaults)
                     )
                 insert_count = _insert_rows(cur, table_name, column_names, insert_rows)
 
@@ -273,7 +299,7 @@ class DataGenerator:
                     for _ in range(n_inserts):
                         insert_rows.append(
                             _create_new_row(table=table, primary_key=next_primary_key, parent_key=p_row[0],
-                                            batch_id=batch_id, timestamp=timestamp)
+                                            batch_id=batch_id, timestamp=timestamp, defaults=defaults)
                         )
                         next_primary_key += 1
 
@@ -341,13 +367,10 @@ def _create_new_row(table: Table, primary_key: int, parent_key: int = None, batc
     for col in table.get_columns():
 
         # if column has default scalar or callable, use it.
-        dflt = None
-        if col.get_name() in defaults:
-            dflt = defaults[col.get_name()]
-        elif not dflt or col.has_default():
-            dflt = col.get_default()
+        dflt = defaults.get(col.get_name())
+        dflt = dflt() if callable(dflt) else dflt
         if dflt:
-            row.append(dflt() if callable(dflt) else dflt)
+            row.append(dflt)
             continue
 
         if col.is_primary_key():
@@ -380,3 +403,12 @@ def _insert_rows(cur, table_name, column_names, rows) -> int:
         f"INSERT INTO {table_name} ({column_names}) values {values_substitutions}", rows
     )
     return cur.rowcount
+
+
+def get_default_column_value(col: Column, defaults: Dict) -> Any:
+    dflt = None
+    if col.get_name() in defaults:
+        dflt = defaults[col.get_name()]
+    elif not dflt or col.has_default():
+        dflt = col.get_default()
+    return dflt() if callable(dflt) else dflt
