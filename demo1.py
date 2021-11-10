@@ -99,17 +99,17 @@ daily_operations = [
     ],
     [
         # day 3
-        GeneratorRequest(PRODUCT, n_inserts=50, n_updates=5),
-        GeneratorRequest(CUSTOMER, n_inserts=0, n_updates=5),
-        GeneratorRequest(CUSTOMER_ADDRESS, n_inserts=0, n_updates=10),
-        GeneratorRequest(ORDER, n_inserts=1000, n_updates=0),
-        GeneratorRequest(ORDER_LINE_ITEM, n_inserts=3, n_updates=0, link_parent=True),
+        GeneratorRequest(PRODUCT, n_inserts=50, n_updates=5, defaults={'product_dimension_length': 7.0}),
+        # GeneratorRequest(CUSTOMER, n_inserts=0, n_updates=5),
+        # GeneratorRequest(CUSTOMER_ADDRESS, n_inserts=0, n_updates=10),
+        # GeneratorRequest(ORDER, n_inserts=1000, n_updates=0),
+        # GeneratorRequest(ORDER_LINE_ITEM, n_inserts=3, n_updates=0, link_parent=True),
     ],
-    [
-        # day 4
-        GeneratorRequest(CUSTOMER, n_inserts=25, n_updates=61),
-        GeneratorRequest(CUSTOMER_ADDRESS, n_inserts=1, n_updates=0, link_parent=True),
-    ],
+    # [
+    #     # day 4
+    #     GeneratorRequest(CUSTOMER, n_inserts=25, n_updates=61),
+    #     GeneratorRequest(CUSTOMER_ADDRESS, n_inserts=1, n_updates=0, link_parent=True),
+    # ],
 ]
 
 # Synchronously process generator_requests and extract and load in warehouse.

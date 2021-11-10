@@ -36,7 +36,7 @@ class GeneratorRequest:
         self.update_columns = update_columns
         self.defaults = defaults
 
-        # Check for errors and resolve default rvalue if presented as None
+        # Check for errors and resolve default value if presented as None
         if defaults:
             if not isinstance(defaults, dict):
                 raise TypeError('defaults must be a dictionary')
@@ -194,6 +194,8 @@ class DataGenerator:
             update_keys = ",".join(
                 [str(i) for i in random.sample(range(1, next_primary_key), n_updates)]
             )
+
+            # without the _UPD I don't need this anymore; check whether bridge table needs u_rows
             cur.execute(
                 f"SELECT {column_names} from {table_name}"
                 f" WHERE {primary_key_column} IN ({update_keys});"
@@ -203,10 +205,17 @@ class DataGenerator:
 
             for u_row in update_rows:
 
-                update_column_values = []
+                substitution_values = []
                 for update_column, dflt in defaults.items():
                     dflt = dflt() if callable(dflt) else dflt
-                    update_column_values.append(dflt)
+                    substitution_values.append(dflt)
+
+                substitution_values.extend(
+                    [
+                        timestamp,
+                        batch_id,
+                        u_row[primary_key_column],
+                    ])
 
                 cur.execute(
                     f"UPDATE {table_name}" +
@@ -214,12 +223,7 @@ class DataGenerator:
                     f" {updated_at_column} = %s,"
                     f" batch_id = %s"
                     f" WHERE {primary_key_column} = %s",
-                    update_column_values.extend(
-                    [
-                        timestamp,
-                        batch_id,
-                        u_row[primary_key_column],
-                    ]),
+                    substitution_values,
                 )
 
                 # For update, randomly add or remove a bridge table row
@@ -367,7 +371,7 @@ def _create_new_row(table: Table, primary_key: int, parent_key: int = None, batc
     for col in table.get_columns():
 
         # if column has default scalar or callable, use it.
-        dflt = defaults.get(col.get_name())
+        dflt = defaults.get(col.get_name()) or col.get_default()
         dflt = dflt() if callable(dflt) else dflt
         if dflt:
             row.append(dflt)
