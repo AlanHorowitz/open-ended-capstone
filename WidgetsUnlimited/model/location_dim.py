@@ -28,8 +28,8 @@ class LocationDimTable(Table):
         super().__init__(
             LocationDimTable.NAME,
             Column("surrogate_key", "INTEGER", primary_key=True),
-            Column("region_name", "VARCHAR"),
             Column("location_name", "VARCHAR"),
+            Column("region_name", "VARCHAR"),
             Column("number_of_customers", "INTEGER"),
             Column("number_of_stores", "INTEGER"),
             Column("square_footage_of_stores", "FLOAT"),

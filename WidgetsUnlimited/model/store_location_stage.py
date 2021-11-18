@@ -5,6 +5,8 @@ class StoreLocationStageTable(Table):
 
     NAME = "store_location_stage"
 
+    # Keep track of location_id and sq footage by store_id, perhaps work file would be better
+    # not to overload the word stage.
     def __init__(self):
         super().__init__(
             StoreLocationStageTable.NAME,

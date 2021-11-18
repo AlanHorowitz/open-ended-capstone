@@ -90,3 +90,11 @@ def test_update_store_location_stage():
     assert store_location_stage.iloc[3]['store_id'] == 4
     assert store_location_stage.iloc[3]['store_location_sq_footage'] == 40000
     assert store_location_stage.iloc[3]['location_id'] == 7
+
+
+def test_update_location_dim():
+    p = LocationDimensionProcessor()
+    ldim = p._location_dim.set_index('location_name')
+    customer_zips = pd.Series(['11111', '22222', '24000', '27999', '28000'])
+    p._update_location_dim(ldim, None, customer_zips)
+    assert ldim.loc['LOC2', 'number_of_customers'] == 1
