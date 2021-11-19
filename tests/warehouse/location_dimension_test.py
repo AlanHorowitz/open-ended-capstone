@@ -93,8 +93,12 @@ def test_update_store_location_stage():
 
 
 def test_update_location_dim():
-    p = LocationDimensionProcessor()
-    ldim = p._location_dim.set_index('location_name')
+    location_dim = LocationDimensionProcessor()._location_dim
     customer_zips = pd.Series(['11111', '22222', '24000', '27999', '28000'])
-    p._update_location_dim(ldim, None, customer_zips)
-    assert ldim.loc['LOC2', 'number_of_customers'] == 1
+    LocationDimensionProcessor._update_location_dim(location_dim, None, customer_zips)
+
+    assert location_dim.loc[1, 'number_of_customers'] == 1
+    assert location_dim.loc[2, 'number_of_customers'] == 1
+    assert location_dim.loc[3, 'number_of_customers'] == 2
+    assert location_dim.loc[4, 'number_of_customers'] == 1
+    assert location_dim.loc[5, 'number_of_customers'] == 0

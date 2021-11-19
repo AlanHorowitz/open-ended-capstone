@@ -24,6 +24,7 @@ class LocationDimensionProcessor(DimensionProcessor):
         location_dim['number_of_customers'] = 0
         location_dim['number_of_stores'] = 0
         location_dim['square_footage_of_stores'] = 0.0
+        location_dim.set_index('surrogate_key', drop=False)
 
         self._location_dim = location_dim.astype(dim_table.get_column_pandas_types())
         if connection:
@@ -64,7 +65,7 @@ class LocationDimensionProcessor(DimensionProcessor):
         c = customer_zips[customer_zips != 'N/A'].apply(int).apply(LocationDimTable.get_location_from_zip)
 
         location_dim['number_of_customers'] = c.value_counts()
-        location_dim['number_of_customers'].fillna(0, inplace=True)
+        location_dim['number_of_customers'] = location_dim['number_of_customers'].fillna(0).astype(int)
         location_dim['number_of_stores'] = 0
         location_dim['square_footage_of_stores'] = 0.0
 
