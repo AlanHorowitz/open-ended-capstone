@@ -271,7 +271,7 @@ def test_generate_bridge_update(
     assert len(cursor.fetchall()) == 200
 
     data_generator.generate(
-        GeneratorRequest(product_table, n_inserts=0, n_updates=1), 1
+        GeneratorRequest(product_table, n_inserts=0, n_updates=1, defaults={'product_category': 'CAT1'}), 1
     )
 
     cursor.execute(f"select * from {product_supplier_table.get_name()}")
@@ -285,7 +285,7 @@ def test_generate_bridge_update(
     assert len(cursor.fetchall()) in (214, 216)
 
     data_generator.generate(
-        GeneratorRequest(supplier_table, n_inserts=0, n_updates=2), 1
+        GeneratorRequest(supplier_table, n_inserts=0, n_updates=2, defaults={'supplier_primary_contact_name': 'Jim'}), 1
     )
 
     cursor.execute(f"select * from {product_supplier_table.get_name()}")
