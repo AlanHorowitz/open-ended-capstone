@@ -40,8 +40,8 @@ def test_init_dimension(ms_connection):
     select_sql = """
     SELECT 
     surrogate_key,
-    region_name,
     location_name,
+    region_name,
     number_of_customers,
     number_of_stores,
     square_footage_of_stores
