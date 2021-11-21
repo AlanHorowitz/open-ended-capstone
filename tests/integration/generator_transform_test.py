@@ -60,7 +60,8 @@ def test_customer(ms_connection):
 
     # try modifying two customers
     data_generator.generate(
-        GeneratorRequest(customer_table, n_inserts=0, n_updates=2), batch_id=2
+        GeneratorRequest(customer_table, n_inserts=0, n_updates=2,
+                         defaults={'customer_email': 'updated_email@myco.com'}), batch_id=2
     )
 
     clean_stage_dir(2)
@@ -74,7 +75,7 @@ def test_customer(ms_connection):
     cur.execute("SELECT COUNT(*) from customer_dim;")
     assert cur.fetchone()[0] == 20
 
-    cur.execute("SELECT COUNT(email) from customer_dim where email like '%_UPD';")
+    cur.execute("SELECT COUNT(email) from customer_dim where email like 'updated_email%';")
     assert cur.fetchone()[0] == 2
 
 
