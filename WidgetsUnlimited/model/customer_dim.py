@@ -46,6 +46,7 @@ class CustomerDimTable(Table):
             Column("shipping_city", "VARCHAR", 255),
             Column("shipping_state", "VARCHAR", 255),
             Column("shipping_zip", "VARCHAR"),
+            Column("location_id", "INTEGER"),
             # Column("shipping_last_update", "TIMESTAMP"),
             # Column("shipping_number_of_updates", "INTEGER"),
             create_only=True,

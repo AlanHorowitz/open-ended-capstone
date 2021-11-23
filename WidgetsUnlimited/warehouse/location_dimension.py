@@ -44,6 +44,7 @@ class LocationDimensionProcessor(DimensionProcessor):
         self._write_table(StoreLocationStageTable(), store_location_stage, "REPLACE")
 
         # for each location category update the aggregates (how to calculate?)
+        # location_id should be set by customer_dim
         billing_zips = pd.read_sql_query(f'SELECT billing_zip from customer_dim', self._connection)['billing_zip']
         location_dim = self._update_location_dim(self._location_dim, store_location_stage, billing_zips)
 
@@ -63,6 +64,7 @@ class LocationDimensionProcessor(DimensionProcessor):
     def _update_location_dim(location_dim, store_location_stage, customer_zips):
 
         c = customer_zips[customer_zips != 'N/A'].apply(int).apply(LocationDimTable.get_location_from_zip)
+        # s = store_location_stage.set_index("location_id")
 
         location_dim['number_of_customers'] = c.value_counts()
         location_dim['number_of_customers'] = location_dim['number_of_customers'].fillna(0).astype(int)

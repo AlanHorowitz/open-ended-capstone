@@ -49,6 +49,7 @@ dim_records = {
     "shipping_city": ["St. Joseph", None],
     "shipping_state": ["TN", None],
     "shipping_zip": ["54321", None],
+    "location_id": [2, 12],
 }
 
 TEST_BILLING_ADDRESS = "First Middle Last\n123 Snickersnack Lane\nBrooklyn, NY 11229"
@@ -69,7 +70,6 @@ def ms_connection():
 
 @pytest.fixture
 def base_dimension_record_45():
-
     customer_dim = pd.DataFrame(dim_records)
     customer_dim = customer_dim.set_index("customer_key", drop=False)
     yield pd.DataFrame(customer_dim.loc[45:45])  # slice for dataframe
@@ -77,14 +77,12 @@ def base_dimension_record_45():
 
 @pytest.fixture
 def base_dimension_records_all():
-
     customer_dim = pd.DataFrame(dim_records)
     customer_dim = customer_dim.set_index("customer_key", drop=False)
     yield customer_dim
 
 
 def test_parse_address():
-
     c = CustomerDimensionProcessor(None)
     address = c.parse_address(TEST_BILLING_ADDRESS)
     assert address["name"] == "First Middle Last"
@@ -97,7 +95,6 @@ def test_parse_address():
 # Build new customer_dim from customers and addresses.
 # Customers 3 & 5 have billing and shipping; customer 4, billing only,
 def test_build_new_dimension():
-
     c = CustomerDimensionProcessor(None)
 
     _day = date(2020, 10, 10)
@@ -155,7 +152,6 @@ def test_build_new_dimension():
 
 
 def test_transform_referral_type():
-
     customer_data = {
         "customer_id": [1, 2, 3, 4],
         "customer_name": ["c1", "c2", "c3", "c4"],
@@ -201,7 +197,6 @@ def test_transform_referral_type():
 
 
 def test_update_customer_only(base_dimension_record_45):
-
     c = CustomerDimensionProcessor(None)
     test_time = datetime.now()
 
@@ -282,7 +277,6 @@ def test_update_customer_address_only(base_dimension_record_45):
 
 
 def test_deactivate(base_dimension_record_45):
-
     c = CustomerDimensionProcessor(None)
     test_time = datetime.now()
 
@@ -321,7 +315,6 @@ def test_deactivate(base_dimension_record_45):
 
 
 def test_activate(base_dimension_record_45):
-
     old_dim = base_dimension_record_45.copy()
     old_dim["is_active"] = False
     old_dim["deactivation_date"] = date(2020, 10, 15)
@@ -370,7 +363,6 @@ def test_latest_update():
 
 
 def test_write_dimension(ms_connection, base_dimension_records_all):
-
     c = CustomerDimensionProcessor(ms_connection)
 
     # insert two rows in empty table
@@ -422,7 +414,6 @@ def test_write_dimension(ms_connection, base_dimension_records_all):
 
 # mix behaviors across two records
 def test_update_all(base_dimension_records_all):
-
     c = CustomerDimensionProcessor(None)
     test_time = datetime.now()
 
@@ -475,7 +466,6 @@ def test_update_all(base_dimension_records_all):
 
 # change only address on record 45
 def test_update_all_2(base_dimension_records_all):
-
     c = CustomerDimensionProcessor(None)
     test_time = datetime.now()
 
@@ -522,5 +512,3 @@ def test_update_all_2(base_dimension_records_all):
     assert customer_dim.loc[46, "billing_street_number"] == "44 Pine Street"
     assert customer_dim.loc[46, "email"] == "henry@hotmail.com"
     assert customer_dim.loc[46, "credit_card_number"] == "88888888"
-
-

@@ -43,6 +43,7 @@ class LocationDimTable(Table):
     @staticmethod
     def get_location_from_zip(zip_code: int) -> int:
 
+        zip_code = int(zip_code)
         for loc in LocationDimTable.LOCATION_DATA:
             key, zip_ranges = loc[0], loc[3]
             for low, high in zip_ranges:

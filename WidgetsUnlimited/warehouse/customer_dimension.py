@@ -9,6 +9,7 @@ from WidgetsUnlimited.model.customer_dim import CustomerDimTable
 from WidgetsUnlimited.model.customer import CustomerTable
 from WidgetsUnlimited.model.customer_address import CustomerAddressTable
 from .dimension_processor import DimensionProcessor
+from WidgetsUnlimited.model.location_dim import LocationDimTable
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,7 @@ class CustomerDimensionProcessor(DimensionProcessor):
 
         super().__init__(connection, CustomerDimTable())
         self._next_surrogate_key = 1
+        self._location_from_zip = LocationDimTable.get_location_from_zip
 
     def process_update(self, batch_id: int) -> None:
         """
@@ -188,7 +190,7 @@ class CustomerDimensionProcessor(DimensionProcessor):
 
     @staticmethod
     def customer_transform(
-        customer: DataFrame, customer_address: DataFrame
+            customer: DataFrame, customer_address: DataFrame
     ) -> DataFrame:
         """
         Common transformations that apply to both inserts and updates.
@@ -259,7 +261,7 @@ class CustomerDimensionProcessor(DimensionProcessor):
         return customer_dim
 
     def _build_new_dimension(
-        self, new_keys: Index, customer: DataFrame, customer_address: DataFrame
+            self, new_keys: Index, customer: DataFrame, customer_address: DataFrame
     ) -> DataFrame:
         """
         Create and initialize new records for customer_dimension table in star schema
@@ -299,6 +301,9 @@ class CustomerDimensionProcessor(DimensionProcessor):
         customer_dim["effective_date"] = date(2020, 10, 10)
         customer_dim["expiration_date"] = date(2099, 12, 31)
         customer_dim["is_current_row"] = "Y"
+        bill_zip, ship_zip = customer_dim['billing_zip'], customer_dim['shipping_zip']
+        customer_dim['location_id'] = \
+            bill_zip.combine(ship_zip, lambda b, s: self._location_from_zip(b or s))
 
         # conform output types
         customer_dim = customer_dim.astype(
@@ -313,11 +318,11 @@ class CustomerDimensionProcessor(DimensionProcessor):
         return customer_dim
 
     def _build_update_dimension(
-        self,
-        update_keys: Index,
-        prior_customer_dim: DataFrame,
-        customer: DataFrame,
-        customer_address: DataFrame,
+            self,
+            update_keys: Index,
+            prior_customer_dim: DataFrame,
+            customer: DataFrame,
+            customer_address: DataFrame,
     ) -> DataFrame:
         """
         Update existing records in customer_dimension table star schema
@@ -347,10 +352,10 @@ class CustomerDimensionProcessor(DimensionProcessor):
         customer = customer.reindex(update_keys)
         if "customer_is_active" in customer.columns:
             was_activated = (customer["customer_is_active"] == True) & (
-                prior_customer_dim["is_active"] == False
+                    prior_customer_dim["is_active"] == False
             )
             was_deactivated = (customer["customer_is_active"] == False) & (
-                prior_customer_dim["is_active"] == True
+                    prior_customer_dim["is_active"] == True
             )
 
             prior_customer_dim.loc[was_activated, "activation_date"] = customer[
@@ -368,6 +373,10 @@ class CustomerDimensionProcessor(DimensionProcessor):
         mask = customer_dim.notnull()
         for col in customer_dim.columns:
             prior_customer_dim.loc[mask[col], col] = customer_dim[col]
+
+        bill_zip, ship_zip = prior_customer_dim['billing_zip'], prior_customer_dim['shipping_zip']
+        prior_customer_dim['location_id'] = \
+            bill_zip.combine(ship_zip, lambda b, s: self._location_from_zip(b or s))
 
         # make copy of result
         update_dim = pd.DataFrame(
