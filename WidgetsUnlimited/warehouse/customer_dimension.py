@@ -301,7 +301,7 @@ class CustomerDimensionProcessor(DimensionProcessor):
         customer_dim["effective_date"] = date(2020, 10, 10)
         customer_dim["expiration_date"] = date(2099, 12, 31)
         customer_dim["is_current_row"] = "Y"
-        bill_zip, ship_zip = customer_dim['billing_zip'], customer_dim['shipping_zip']
+        bill_zip, ship_zip = customer_dim['billing_zip'].fillna(''), customer_dim['shipping_zip'].fillna('')
         customer_dim['location_id'] = \
             bill_zip.combine(ship_zip, lambda b, s: self._location_from_zip(b or s))
 

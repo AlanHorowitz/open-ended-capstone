@@ -53,7 +53,7 @@ dim_records = {
 }
 
 TEST_BILLING_ADDRESS = "First Middle Last\n123 Snickersnack Lane\nBrooklyn, NY 11229"
-TEST_SHIPPING_ADDRESS = "First Middle Last\n15 Jones Boulevard\nFair Lawn,NJ 07410"
+TEST_SHIPPING_ADDRESS = "First Middle Last\n15 Jones Boulevard\nFair Lawn,NJ 61616"
 
 
 @pytest.fixture
@@ -125,10 +125,10 @@ def test_build_new_dimension():
         "batch_id": [1] * 4,
     }
     customer_address_data = {
-        "customer_id": [1, 2, 3, 3, 4, 5, 5],
+        "customer_id": [1, 2, 2, 3, 4, 5, 5],
         "customer_address_id": [1, 2, 3, 4, 5, 6, 7],
-        "customer_address": [tsa, tba, tsa, tba, tba, tsa, tba],
-        "customer_address_type": ["S", "B", "S", "B", "B", "S", "B"],
+        "customer_address": [tsa, tba, tsa, tsa, tba, tsa, tba],
+        "customer_address_type": ["S", "B", "S", "S", "B", "S", "B"],
         "customer_address_inserted_at": [_date] * 7,
         "customer_address_updated_at": [_date] * 7,
         "batch_id": [1] * 7,
@@ -145,10 +145,13 @@ def test_build_new_dimension():
 
     assert inserts.shape[0] == 3
     assert inserts.at[3, "name"] == "c3"
-    assert inserts.at[3, "billing_state"] == "NY"
+    assert inserts.at[3, "billing_state"] == "N/A"
     assert inserts.at[3, "shipping_state"] == "NJ"
     assert inserts.at[4, "billing_city"] == "Brooklyn"
     assert inserts.at[4, "shipping_city"] == "N/A"
+    assert inserts.at[3, "location_id"] == 10
+    assert inserts.at[4, "location_id"] == 1
+    assert inserts.at[5, "location_id"] == 1
 
 
 def test_transform_referral_type():
