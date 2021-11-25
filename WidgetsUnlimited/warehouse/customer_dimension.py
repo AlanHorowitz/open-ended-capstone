@@ -260,6 +260,21 @@ class CustomerDimensionProcessor(DimensionProcessor):
 
         return customer_dim
 
+    def get_location_id(self, df: DataFrame) -> int:
+        """ Return location id from billing ar shipping zip or -1 if absent """
+
+        def f(b, s):
+            if b != 'N/A':
+                return self._location_from_zip(b)
+            elif s != 'N/A':
+                return self._location_from_zip(s)
+            else:
+                logger.warning("My warning")
+                return -1
+
+        bill_zip, ship_zip = df['billing_zip'].fillna('N/A'), df['shipping_zip'].fillna('N/A')
+        return bill_zip.combine(ship_zip, f)
+
     def _build_new_dimension(
             self, new_keys: Index, customer: DataFrame, customer_address: DataFrame
     ) -> DataFrame:
@@ -301,9 +316,7 @@ class CustomerDimensionProcessor(DimensionProcessor):
         customer_dim["effective_date"] = date(2020, 10, 10)
         customer_dim["expiration_date"] = date(2099, 12, 31)
         customer_dim["is_current_row"] = "Y"
-        bill_zip, ship_zip = customer_dim['billing_zip'].fillna(''), customer_dim['shipping_zip'].fillna('')
-        customer_dim['location_id'] = \
-            bill_zip.combine(ship_zip, lambda b, s: self._location_from_zip(b or s))
+        customer_dim['location_id'] = self.get_location_id(customer_dim)
 
         # conform output types
         customer_dim = customer_dim.astype(
@@ -374,9 +387,7 @@ class CustomerDimensionProcessor(DimensionProcessor):
         for col in customer_dim.columns:
             prior_customer_dim.loc[mask[col], col] = customer_dim[col]
 
-        bill_zip, ship_zip = prior_customer_dim['billing_zip'], prior_customer_dim['shipping_zip']
-        prior_customer_dim['location_id'] = \
-            bill_zip.combine(ship_zip, lambda b, s: self._location_from_zip(b or s))
+        prior_customer_dim['location_id'] = self.get_location_id(prior_customer_dim)
 
         # make copy of result
         update_dim = pd.DataFrame(

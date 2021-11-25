@@ -24,29 +24,20 @@ class LocationDimensionProcessor(DimensionProcessor):
         location_dim['number_of_customers'] = 0
         location_dim['number_of_stores'] = 0
         location_dim['square_footage_of_stores'] = 0.0
-        location_dim.set_index('surrogate_key', drop=False)
 
-        self._location_dim = location_dim.astype(dim_table.get_column_pandas_types())
+        self._location_dim = location_dim.astype(dim_table.get_column_pandas_types())\
+            .set_index('surrogate_key', drop=False)
+
         if connection:
             self._write_table(None, self._location_dim, "INSERT")
 
     def process_update(self, batch_id: int) -> None:
-        # read incremental store_location
-        # read store location stage table, pandas
-        # apply updates
-        # overwrite using pandas
-        store_location, *_ = read_stage(
-            batch_id, [StoreLocationTable(), ]
-        )
-
         # apply location code for incremental store_location records
-        store_location_stage = self._update_store_location_stage(store_location)
-        self._write_table(StoreLocationStageTable(), store_location_stage, "REPLACE")
+        location_dim = self._location_dim
+        location_ids = pd.read_sql_query(f'SELECT location_id from customer_dim', self._connection)['location_id']
 
-        # for each location category update the aggregates (how to calculate?)
-        # location_id should be set by customer_dim
-        billing_zips = pd.read_sql_query(f'SELECT billing_zip from customer_dim', self._connection)['billing_zip']
-        location_dim = self._update_location_dim(self._location_dim, store_location_stage, billing_zips)
+        location_dim['number_of_customers'] = location_ids.value_counts()
+        location_dim['number_of_customers'] = location_dim['number_of_customers'].fillna(0).astype(int)
 
         self._write_table(None, location_dim, "REPLACE")
 
