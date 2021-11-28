@@ -3,8 +3,6 @@ from .warehouse_util import read_stage
 import pandas as pd
 
 from .dimension_processor import DimensionProcessor
-from WidgetsUnlimited.model.store_location_stage import StoreLocationStageTable
-from WidgetsUnlimited.model.store_location import StoreLocationTable
 
 
 # maintain a storage dimension table (what is in it?)
@@ -25,7 +23,7 @@ class LocationDimensionProcessor(DimensionProcessor):
         location_dim['number_of_stores'] = 0
         location_dim['square_footage_of_stores'] = 0.0
 
-        self._location_dim = location_dim.astype(dim_table.get_column_pandas_types())\
+        self._location_dim = location_dim.astype(dim_table.get_column_pandas_types()) \
             .set_index('surrogate_key', drop=False)
 
         if connection:
@@ -34,32 +32,14 @@ class LocationDimensionProcessor(DimensionProcessor):
     def process_update(self, batch_id: int) -> None:
         # apply location code for incremental store_location records
         location_dim = self._location_dim
-        location_ids = pd.read_sql_query(f'SELECT location_id from customer_dim', self._connection)['location_id']
+        customer_locations = pd.read_sql_query(f'SELECT location_id from customer_dim', self._connection)
+        store_data = pd.read_sql_query(f'SELECT location_id, square_footage from store_dim', self._connection)
+        store_group = store_data.groupby('location_id')
 
-        location_dim['number_of_customers'] = location_ids.value_counts()
+        location_dim['number_of_customers'] = customer_locations['location_id'].value_counts()
         location_dim['number_of_customers'] = location_dim['number_of_customers'].fillna(0).astype(int)
+
+        location_dim['number_of_stores'] = store_group['location_id'].count()
+        location_dim['square_footage_of_stores'] = store_group['location_id'].mean()
 
         self._write_table(None, location_dim, "REPLACE")
-
-    @staticmethod
-    def _update_store_location_stage(store_location):
-        store_location_stage = pd.DataFrame([])
-        store_location_stage['store_id'] = store_location['store_id']
-        store_location_stage['store_location_sq_footage'] = store_location['store_location_sq_footage']
-        store_location_stage['location_id'] = (store_location['store_location_zip_code'].apply(int)). \
-            apply(LocationDimTable.get_location_from_zip)
-        return store_location_stage
-
-    # aggregates to be figured out.
-    @staticmethod
-    def _update_location_dim(location_dim, store_location_stage, customer_zips):
-
-        c = customer_zips[customer_zips != 'N/A'].apply(int).apply(LocationDimTable.get_location_from_zip)
-        # s = store_location_stage.set_index("location_id")
-
-        location_dim['number_of_customers'] = c.value_counts()
-        location_dim['number_of_customers'] = location_dim['number_of_customers'].fillna(0).astype(int)
-        location_dim['number_of_stores'] = 0
-        location_dim['square_footage_of_stores'] = 0.0
-
-        return location_dim
