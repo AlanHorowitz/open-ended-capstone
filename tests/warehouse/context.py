@@ -15,6 +15,8 @@ from warehouse.store_dimension import StoreDimensionProcessor
 
 from model.customer import CustomerTable
 from model.customer_address import CustomerAddressTable
+from model.store import StoreTable
+from model.store_location import StoreLocationTable
 
 from model.product_dim import ProductDimTable
 from model.date_dim import DateDimTable
