@@ -60,13 +60,13 @@ class ProductDimensionProcessor(DimensionProcessor):
         """
         Perform the following steps to update the product_dimension table for an ETL batch
 
-        1) Read product and product_supplier files from stage area into dataframes
+        1) Read store and store_location files from stage area into dataframes
         2) Load dimension header columns of product_dim from mySQL to dataframe
         3) Compute new_keys and update_keys
-        4) Compute insert and update product_dim records using transformations taking product, product_supplier
+        4) Compute insert and update product_dim records using transformations taking store, store_location
         and product_dim as inputs
         5) concatenate input and update product_dim records
-        6) truncate product dimension table write concatenated records
+        6) truncate store dimension table write concatenated records
         :param batch_id: Identifier for ETL process
         :return:None
         """
@@ -78,7 +78,7 @@ class ProductDimensionProcessor(DimensionProcessor):
         prior_product_dim = self._read_dimension("product_key")
         update_keys = prior_product_dim.index
         new_keys = product.index.difference(update_keys)
-        logger.debug("%d unique product ids detected (New: %d) (Updated: %d)", len(new_keys) + len(update_keys),
+        logger.debug("%d unique store ids detected (New: %d) (Updated: %d)", len(new_keys) + len(update_keys),
                      len(new_keys), len(update_keys))
 
         inserts = self._build_new_dimension(new_keys, product, product_supplier)
@@ -140,7 +140,7 @@ class ProductDimensionProcessor(DimensionProcessor):
 
         """
 
-        # simple copies from product to product_dim
+        # simple copies from store to product_dim
         for k, v in product_dim_to_product_mapping.items():
             product_dim[k] = product[v]
 

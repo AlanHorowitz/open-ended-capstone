@@ -7,30 +7,14 @@ from .warehouse_util import read_stage
 from WidgetsUnlimited.model.store_dim import StoreDimTable
 from WidgetsUnlimited.model.store import StoreTable
 from WidgetsUnlimited.model.store_location import StoreLocationTable
+from WidgetsUnlimited.model.location_dim import LocationDimTable
 
 from .dimension_processor import DimensionProcessor
 
 logger = logging.getLogger(__name__)
 
-# transformation mappings
 
-product_dim_to_product_mapping = {
-    "product_key": "product_id",  # natural key -- Add index
-    "name": "product_name",
-    "description": "product_description",
-    "category": "product_category",
-    "brand": "product_brand",
-    "unit_cost": "product_unit_cost",
-    "dimension_length": "product_dimension_length",
-    "dimension_width": "product_dimension_width",
-    "dimension_height": "product_dimension_height",
-    "introduced_date": "product_introduced_date",
-    "discontinued": "product_discontinued",
-    "no_longer_offered": "product_no_longer_offered",
-}
-
-
-class ProductDimensionProcessor(DimensionProcessor):
+class StoreDimensionProcessor(DimensionProcessor):
     """
     Transform the customer_dimension table in the mySQL star schema.
 
@@ -123,7 +107,7 @@ class ProductDimensionProcessor(DimensionProcessor):
 
     @staticmethod
     def dimension_transform(
-            product_dim: DataFrame, product: DataFrame, product_supplier: DataFrame
+            store_dim: DataFrame, store: DataFrame, store_location: DataFrame
     ) -> DataFrame:
         """
         Common transformations that apply to both inserts and updates.
@@ -131,23 +115,20 @@ class ProductDimensionProcessor(DimensionProcessor):
         - simple column to column mapping
         - append number_of_suppliers
 
-        :param product_dim:
-        :param product:
-        :param product_supplier: indexed by product_id
-        :return: a product_dim dataframe refreshed with current values.
+        :param store_dim:
+        :param store:
+        :param store_location:
+        :return: a store_dim dataframe refreshed with current values.
 
         """
 
-        # simple copies from product to product_dim
-        for k, v in product_dim_to_product_mapping.items():
-            product_dim[k] = product[v]
+        store_dim["store_key"] = store["store_id"]
+        store_dim["name"] = store["store_name"]
+        store_dim["location_id"] = store_location["store_location_zip_code"].\
+            apply(LocationDimTable.get_location_from_zip)
+        store_dim["square_footage"] = store_location["store_location_sq_footage"]
 
-        product_dim["number_of_suppliers"] = product_supplier.index.value_counts(
-            sort=False
-        )
-        product_dim["percent_returns"] = 0
-
-        return product_dim
+        return store_dim
 
     def _build_new_dimension(
             self, new_keys: Index, store: DataFrame, store_location: DataFrame
@@ -156,8 +137,8 @@ class ProductDimensionProcessor(DimensionProcessor):
         Create and initialize new records for customer_dimension table in star schema
 
         :param new_keys: keys for records in batch not yet in star schema
-        :param product: staged customer data
-        :param product_supplier: staged customer address data
+        :param store: staged customer data
+        :param store_location: staged customer address data
         :return: a customer_dim dataframe ready to be written to mySQL
         """
 
@@ -198,30 +179,30 @@ class ProductDimensionProcessor(DimensionProcessor):
     def _build_update_dimension(
             self,
             update_keys: Index,
-            prior_product_dim: DataFrame,
-            product: DataFrame,
-            product_supplier: DataFrame,
+            prior_store_dim: DataFrame,
+            store: DataFrame,
+            store_location: DataFrame,
     ) -> DataFrame:
 
         """
         Update existing records in customer_dimension table star schema
 
         :param update_keys: keys for records in batch already in star schema
-        :param prior_product_dim:
-        :param product: staged customer data
-        :param product_supplier: staged customer address data
+        :param prior_store_dim:
+        :param store: staged customer data
+        :param store_location: staged customer address data
         :return: a customer_dim dataframe ready to be written to mySQL
         """
 
-        if prior_product_dim.shape[0] == 0:
+        if prior_store_dim.shape[0] == 0:
             return pd.DataFrame([])
 
         # restrict stage date to update_keys
-        product = product.loc[update_keys]
-        product_supplier = product_supplier.loc[update_keys]
+        store = store.loc[update_keys]
+        store_location = store_location.loc[update_keys]
 
-        update_dim = ProductDimensionProcessor.dimension_transform(
-            prior_product_dim, product, product_supplier
+        update_dim = self.dimension_transform(
+            prior_store_dim, store, store_location
         )
 
         # conform output types

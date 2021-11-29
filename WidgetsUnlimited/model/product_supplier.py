@@ -3,7 +3,7 @@ from .metadata import Table, Column
 
 class ProductSupplierTable(Table):
 
-    NAME = "product_supplier"
+    NAME = "store_location"
 
     def __init__(self):
         super().__init__(

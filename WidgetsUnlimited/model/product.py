@@ -4,7 +4,7 @@ from .product_supplier import ProductSupplierTable
 
 class ProductTable(Table):
 
-    NAME = "product"
+    NAME = "store"
 
     def __init__(self):
         super().__init__(

@@ -13,7 +13,7 @@ class ProductDimTable(Table):
             Column("effective_date", "DATE"),
             Column("expiration_date", "DATE"),
             Column("is_current_row", "BOOLEAN"),  # type 2 scd
-            # product columns
+            # store columns
             Column("product_key", "INTEGER"),  # natural key -- Add index
             Column("name", "VARCHAR"),
             Column("description", "VARCHAR"),

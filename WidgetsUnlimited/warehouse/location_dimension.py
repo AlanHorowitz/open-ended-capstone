@@ -11,8 +11,6 @@ class LocationDimensionProcessor(DimensionProcessor):
         dim_table = LocationDimTable()
         dim_header_columns = dim_table.get_header_columns()
         super().__init__(connection, dim_table)
-        if connection:
-            self._create(StoreLocationStageTable())
 
         # set static columns from base and initialize aggregates.
         location_dim_base = pd.DataFrame(LocationDimTable.LOCATION_DATA)
