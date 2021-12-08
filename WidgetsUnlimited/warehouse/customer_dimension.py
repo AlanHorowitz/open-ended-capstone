@@ -350,7 +350,7 @@ class CustomerDimensionProcessor(DimensionProcessor):
         if prior_customer_dim.shape[0] == 0:
             return pd.DataFrame([])
 
-        # restrict stage date to update_keys
+        # restrict stage data to update_keys (filter out new keys)
         customer = customer.loc[update_keys.intersection(customer.index)]
         customer_address = customer_address.loc[
             update_keys.intersection(customer_address.index)
